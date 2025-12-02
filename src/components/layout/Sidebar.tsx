@@ -17,6 +17,7 @@ import {
   Sparkles,
   Building2,
   ClipboardList,
+  Link2,
 } from 'lucide-react';
 
 const menuItems = [
@@ -26,6 +27,7 @@ const menuItems = [
   { icon: FileText, label: 'Disputes', path: '/disputes' },
   { icon: Brain, label: 'AI Engine', path: '/ai-engine' },
   { icon: Calculator, label: 'Score Simulator', path: '/simulator' },
+  { icon: Link2, label: 'SmartCredit', path: '/smartcredit' },
   { icon: MessageSquare, label: 'Messages', path: '/messages' },
   { icon: BarChart3, label: 'Analytics', path: '/analytics' },
   { icon: CreditCard, label: 'Billing', path: '/billing' },

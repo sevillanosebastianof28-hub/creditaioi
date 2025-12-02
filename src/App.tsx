@@ -28,6 +28,24 @@ import ClientDashboard from "./pages/ClientDashboard";
 import VADashboard from "./pages/VADashboard";
 import SmartCreditConnect from "./pages/SmartCreditConnect";
 
+// Client pages
+import ClientScores from "./pages/client/ClientScores";
+import ClientDisputes from "./pages/client/ClientDisputes";
+import ClientDocuments from "./pages/client/ClientDocuments";
+import ClientMessages from "./pages/client/ClientMessages";
+import ClientBilling from "./pages/client/ClientBilling";
+import ClientNotifications from "./pages/client/ClientNotifications";
+import ClientProfile from "./pages/client/ClientProfile";
+
+// VA pages
+import VAClients from "./pages/va/VAClients";
+import VATasks from "./pages/va/VATasks";
+import VADisputes from "./pages/va/VADisputes";
+import VADocuments from "./pages/va/VADocuments";
+import VATraining from "./pages/va/VATraining";
+import VAMessages from "./pages/va/VAMessages";
+import VASettings from "./pages/va/VASettings";
+
 const queryClient = new QueryClient();
 
 // Router component that handles role-based redirects
@@ -132,103 +150,27 @@ function AppRouter() {
       } />
 
       {/* Client Routes */}
-      <Route path="/client-dashboard" element={
-        <ProtectedRoute allowedRoles={['client']}>
-          <ClientDashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/client-dashboard/scores" element={
-        <ProtectedRoute allowedRoles={['client']}>
-          <ClientDashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/client-dashboard/disputes" element={
-        <ProtectedRoute allowedRoles={['client']}>
-          <ClientDashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/client-dashboard/documents" element={
-        <ProtectedRoute allowedRoles={['client']}>
-          <ClientDashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/client-dashboard/smartcredit" element={
-        <ProtectedRoute allowedRoles={['client']}>
-          <SmartCreditConnect />
-        </ProtectedRoute>
-      } />
-      <Route path="/client-dashboard/messages" element={
-        <ProtectedRoute allowedRoles={['client']}>
-          <ClientDashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/client-dashboard/billing" element={
-        <ProtectedRoute allowedRoles={['client']}>
-          <ClientDashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/client-dashboard/notifications" element={
-        <ProtectedRoute allowedRoles={['client']}>
-          <ClientDashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/client-dashboard/profile" element={
-        <ProtectedRoute allowedRoles={['client']}>
-          <ClientDashboard />
-        </ProtectedRoute>
-      } />
+      <Route path="/client-dashboard" element={<ProtectedRoute allowedRoles={['client']}><ClientDashboard /></ProtectedRoute>} />
+      <Route path="/client-dashboard/scores" element={<ProtectedRoute allowedRoles={['client']}><ClientScores /></ProtectedRoute>} />
+      <Route path="/client-dashboard/disputes" element={<ProtectedRoute allowedRoles={['client']}><ClientDisputes /></ProtectedRoute>} />
+      <Route path="/client-dashboard/documents" element={<ProtectedRoute allowedRoles={['client']}><ClientDocuments /></ProtectedRoute>} />
+      <Route path="/client-dashboard/smartcredit" element={<ProtectedRoute allowedRoles={['client']}><SmartCreditConnect /></ProtectedRoute>} />
+      <Route path="/client-dashboard/messages" element={<ProtectedRoute allowedRoles={['client']}><ClientMessages /></ProtectedRoute>} />
+      <Route path="/client-dashboard/billing" element={<ProtectedRoute allowedRoles={['client']}><ClientBilling /></ProtectedRoute>} />
+      <Route path="/client-dashboard/notifications" element={<ProtectedRoute allowedRoles={['client']}><ClientNotifications /></ProtectedRoute>} />
+      <Route path="/client-dashboard/profile" element={<ProtectedRoute allowedRoles={['client']}><ClientProfile /></ProtectedRoute>} />
 
       {/* VA Routes */}
-      <Route path="/va-dashboard" element={
-        <ProtectedRoute allowedRoles={['va_staff']}>
-          <VADashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/va-dashboard/clients" element={
-        <ProtectedRoute allowedRoles={['va_staff']}>
-          <VADashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/va-dashboard/clients/:id" element={
-        <ProtectedRoute allowedRoles={['va_staff']}>
-          <VADashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/va-dashboard/tasks" element={
-        <ProtectedRoute allowedRoles={['va_staff']}>
-          <VADashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/va-dashboard/disputes" element={
-        <ProtectedRoute allowedRoles={['va_staff']}>
-          <VADashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/va-dashboard/documents" element={
-        <ProtectedRoute allowedRoles={['va_staff']}>
-          <VADashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/va-dashboard/training" element={
-        <ProtectedRoute allowedRoles={['va_staff']}>
-          <VADashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/va-dashboard/messages" element={
-        <ProtectedRoute allowedRoles={['va_staff']}>
-          <VADashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/va-dashboard/settings" element={
-        <ProtectedRoute allowedRoles={['va_staff']}>
-          <VADashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/va-dashboard/smartcredit/:clientId" element={
-        <ProtectedRoute allowedRoles={['va_staff']}>
-          <SmartCreditConnect />
-        </ProtectedRoute>
-      } />
+      <Route path="/va-dashboard" element={<ProtectedRoute allowedRoles={['va_staff']}><VADashboard /></ProtectedRoute>} />
+      <Route path="/va-dashboard/clients" element={<ProtectedRoute allowedRoles={['va_staff']}><VAClients /></ProtectedRoute>} />
+      <Route path="/va-dashboard/clients/:id" element={<ProtectedRoute allowedRoles={['va_staff']}><VAClients /></ProtectedRoute>} />
+      <Route path="/va-dashboard/tasks" element={<ProtectedRoute allowedRoles={['va_staff']}><VATasks /></ProtectedRoute>} />
+      <Route path="/va-dashboard/disputes" element={<ProtectedRoute allowedRoles={['va_staff']}><VADisputes /></ProtectedRoute>} />
+      <Route path="/va-dashboard/documents" element={<ProtectedRoute allowedRoles={['va_staff']}><VADocuments /></ProtectedRoute>} />
+      <Route path="/va-dashboard/training" element={<ProtectedRoute allowedRoles={['va_staff']}><VATraining /></ProtectedRoute>} />
+      <Route path="/va-dashboard/messages" element={<ProtectedRoute allowedRoles={['va_staff']}><VAMessages /></ProtectedRoute>} />
+      <Route path="/va-dashboard/settings" element={<ProtectedRoute allowedRoles={['va_staff']}><VASettings /></ProtectedRoute>} />
+      <Route path="/va-dashboard/smartcredit/:clientId" element={<ProtectedRoute allowedRoles={['va_staff']}><SmartCreditConnect /></ProtectedRoute>} />
 
       {/* Agency Owner SmartCredit Management */}
       <Route path="/smartcredit" element={
