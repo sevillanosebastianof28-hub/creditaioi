@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 interface ScoreGaugeProps {
   score: number;
   previousScore?: number;
-  bureau: string;
+  bureau?: string;
   size?: 'sm' | 'md' | 'lg';
 }
 
@@ -84,9 +84,11 @@ export function ScoreGauge({ score, previousScore, bureau, size = 'md' }: ScoreG
           )}
         </div>
       </div>
-      <span className={cn('font-medium text-muted-foreground capitalize', sizes[size].label)}>
-        {bureau}
-      </span>
+      {bureau && (
+        <span className={cn('font-medium text-muted-foreground capitalize', sizes[size].label)}>
+          {bureau}
+        </span>
+      )}
     </div>
   );
 }
