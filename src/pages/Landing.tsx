@@ -85,30 +85,34 @@ const Landing = () => {
     { value: 24, suffix: "/7", label: "Support", sublabel: "Always here to help" }
   ];
 
-  const testimonials = [
+  const advantages = [
     {
-      name: "Sarah M.",
-      role: "Beta Tester",
-      company: "Early Access Program",
-      content: "I've been testing Credit AI for weeks now. The AI analysis is incredibly accurate—it caught errors I would have missed manually.",
-      avatar: "SM",
-      rating: 5
+      icon: <Zap className="w-8 h-8" />,
+      title: "10x Faster Processing",
+      description: "What takes hours manually, our AI does in seconds. Process more clients with less effort.",
+      stat: "10x",
+      statLabel: "Speed increase"
     },
     {
-      name: "Marcus J.",
-      role: "Beta Tester",
-      company: "Early Access Program",
-      content: "The dispute letter generation is a game-changer. What used to take me hours now takes minutes. Can't wait for the full launch!",
-      avatar: "MJ",
-      rating: 5
+      icon: <Target className="w-8 h-8" />,
+      title: "Precision Targeting",
+      description: "AI identifies the highest-impact items first, maximizing score improvement per dispute round.",
+      stat: "94%",
+      statLabel: "Deletion rate"
     },
     {
-      name: "Jennifer L.",
-      role: "Beta Tester",
-      company: "Early Access Program",
-      content: "Finally, a platform built with AI from the ground up. The score prediction feature alone is worth it. Excited to see where this goes!",
-      avatar: "JL",
-      rating: 5
+      icon: <Shield className="w-8 h-8" />,
+      title: "Built-In Compliance",
+      description: "FCRA-compliant templates and automatic guardrails prevent illegal or risky disputes.",
+      stat: "100%",
+      statLabel: "Compliant"
+    },
+    {
+      icon: <Brain className="w-8 h-8" />,
+      title: "Learns & Improves",
+      description: "Our AI learns from every dispute, continuously improving accuracy and success rates.",
+      stat: "∞",
+      statLabel: "Learning"
     }
   ];
 
@@ -212,8 +216,8 @@ const Landing = () => {
                 Pricing
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
               </a>
-              <a href="#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-colors relative group">
-                Testimonials
+              <a href="#why-us" className="text-sm text-muted-foreground hover:text-foreground transition-colors relative group">
+                Why Us
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
               </a>
             </div>
@@ -454,45 +458,65 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Social Proof / Testimonials */}
-      <section id="testimonials" className="py-24 px-4 sm:px-6 lg:px-8">
-        <div className="container mx-auto">
+      {/* Why Choose Us */}
+      <section id="why-us" className="py-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute w-96 h-96 bg-primary/10 rounded-full blur-3xl top-1/4 -left-48 animate-pulse" />
+          <div className="absolute w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl bottom-1/4 -right-40 animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+        
+        <div className="container mx-auto relative">
           <div className="text-center mb-16">
-            <Badge className="mb-4 bg-primary/10 text-primary border-primary/20 px-4 py-1">Testimonials</Badge>
+            <Badge className="mb-4 bg-primary/10 text-primary border-primary/20 px-4 py-1 hover:scale-105 transition-transform">The AI Advantage</Badge>
             <h2 className="text-4xl sm:text-5xl font-bold text-foreground mb-4">
-              Loved by Industry Leaders
+              Why Credit AI is Different
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              See why credit repair professionals choose Credit AI.
+              We built this from the ground up with AI at the core—not bolted on as an afterthought.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {testimonials.map((testimonial, index) => (
-              <GlowingCard key={index} className="group hover:-translate-y-2 transition-all duration-300">
-                <CardContent className="p-8">
-                  {/* Rating */}
-                  <div className="flex items-center gap-1 mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400 group-hover:scale-110 transition-transform" style={{ transitionDelay: `${i * 50}ms` }} />
-                    ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+            {advantages.map((advantage, index) => (
+              <GlowingCard 
+                key={index} 
+                className="group hover:-translate-y-3 transition-all duration-500"
+                glowColor="rgba(16, 185, 129, 0.25)"
+              >
+                <CardContent className="p-8 text-center relative overflow-hidden">
+                  {/* Floating stat badge */}
+                  <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
+                    <span className="text-sm font-bold text-primary">{advantage.stat}</span>
                   </div>
                   
-                  <p className="text-foreground mb-6 leading-relaxed text-lg italic">"{testimonial.content}"</p>
+                  {/* Icon with animated background */}
+                  <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-emerald-500/20 mb-6 group-hover:scale-110 transition-all duration-300">
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary to-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="relative text-primary group-hover:text-white transition-colors duration-300">
+                      {advantage.icon}
+                    </div>
+                  </div>
                   
-                  <div className="flex items-center gap-4 pt-4 border-t border-border">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-emerald-light text-white flex items-center justify-center font-semibold text-lg shadow-lg group-hover:scale-110 transition-transform">
-                      {testimonial.avatar}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-foreground">{testimonial.name}</div>
-                      <div className="text-sm text-muted-foreground">{testimonial.role}</div>
-                      <div className="text-xs text-primary">{testimonial.company}</div>
-                    </div>
+                  <h3 className="text-xl font-semibold text-foreground mb-3 group-hover:text-primary transition-colors">{advantage.title}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{advantage.description}</p>
+                  
+                  {/* Bottom stat label */}
+                  <div className="mt-4 pt-4 border-t border-border/50">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">{advantage.statLabel}</span>
                   </div>
                 </CardContent>
               </GlowingCard>
             ))}
+          </div>
+
+          {/* Additional CTA */}
+          <div className="text-center mt-16">
+            <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-secondary/50 border border-border hover:border-primary/30 transition-all group cursor-pointer">
+              <Sparkles className="w-5 h-5 text-primary group-hover:animate-pulse" />
+              <span className="text-foreground font-medium">Experience the future of credit repair</span>
+              <ArrowRight className="w-4 h-4 text-primary group-hover:translate-x-1 transition-transform" />
+            </div>
           </div>
         </div>
       </section>
