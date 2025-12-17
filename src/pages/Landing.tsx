@@ -79,34 +79,34 @@ const Landing = () => {
   ];
 
   const stats = [
-    { value: 94, suffix: "%", label: "Deletion Rate", sublabel: "Industry-leading success" },
+    { value: 94, suffix: "%", label: "Deletion Rate", sublabel: "In beta testing" },
     { value: 45, suffix: "+", label: "Avg Points", sublabel: "Score improvement" },
     { value: 10, suffix: "x", label: "Faster", sublabel: "Than manual processing" },
-    { value: 500, suffix: "+", label: "Businesses", sublabel: "Trust our platform" }
+    { value: 24, suffix: "/7", label: "Support", sublabel: "Always here to help" }
   ];
 
   const testimonials = [
     {
-      name: "Sarah Mitchell",
-      role: "Business Owner",
-      company: "CreditPro Solutions",
-      content: "Credit AI transformed our business. We went from 50 clients to 300+ without adding staff. The AI handles everything.",
+      name: "Sarah M.",
+      role: "Beta Tester",
+      company: "Early Access Program",
+      content: "I've been testing Credit AI for weeks now. The AI analysis is incredibly accurate—it caught errors I would have missed manually.",
       avatar: "SM",
       rating: 5
     },
     {
-      name: "Marcus Johnson",
-      role: "Credit Specialist",
-      company: "ScoreBoost Inc",
-      content: "The dispute letter generation is incredible. What used to take hours now takes minutes. My clients see results faster than ever.",
+      name: "Marcus J.",
+      role: "Beta Tester",
+      company: "Early Access Program",
+      content: "The dispute letter generation is a game-changer. What used to take me hours now takes minutes. Can't wait for the full launch!",
       avatar: "MJ",
       rating: 5
     },
     {
-      name: "Jennifer Lee",
-      role: "Director",
-      company: "Credit Masters",
-      content: "Finally, a platform that understands credit repair. The AI insights have helped us achieve a 94% deletion rate.",
+      name: "Jennifer L.",
+      role: "Beta Tester",
+      company: "Early Access Program",
+      content: "Finally, a platform built with AI from the ground up. The score prediction feature alone is worth it. Excited to see where this goes!",
       avatar: "JL",
       rating: 5
     }
@@ -580,7 +580,7 @@ const Landing = () => {
             Ready to Transform Your Business?
           </h2>
           <p className="text-xl text-white/80 mb-10 max-w-2xl mx-auto">
-            Join 500+ businesses already using AI to scale their operations and deliver better results for clients.
+            Be among the first to experience the future of credit repair. Start your free trial today and see the AI difference.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button 
