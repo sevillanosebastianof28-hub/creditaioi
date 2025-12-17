@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 
 const menuItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: Users, label: 'Clients', path: '/clients' },
   { icon: ClipboardList, label: 'VA Tasks', path: '/tasks' },
   { icon: FileText, label: 'Disputes', path: '/disputes' },
@@ -80,7 +80,8 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-64px)]">
         {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname === item.path || 
+            (item.path === '/dashboard' && location.pathname === '/');
           return (
             <Link
               key={item.path}

@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 // Pages
+import Landing from "./pages/Landing";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Clients from "./pages/Clients";
@@ -62,7 +63,7 @@ function AppRouter() {
 
   // Determine default route based on role
   const getDefaultRoute = () => {
-    if (!user) return '/auth';
+    if (!user) return '/';
     switch (role) {
       case 'client':
         return '/client-dashboard';
@@ -70,12 +71,18 @@ function AppRouter() {
         return '/va-dashboard';
       case 'agency_owner':
       default:
-        return '/';
+        return '/dashboard';
     }
   };
 
   return (
     <Routes>
+      {/* Public Landing Page */}
+      <Route 
+        path="/" 
+        element={user ? <Navigate to={getDefaultRoute()} replace /> : <Landing />} 
+      />
+
       {/* Auth */}
       <Route 
         path="/auth" 
@@ -83,7 +90,7 @@ function AppRouter() {
       />
 
       {/* Agency Owner Routes (Full Access) */}
-      <Route path="/" element={
+      <Route path="/dashboard" element={
         <ProtectedRoute allowedRoles={['agency_owner']}>
           <Index />
         </ProtectedRoute>
