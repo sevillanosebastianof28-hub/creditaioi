@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth, AppRole } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,8 @@ import {
   Lock,
   Eye,
   EyeOff,
-  Check
+  Check,
+  ArrowLeft
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -117,21 +118,37 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
+    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/30 to-accent/20 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+      
+      <div className="w-full max-w-lg relative z-10">
+        {/* Back to home */}
+        <Link 
+          to="/" 
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to home
+        </Link>
+
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center">
-            <Sparkles className="w-7 h-7 text-white" />
+          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/25">
+            <Sparkles className="w-7 h-7 text-primary-foreground" />
           </div>
-          <span className="text-3xl font-bold text-white">CreditAI</span>
+          <span className="text-3xl font-bold text-foreground">Credit AI</span>
         </div>
 
-        <Card className="border-sidebar-border bg-sidebar-background/95 backdrop-blur-xl">
+        <Card className="border-border bg-card/80 backdrop-blur-xl shadow-xl">
           <Tabs defaultValue="signin" className="w-full">
             <CardHeader className="pb-4">
-              <TabsList className="grid w-full grid-cols-2 bg-sidebar-accent">
-                <TabsTrigger value="signin" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <TabsList className="grid w-full grid-cols-2 bg-secondary">
+                <TabsTrigger 
+                  value="signin" 
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                >
                   Sign In
                 </TabsTrigger>
                 <TabsTrigger 
@@ -149,7 +166,7 @@ export default function Auth() {
               <TabsContent value="signin" className="mt-0">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email" className="text-sidebar-foreground">Email</Label>
+                    <Label htmlFor="signin-email" className="text-foreground">Email</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
@@ -158,13 +175,13 @@ export default function Auth() {
                         placeholder="you@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10 bg-sidebar-accent border-sidebar-border text-sidebar-foreground"
+                        className="pl-10 bg-background border-border"
                         required
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password" className="text-sidebar-foreground">Password</Label>
+                    <Label htmlFor="signin-password" className="text-foreground">Password</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
@@ -173,13 +190,13 @@ export default function Auth() {
                         placeholder="••••••••"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10 pr-10 bg-sidebar-accent border-sidebar-border text-sidebar-foreground"
+                        className="pl-10 pr-10 bg-background border-border"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-sidebar-foreground"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -187,7 +204,7 @@ export default function Auth() {
                   </div>
                   <Button 
                     type="submit" 
-                    className="w-full bg-gradient-primary hover:opacity-90"
+                    className="w-full bg-primary hover:bg-primary/90"
                     disabled={isLoading}
                   >
                     {isLoading ? 'Signing in...' : 'Sign In'}
@@ -201,9 +218,9 @@ export default function Auth() {
                 {step === 'role' ? (
                   <div className="space-y-4">
                     <div>
-                      <CardTitle className="text-xl text-sidebar-foreground">Choose Your Role</CardTitle>
-                      <CardDescription className="text-sidebar-foreground/60">
-                        Select how you'll be using CreditAI
+                      <CardTitle className="text-xl text-foreground">Choose Your Role</CardTitle>
+                      <CardDescription className="text-muted-foreground">
+                        Select how you'll be using Credit AI
                       </CardDescription>
                     </div>
                     <div className="space-y-3">
@@ -216,28 +233,28 @@ export default function Auth() {
                             type="button"
                             onClick={() => setSelectedRole(option.value)}
                             className={cn(
-                              'w-full p-4 rounded-lg border-2 text-left transition-all duration-200',
-                              'hover:border-primary/50 hover:bg-sidebar-accent',
+                              'w-full p-4 rounded-xl border-2 text-left transition-all duration-200',
+                              'hover:border-primary/50 hover:bg-secondary/50',
                               isSelected
-                                ? 'border-primary bg-primary/10'
-                                : 'border-sidebar-border bg-sidebar-accent/50'
+                                ? 'border-primary bg-primary/5 shadow-sm'
+                                : 'border-border bg-background'
                             )}
                           >
                             <div className="flex items-start gap-4">
                               <div className={cn(
-                                'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0',
-                                isSelected ? 'bg-primary text-primary-foreground' : 'bg-sidebar-accent text-sidebar-foreground'
+                                'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors',
+                                isSelected ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
                               )}>
                                 <Icon className="w-5 h-5" />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between">
-                                  <p className="font-semibold text-sidebar-foreground">{option.label}</p>
+                                  <p className="font-semibold text-foreground">{option.label}</p>
                                   {isSelected && (
                                     <Check className="w-5 h-5 text-primary" />
                                   )}
                                 </div>
-                                <p className="text-sm text-sidebar-foreground/60 mt-0.5">
+                                <p className="text-sm text-muted-foreground mt-0.5">
                                   {option.description}
                                 </p>
                               </div>
@@ -248,7 +265,7 @@ export default function Auth() {
                     </div>
                     <Button 
                       onClick={proceedToDetails}
-                      className="w-full bg-gradient-primary hover:opacity-90"
+                      className="w-full bg-primary hover:bg-primary/90"
                       disabled={!selectedRole}
                     >
                       Continue
@@ -260,29 +277,30 @@ export default function Auth() {
                     <button
                       type="button"
                       onClick={() => setStep('role')}
-                      className="text-sm text-primary hover:underline"
+                      className="text-sm text-primary hover:underline flex items-center gap-1"
                     >
-                      ← Back to role selection
+                      <ArrowLeft className="w-3 h-3" />
+                      Back to role selection
                     </button>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="firstName" className="text-sidebar-foreground">First Name</Label>
+                        <Label htmlFor="firstName" className="text-foreground">First Name</Label>
                         <Input
                           id="firstName"
                           value={firstName}
                           onChange={(e) => setFirstName(e.target.value)}
-                          className="bg-sidebar-accent border-sidebar-border text-sidebar-foreground"
+                          className="bg-background border-border"
                           required
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="lastName" className="text-sidebar-foreground">Last Name</Label>
+                        <Label htmlFor="lastName" className="text-foreground">Last Name</Label>
                         <Input
                           id="lastName"
                           value={lastName}
                           onChange={(e) => setLastName(e.target.value)}
-                          className="bg-sidebar-accent border-sidebar-border text-sidebar-foreground"
+                          className="bg-background border-border"
                           required
                         />
                       </div>
@@ -290,20 +308,20 @@ export default function Auth() {
 
                     {selectedRole === 'agency_owner' && (
                       <div className="space-y-2">
-                        <Label htmlFor="agencyName" className="text-sidebar-foreground">Agency Name</Label>
+                        <Label htmlFor="agencyName" className="text-foreground">Agency Name</Label>
                         <Input
                           id="agencyName"
                           placeholder="Your Credit Repair Agency"
                           value={agencyName}
                           onChange={(e) => setAgencyName(e.target.value)}
-                          className="bg-sidebar-accent border-sidebar-border text-sidebar-foreground"
+                          className="bg-background border-border"
                           required
                         />
                       </div>
                     )}
 
                     <div className="space-y-2">
-                      <Label htmlFor="signup-email" className="text-sidebar-foreground">Email</Label>
+                      <Label htmlFor="signup-email" className="text-foreground">Email</Label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
@@ -312,13 +330,13 @@ export default function Auth() {
                           placeholder="you@example.com"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          className="pl-10 bg-sidebar-accent border-sidebar-border text-sidebar-foreground"
+                          className="pl-10 bg-background border-border"
                           required
                         />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="signup-password" className="text-sidebar-foreground">Password</Label>
+                      <Label htmlFor="signup-password" className="text-foreground">Password</Label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
@@ -327,14 +345,14 @@ export default function Auth() {
                           placeholder="••••••••"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className="pl-10 pr-10 bg-sidebar-accent border-sidebar-border text-sidebar-foreground"
+                          className="pl-10 pr-10 bg-background border-border"
                           required
                           minLength={6}
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-sidebar-foreground"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                         >
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
@@ -342,7 +360,7 @@ export default function Auth() {
                     </div>
                     <Button 
                       type="submit" 
-                      className="w-full bg-gradient-primary hover:opacity-90"
+                      className="w-full bg-primary hover:bg-primary/90"
                       disabled={isLoading}
                     >
                       {isLoading ? 'Creating Account...' : 'Create Account'}
@@ -355,8 +373,11 @@ export default function Auth() {
           </Tabs>
         </Card>
 
-        <p className="text-center text-sidebar-foreground/50 text-sm mt-6">
-          By signing up, you agree to our Terms of Service and Privacy Policy
+        <p className="text-center text-muted-foreground text-sm mt-6">
+          By signing up, you agree to our{' '}
+          <a href="#" className="text-primary hover:underline">Terms of Service</a>
+          {' '}and{' '}
+          <a href="#" className="text-primary hover:underline">Privacy Policy</a>
         </p>
       </div>
     </div>
