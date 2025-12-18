@@ -12,11 +12,10 @@ export default {
         "2xl": "1400px",
       },
     },
-	extend: {
-		fontFamily: {
-			sans: ['Inter', 'system-ui', 'sans-serif'],
-			display: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
-		},
+    extend: {
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
