@@ -23,6 +23,7 @@ import Agency from "./pages/Agency";
 import Compliance from "./pages/Compliance";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import AIAutomation from "./pages/AIAutomation";
 
 // Role-specific pages
 import ClientDashboard from "./pages/ClientDashboard";
@@ -88,6 +89,9 @@ function AppRouter() {
         path="/auth" 
         element={user ? <Navigate to={getDefaultRoute()} replace /> : <Auth />} 
       />
+
+      {/* Public AI Automation Page */}
+      <Route path="/ai-automation" element={<AIAutomation />} />
 
       {/* Agency Owner Routes (Full Access) */}
       <Route path="/dashboard" element={
