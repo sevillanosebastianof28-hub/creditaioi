@@ -199,12 +199,12 @@ const Landing = () => {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
               <div className="relative group">
-                <div className="absolute -inset-2 bg-gradient-to-r from-primary/40 via-primary/20 to-transparent rounded-xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="absolute -inset-1 bg-gradient-to-r from-primary/30 to-transparent rounded-lg blur-sm" />
+                <div className="absolute -inset-4 bg-gradient-to-r from-primary/50 via-primary/30 to-primary/10 rounded-2xl blur-xl opacity-80 group-hover:opacity-100 transition-opacity duration-300 animate-pulse" />
+                <div className="absolute -inset-2 bg-gradient-to-r from-primary/40 to-primary/20 rounded-xl blur-md" />
                 <img 
                   src="/images/credit-ai-logo.png" 
                   alt="Credit AI Platform" 
-                  className="relative h-14 w-auto drop-shadow-[0_0_15px_hsl(var(--primary)/0.5)] hover:drop-shadow-[0_0_25px_hsl(var(--primary)/0.7)] transition-all duration-300 hover:scale-105" 
+                  className="relative h-20 w-auto drop-shadow-[0_0_20px_hsl(var(--primary)/0.6)] hover:drop-shadow-[0_0_35px_hsl(var(--primary)/0.8)] transition-all duration-300 hover:scale-110" 
                 />
               </div>
             </div>
