@@ -204,7 +204,7 @@ const Landing = () => {
                 <img 
                   src="/images/credit-ai-logo.png" 
                   alt="Credit AI Platform" 
-                  className="relative h-20 w-auto drop-shadow-[0_0_20px_hsl(var(--primary)/0.6)] hover:drop-shadow-[0_0_35px_hsl(var(--primary)/0.8)] transition-all duration-300 hover:scale-110" 
+                  className="relative h-28 w-auto drop-shadow-[0_0_25px_hsl(var(--primary)/0.7)] hover:drop-shadow-[0_0_45px_hsl(var(--primary)/0.9)] transition-all duration-300 hover:scale-110" 
                 />
               </div>
             </div>
