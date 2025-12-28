@@ -197,8 +197,16 @@ const Landing = () => {
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2">
-              <img src="/images/credit-ai-logo.png" alt="Credit AI Platform" className="h-10 w-auto" />
+            <div className="flex items-center gap-3">
+              <div className="relative group">
+                <div className="absolute -inset-2 bg-gradient-to-r from-primary/40 via-primary/20 to-transparent rounded-xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute -inset-1 bg-gradient-to-r from-primary/30 to-transparent rounded-lg blur-sm" />
+                <img 
+                  src="/images/credit-ai-logo.png" 
+                  alt="Credit AI Platform" 
+                  className="relative h-14 w-auto drop-shadow-[0_0_15px_hsl(var(--primary)/0.5)] hover:drop-shadow-[0_0_25px_hsl(var(--primary)/0.7)] transition-all duration-300 hover:scale-105" 
+                />
+              </div>
             </div>
             <div className="hidden md:flex items-center gap-8">
               <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors relative group">
