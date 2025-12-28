@@ -199,15 +199,7 @@ const AIAutomation = () => {
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <div className="relative">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg">
-                <Zap className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <div className="absolute -inset-1 bg-gradient-to-br from-primary to-primary/60 rounded-xl blur opacity-30" />
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-              Credit AI
-            </span>
+            <img src="/images/credit-ai-logo.png" alt="Credit AI Platform" className="h-10 w-auto" />
           </Link>
           <div className="flex items-center gap-4">
             <Link to="/landing">

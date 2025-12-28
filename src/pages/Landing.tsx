@@ -198,10 +198,7 @@ const Landing = () => {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/25 hover:scale-110 transition-transform">
-                <Sparkles className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold text-foreground">Credit AI</span>
+              <img src="/images/credit-ai-logo.png" alt="Credit AI Platform" className="h-10 w-auto" />
             </div>
             <div className="hidden md:flex items-center gap-8">
               <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors relative group">
@@ -638,10 +635,7 @@ const Landing = () => {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
             <div className="col-span-2">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center hover:scale-110 transition-transform">
-                  <Sparkles className="w-6 h-6 text-primary-foreground" />
-                </div>
-                <span className="text-xl font-bold text-foreground">Credit AI</span>
+                <img src="/images/credit-ai-logo.png" alt="Credit AI Platform" className="h-10 w-auto" />
               </div>
               <p className="text-muted-foreground mb-4 max-w-xs">
                 The first AI-driven credit repair operating system. Transform your business with intelligent automation.

@@ -135,10 +135,7 @@ export default function Auth() {
 
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/25">
-            <Sparkles className="w-7 h-7 text-primary-foreground" />
-          </div>
-          <span className="text-3xl font-bold text-foreground">Credit AI</span>
+          <img src="/images/credit-ai-logo.png" alt="Credit AI Platform" className="h-14 w-auto" />
         </div>
 
         <Card className="border-border bg-card/80 backdrop-blur-xl shadow-xl">
