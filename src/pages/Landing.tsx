@@ -556,8 +556,7 @@ const Landing = () => {
                   <div className="text-center mb-8">
                     <h3 className="text-xl font-semibold text-foreground mb-2">{plan.name}</h3>
                     <div className="flex items-baseline justify-center gap-1 mb-2">
-                      <span className="text-5xl font-bold text-foreground">{plan.price}</span>
-                      <span className="text-muted-foreground">{plan.period}</span>
+                      <span className="text-3xl font-bold text-muted-foreground">Coming Soon</span>
                     </div>
                     <p className="text-sm text-muted-foreground">{plan.description}</p>
                   </div>
@@ -585,6 +584,13 @@ const Landing = () => {
                 </CardContent>
               </GlowingCard>
             ))}
+          </div>
+          
+          {/* Launch Date */}
+          <div className="text-center mt-12">
+            <p className="text-lg text-muted-foreground">
+              Launching <span className="text-primary font-semibold">12/28/25</span>
+            </p>
           </div>
         </div>
       </section>
