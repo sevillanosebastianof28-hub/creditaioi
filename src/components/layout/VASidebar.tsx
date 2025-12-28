@@ -42,10 +42,7 @@ export function VASidebar() {
       <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-sidebar-primary-foreground" />
-            </div>
-            <span className="font-bold text-lg text-sidebar-accent-foreground">CreditAI</span>
+            <img src="/images/credit-ai-logo.png" alt="Credit AI" className="h-8 w-auto" />
           </div>
         )}
         {collapsed && (
