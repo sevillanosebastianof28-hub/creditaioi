@@ -53,6 +53,42 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_report_analyses: {
+        Row: {
+          analysis_result: Json | null
+          created_at: string
+          disputable_items: Json | null
+          file_path: string | null
+          id: string
+          raw_text: string | null
+          summary: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          analysis_result?: Json | null
+          created_at?: string
+          disputable_items?: Json | null
+          file_path?: string | null
+          id?: string
+          raw_text?: string | null
+          summary?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          analysis_result?: Json | null
+          created_at?: string
+          disputable_items?: Json | null
+          file_path?: string | null
+          id?: string
+          raw_text?: string | null
+          summary?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           agency_id: string | null
