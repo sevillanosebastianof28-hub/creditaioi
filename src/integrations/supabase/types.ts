@@ -53,6 +53,39 @@ export type Database = {
         }
         Relationships: []
       }
+      bureau_patterns: {
+        Row: {
+          bureau: Database["public"]["Enums"]["bureau_type"]
+          created_at: string
+          id: string
+          last_updated: string
+          pattern_data: Json
+          pattern_type: string
+          sample_size: number | null
+          success_rate: number | null
+        }
+        Insert: {
+          bureau: Database["public"]["Enums"]["bureau_type"]
+          created_at?: string
+          id?: string
+          last_updated?: string
+          pattern_data: Json
+          pattern_type: string
+          sample_size?: number | null
+          success_rate?: number | null
+        }
+        Update: {
+          bureau?: Database["public"]["Enums"]["bureau_type"]
+          created_at?: string
+          id?: string
+          last_updated?: string
+          pattern_data?: Json
+          pattern_type?: string
+          sample_size?: number | null
+          success_rate?: number | null
+        }
+        Relationships: []
+      }
       credit_report_analyses: {
         Row: {
           analysis_result: Json | null
@@ -88,6 +121,154 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      dispute_items: {
+        Row: {
+          account_number: string | null
+          bureau: Database["public"]["Enums"]["bureau_type"]
+          client_id: string
+          created_at: string
+          creditor_name: string
+          dispute_reason: string
+          id: string
+          letter_content: string | null
+          letter_type: string
+          outcome: Database["public"]["Enums"]["dispute_status"]
+          outcome_details: Json | null
+          response_received_at: string | null
+          round_id: string
+          sent_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_number?: string | null
+          bureau: Database["public"]["Enums"]["bureau_type"]
+          client_id: string
+          created_at?: string
+          creditor_name: string
+          dispute_reason: string
+          id?: string
+          letter_content?: string | null
+          letter_type: string
+          outcome?: Database["public"]["Enums"]["dispute_status"]
+          outcome_details?: Json | null
+          response_received_at?: string | null
+          round_id: string
+          sent_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string | null
+          bureau?: Database["public"]["Enums"]["bureau_type"]
+          client_id?: string
+          created_at?: string
+          creditor_name?: string
+          dispute_reason?: string
+          id?: string
+          letter_content?: string | null
+          letter_type?: string
+          outcome?: Database["public"]["Enums"]["dispute_status"]
+          outcome_details?: Json | null
+          response_received_at?: string | null
+          round_id?: string
+          sent_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_items_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispute_rounds: {
+        Row: {
+          ai_recommendations: Json | null
+          client_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          round_number: number
+          started_at: string
+          status: Database["public"]["Enums"]["dispute_status"]
+          updated_at: string
+        }
+        Insert: {
+          ai_recommendations?: Json | null
+          client_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          round_number?: number
+          started_at?: string
+          status?: Database["public"]["Enums"]["dispute_status"]
+          updated_at?: string
+        }
+        Update: {
+          ai_recommendations?: Json | null
+          client_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          round_number?: number
+          started_at?: string
+          status?: Database["public"]["Enums"]["dispute_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      outcome_tracking: {
+        Row: {
+          bureau: Database["public"]["Enums"]["bureau_type"]
+          created_at: string
+          creditor_name: string | null
+          days_to_response: number | null
+          dispute_item_id: string | null
+          dispute_reason: string
+          id: string
+          letter_type: string
+          outcome: Database["public"]["Enums"]["dispute_status"]
+          success_factors: Json | null
+        }
+        Insert: {
+          bureau: Database["public"]["Enums"]["bureau_type"]
+          created_at?: string
+          creditor_name?: string | null
+          days_to_response?: number | null
+          dispute_item_id?: string | null
+          dispute_reason: string
+          id?: string
+          letter_type: string
+          outcome: Database["public"]["Enums"]["dispute_status"]
+          success_factors?: Json | null
+        }
+        Update: {
+          bureau?: Database["public"]["Enums"]["bureau_type"]
+          created_at?: string
+          creditor_name?: string | null
+          days_to_response?: number | null
+          dispute_item_id?: string | null
+          dispute_reason?: string
+          id?: string
+          letter_type?: string
+          outcome?: Database["public"]["Enums"]["dispute_status"]
+          success_factors?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outcome_tracking_dispute_item_id_fkey"
+            columns: ["dispute_item_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -239,6 +420,15 @@ export type Database = {
     }
     Enums: {
       app_role: "client" | "agency_owner" | "va_staff"
+      bureau_type: "experian" | "equifax" | "transunion"
+      dispute_status:
+        | "pending"
+        | "in_progress"
+        | "responded"
+        | "verified"
+        | "deleted"
+        | "updated"
+        | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -367,6 +557,16 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["client", "agency_owner", "va_staff"],
+      bureau_type: ["experian", "equifax", "transunion"],
+      dispute_status: [
+        "pending",
+        "in_progress",
+        "responded",
+        "verified",
+        "deleted",
+        "updated",
+        "failed",
+      ],
     },
   },
 } as const

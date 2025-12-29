@@ -5,3 +5,9 @@ verify_jwt = true
 
 [functions.generate-dispute-letter]
 verify_jwt = true
+
+[functions.ai-round-manager]
+verify_jwt = true
+
+[functions.ai-outcome-tracker]
+verify_jwt = true
