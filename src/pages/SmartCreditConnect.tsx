@@ -372,6 +372,11 @@ export default function SmartCreditConnect() {
                     <Button 
                       variant="outline" 
                       className="border-primary/30 text-primary hover:bg-primary/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDropZoneClick();
+                      }}
+                      type="button"
                     >
                       <Upload className="w-4 h-4 mr-2" />
                       Select File
