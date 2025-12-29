@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { mockTradelines } from '@/data/mockData';
 import { ScoreGauge } from '@/components/dashboard/ScoreGauge';
 import { cn } from '@/lib/utils';
+import { useScoreSimulator } from '@/hooks/useScoreSimulator';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Calculator,
   TrendingUp,
@@ -16,13 +17,73 @@ import {
   Sparkles,
   ArrowRight,
   CheckCircle,
+  Loader2,
+  Brain,
 } from 'lucide-react';
 
-const ScoreSimulator = () => {
-  const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  const baseScore = 598;
+// Default disputable items for simulation
+const defaultDisputableItems = [
+  {
+    id: 't1',
+    creditor: 'Capital One',
+    accountNumber: '****4532',
+    accountType: 'credit_card',
+    status: 'collection',
+    balance: 2450,
+    bureaus: ['equifax', 'experian', 'transunion'],
+    disputable: true,
+    disputeReason: 'Account sold to collection agency - original creditor data outdated',
+    deletionProbability: 78,
+    expectedScoreImpact: 35,
+  },
+  {
+    id: 't2',
+    creditor: 'Midland Credit Management',
+    accountNumber: '****7891',
+    accountType: 'collection',
+    status: 'collection',
+    balance: 1890,
+    bureaus: ['equifax', 'transunion'],
+    disputable: true,
+    disputeReason: 'Unable to validate debt - missing original contract',
+    deletionProbability: 85,
+    expectedScoreImpact: 42,
+  },
+  {
+    id: 't3',
+    creditor: 'Chase Bank',
+    accountNumber: '****2345',
+    accountType: 'credit_card',
+    status: 'open',
+    balance: 1200,
+    bureaus: ['equifax', 'experian', 'transunion'],
+    disputable: true,
+    disputeReason: 'Late payment during COVID - goodwill adjustment possible',
+    deletionProbability: 45,
+    expectedScoreImpact: 18,
+  },
+  {
+    id: 't4',
+    creditor: 'Medical Center Collections',
+    accountNumber: '****9012',
+    accountType: 'collection',
+    status: 'collection',
+    balance: 425,
+    bureaus: ['experian'],
+    disputable: true,
+    disputeReason: 'Medical debt under HIPAA - privacy violation potential',
+    deletionProbability: 92,
+    expectedScoreImpact: 28,
+  },
+];
 
-  const disputableItems = mockTradelines.filter((t) => t.disputable);
+const ScoreSimulator = () => {
+  const { user } = useAuth();
+  const { isProcessing, simulation, simulateDeletions, clearSimulation } = useScoreSimulator();
+  
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [disputableItems, setDisputableItems] = useState(defaultDisputableItems);
+  const baseScore = 598;
 
   const toggleItem = (id: string) => {
     setSelectedItems((prev) =>
@@ -30,7 +91,12 @@ const ScoreSimulator = () => {
     );
   };
 
+  // Calculate projected score from local selection or AI simulation
   const calculateProjectedScore = () => {
+    if (simulation?.projectedScore) {
+      return simulation.projectedScore;
+    }
+    
     const totalImpact = disputableItems
       .filter((item) => selectedItems.includes(item.id))
       .reduce((acc, item) => acc + (item.expectedScoreImpact || 0), 0);
@@ -39,6 +105,32 @@ const ScoreSimulator = () => {
 
   const projectedScore = calculateProjectedScore();
   const scoreIncrease = projectedScore - baseScore;
+
+  const handleRunSimulation = async () => {
+    const itemsToSimulate = disputableItems.filter(item => selectedItems.includes(item.id));
+    
+    if (itemsToSimulate.length === 0) {
+      return;
+    }
+
+    const selectedDeletions = itemsToSimulate.map(item => ({
+      id: item.id,
+      creditor: item.creditor,
+      accountType: item.accountType,
+      balance: item.balance,
+      status: item.status,
+      bureaus: item.bureaus,
+    }));
+
+    const currentScores = {
+      experian: baseScore,
+      equifax: baseScore + 5,
+      transunion: baseScore - 3,
+      average: baseScore,
+    };
+
+    await simulateDeletions(currentScores, selectedDeletions, disputableItems);
+  };
 
   const loanQualifications = [
     {
@@ -79,12 +171,17 @@ const ScoreSimulator = () => {
           <div>
             <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
               <Calculator className="w-8 h-8 text-primary" />
-              Score Simulator
+              AI Score Simulator
             </h1>
             <p className="text-muted-foreground mt-1">
-              See how deletions could impact your client's credit score.
+              See how deletions could impact your client's credit score with AI predictions.
             </p>
           </div>
+          {simulation && (
+            <Button variant="outline" onClick={clearSimulation}>
+              Clear Simulation
+            </Button>
+          )}
         </div>
 
         {/* Score Display */}
@@ -154,6 +251,55 @@ const ScoreSimulator = () => {
           </Card>
         </div>
 
+        {/* AI Simulation Results */}
+        {simulation && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="w-5 h-5 text-primary" />
+                AI Simulation Results
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 rounded-lg bg-background">
+                  <p className="text-sm text-muted-foreground">Confidence Level</p>
+                  <p className="text-2xl font-bold text-primary">{simulation.confidence || 'High'}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-background">
+                  <p className="text-sm text-muted-foreground">Projected Score</p>
+                  <p className="text-2xl font-bold text-success">{simulation.projectedScore}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-background">
+                  <p className="text-sm text-muted-foreground">Points Gained</p>
+                  <p className="text-lg font-bold text-success">
+                    +{simulation.pointsGained || 0}
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-background">
+                  <p className="text-sm text-muted-foreground">Analysis</p>
+                  <p className="text-sm">{simulation.analysis?.slice(0, 100) || 'Ready for next steps'}...</p>
+                </div>
+              </div>
+              
+              {simulation.breakdown && simulation.breakdown.length > 0 && (
+                <div className="space-y-2">
+                  <p className="font-medium">Item-by-Item Breakdown:</p>
+                  {simulation.breakdown.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-background">
+                      <span className="font-medium">{item.item}</span>
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm text-muted-foreground">{item.confidence}</span>
+                        <Badge variant="outline" className="text-success">+{item.pointsImpact} pts</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Item Selection */}
         <Card>
           <CardHeader>
@@ -194,9 +340,9 @@ const ScoreSimulator = () => {
                         <Badge
                           variant="outline"
                           className={cn(
-                            item.deletionProbability! >= 80 && 'bg-success/10 text-success',
-                            item.deletionProbability! >= 50 &&
-                              item.deletionProbability! < 80 &&
+                            item.deletionProbability >= 80 && 'bg-success/10 text-success',
+                            item.deletionProbability >= 50 &&
+                              item.deletionProbability < 80 &&
                               'bg-warning/10 text-warning'
                           )}
                         >
@@ -229,10 +375,27 @@ const ScoreSimulator = () => {
                 <p className="text-sm text-muted-foreground">Total Potential Increase</p>
                 <p className="text-2xl font-bold text-success">+{scoreIncrease} points</p>
               </div>
-              <Button className="bg-gradient-primary hover:opacity-90">
-                Generate Dispute Letters
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={handleRunSimulation}
+                  disabled={selectedItems.length === 0 || isProcessing}
+                >
+                  {isProcessing ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Brain className="w-4 h-4 mr-2" />
+                  )}
+                  Run AI Simulation
+                </Button>
+                <Button 
+                  className="bg-gradient-primary hover:opacity-90"
+                  disabled={selectedItems.length === 0}
+                >
+                  Generate Dispute Letters
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
