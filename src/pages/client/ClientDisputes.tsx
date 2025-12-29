@@ -43,14 +43,16 @@ export default function ClientDisputes() {
     try {
       const { data, error } = await supabase.functions.invoke('generate-dispute-letter', {
         body: {
-          creditorName: dispute.creditor,
-          accountNumber: 'XXXX-' + Math.random().toString().slice(2, 6),
-          bureau: dispute.bureau,
-          disputeReason: dispute.disputeReason,
-          accountType: dispute.type,
-          balance: dispute.balance,
-          letterType: 'fcra_dispute',
-          tone: 'professional'
+          letterType: 'factual_dispute',
+          disputableItem: {
+            creditor: dispute.creditor,
+            accountType: dispute.type,
+            balance: dispute.balance,
+            issueType: dispute.type,
+            disputeReason: dispute.disputeReason,
+            applicableLaw: 'FCRA',
+            bureaus: [dispute.bureau]
+          }
         }
       });
 
