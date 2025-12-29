@@ -66,8 +66,8 @@ export default function ClientDashboard() {
     );
   }
 
-  // No data state
-  if (!creditData || connectionStatus.status !== 'connected') {
+  // No data state - check for scores specifically
+  if (!creditData?.scores || connectionStatus.status !== 'connected') {
     return (
       <RoleBasedLayout>
         <div className="space-y-6">
@@ -85,14 +85,18 @@ export default function ClientDashboard() {
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                 <Link2 className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Connect SmartCredit</h3>
+              <h3 className="text-xl font-semibold mb-2">
+                {connectionStatus.status === 'connected' ? 'Sync Your Credit Report' : 'Connect SmartCredit'}
+              </h3>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Link your SmartCredit account to automatically sync your credit reports and start tracking your progress.
+                {connectionStatus.status === 'connected' 
+                  ? 'Your account is connected. Click below to sync your credit report and view your data.'
+                  : 'Link your SmartCredit account to automatically sync your credit reports and start tracking your progress.'}
               </p>
               <Link to="/client-dashboard/smartcredit">
                 <Button className="bg-gradient-primary hover:opacity-90">
                   <Link2 className="w-4 h-4 mr-2" />
-                  Connect Now
+                  {connectionStatus.status === 'connected' ? 'Sync Report' : 'Connect Now'}
                 </Button>
               </Link>
             </CardContent>

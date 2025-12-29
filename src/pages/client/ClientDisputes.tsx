@@ -54,7 +54,7 @@ export default function ClientDisputes() {
   }
 
   // No data state
-  if (!creditData || connectionStatus.status !== 'connected') {
+  if (!creditData?.negativeItems || connectionStatus.status !== 'connected') {
     return (
       <RoleBasedLayout>
         <div className="space-y-6">

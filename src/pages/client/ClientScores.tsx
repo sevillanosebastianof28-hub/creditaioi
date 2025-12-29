@@ -42,7 +42,7 @@ export default function ClientScores() {
   }
 
   // No data state
-  if (!creditData || connectionStatus.status !== 'connected') {
+  if (!creditData?.scores || connectionStatus.status !== 'connected') {
     return (
       <RoleBasedLayout>
         <div className="space-y-6">
