@@ -145,45 +145,67 @@ export default function ClientDisputes() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {disputes.map((dispute) => {
-                const config = statusConfig[dispute.status];
-                const StatusIcon = config.icon;
-                return (
-                  <div key={dispute.id} className="p-4 rounded-lg border border-border hover:border-primary/30 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold">{dispute.creditor}</h4>
-                          <Badge variant="outline" className={config.color}>
-                            <StatusIcon className="w-3 h-3 mr-1" />
-                            {config.label}
-                          </Badge>
+              {disputes.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No dispute items found</p>
+              ) : (
+                disputes.map((dispute) => {
+                  const config = statusConfig[dispute.status as keyof typeof statusConfig] || statusConfig.pending;
+                  const StatusIcon = config.icon;
+                  return (
+                    <div key={dispute.id} className="p-4 rounded-lg border border-border hover:border-primary/30 transition-colors">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-semibold text-lg">{dispute.creditor || 'Unknown Creditor'}</h4>
+                            <Badge variant="outline" className={config.color}>
+                              <StatusIcon className="w-3 h-3 mr-1" />
+                              {config.label}
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              {dispute.bureau || 'Unknown Bureau'}
+                            </Badge>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Account Type: </span>
+                              <span className="font-medium">{dispute.type || 'N/A'}</span>
+                            </div>
+                            {dispute.balance !== null && dispute.balance !== undefined && (
+                              <div>
+                                <span className="text-muted-foreground">Balance: </span>
+                                <span className="font-medium text-destructive">${dispute.balance.toLocaleString()}</span>
+                              </div>
+                            )}
+                            <div>
+                              <span className="text-muted-foreground">Date Opened: </span>
+                              <span className="font-medium">
+                                {dispute.dateOpened ? new Date(dispute.dateOpened).toLocaleDateString() : 'N/A'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Deletion Probability: </span>
+                              <span className={`font-medium ${(dispute.deletionProbability || 0) >= 0.7 ? 'text-success' : (dispute.deletionProbability || 0) >= 0.4 ? 'text-warning' : 'text-destructive'}`}>
+                                {Math.round((dispute.deletionProbability || 0) * 100)}%
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="pt-2 border-t border-border/50">
+                            <span className="text-muted-foreground text-sm">Dispute Reason: </span>
+                            <p className="text-sm mt-1">{dispute.disputeReason || 'No reason specified'}</p>
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground">{dispute.type} • {dispute.bureau}</p>
-                        <p className="text-sm text-muted-foreground">Reason: {dispute.disputeReason}</p>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          {dispute.balance && (
-                            <span className="flex items-center gap-1">
-                              Balance: ${dispute.balance.toLocaleString()}
-                            </span>
-                          )}
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            Opened: {new Date(dispute.dateOpened).toLocaleDateString()}
-                          </span>
-                          <Badge variant="secondary" className="text-xs">
-                            {Math.round(dispute.deletionProbability * 100)}% deletion chance
-                          </Badge>
-                        </div>
+                        
+                        <Button variant="outline" size="sm" className="shrink-0">
+                          <Eye className="w-4 h-4 mr-1" />
+                          View Letter
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="sm">
-                        <Eye className="w-4 h-4 mr-1" />
-                        Details
-                      </Button>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </CardContent>
         </Card>
