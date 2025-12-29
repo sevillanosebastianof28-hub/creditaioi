@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,9 +51,9 @@ serve(async (req) => {
         throw new Error(`Failed to download file: ${downloadError.message}`);
       }
 
-      // Convert file to base64
+      // Convert file to base64 using Deno's base64 encoder (handles large files)
       const arrayBuffer = await fileData.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      const base64 = base64Encode(arrayBuffer);
       
       // Determine file type
       const fileExtension = filePath.split('.').pop()?.toLowerCase();
