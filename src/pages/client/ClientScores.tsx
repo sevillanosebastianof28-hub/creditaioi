@@ -1,29 +1,103 @@
 import { RoleBasedLayout } from '@/components/layout/RoleBasedLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ScoreGauge } from '@/components/dashboard/ScoreGauge';
-import { TrendingUp, TrendingDown, Calendar, Target } from 'lucide-react';
-
-const scoreHistory = [
-  { date: '2024-01-15', experian: 580, equifax: 575, transunion: 582 },
-  { date: '2024-02-15', experian: 595, equifax: 590, transunion: 598 },
-  { date: '2024-03-15', experian: 612, equifax: 608, transunion: 615 },
-  { date: '2024-04-15', experian: 628, equifax: 625, transunion: 630 },
-  { date: '2024-05-15', experian: 645, equifax: 640, transunion: 648 },
-];
+import { useCreditData } from '@/hooks/useCreditData';
+import { TrendingUp, TrendingDown, Calendar, Target, Link2, RefreshCw } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function ClientScores() {
-  const currentScores = scoreHistory[scoreHistory.length - 1];
-  const previousScores = scoreHistory[scoreHistory.length - 2];
+  const { 
+    isLoading, 
+    isRefreshing,
+    creditData, 
+    connectionStatus,
+    averageScore,
+    refreshData 
+  } = useCreditData();
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <RoleBasedLayout>
+        <div className="space-y-6">
+          <div>
+            <Skeleton className="h-9 w-48 mb-2" />
+            <Skeleton className="h-5 w-72" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="card-elevated">
+                <CardContent className="pt-6">
+                  <Skeleton className="h-40 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </RoleBasedLayout>
+    );
+  }
+
+  // No data state
+  if (!creditData || connectionStatus.status !== 'connected') {
+    return (
+      <RoleBasedLayout>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Score Progress</h1>
+            <p className="text-muted-foreground mt-1">Track your credit score improvements over time</p>
+          </div>
+
+          <Card className="card-elevated border-primary/20">
+            <CardContent className="py-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <Link2 className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">No Score Data Yet</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                Connect your SmartCredit account to view your credit scores and track improvements.
+              </p>
+              <Link to="/client-dashboard/smartcredit">
+                <Button className="bg-gradient-primary hover:opacity-90">
+                  <Link2 className="w-4 h-4 mr-2" />
+                  Connect SmartCredit
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </RoleBasedLayout>
+    );
+  }
+
+  const currentScores = creditData.scores;
+  const previousScores = creditData.previousScores;
+  const scoreHistory = creditData.scoreHistory || [];
 
   const getChange = (current: number, previous: number) => current - previous;
+  const targetScore = 720;
+  const pointsToGo = Math.max(0, targetScore - (averageScore || 0));
+  const progressToTarget = Math.min(100, Math.round(((averageScore || 0) - 550) / (targetScore - 550) * 100));
 
   return (
     <RoleBasedLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Score Progress</h1>
-          <p className="text-muted-foreground mt-1">Track your credit score improvements over time</p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Score Progress</h1>
+            <p className="text-muted-foreground mt-1">Track your credit score improvements over time</p>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={refreshData}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
 
         {/* Current Scores */}
@@ -120,12 +194,12 @@ export default function ClientScores() {
               <div className="p-4 rounded-lg border border-border">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">Target Score</span>
-                  <Badge>720+</Badge>
+                  <Badge>{targetScore}+</Badge>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
-                  <div className="bg-primary h-2 rounded-full" style={{ width: '85%' }}></div>
+                  <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${progressToTarget}%` }}></div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">72 points to go</p>
+                <p className="text-xs text-muted-foreground mt-2">{pointsToGo} points to go</p>
               </div>
               <div className="p-4 rounded-lg border border-border">
                 <div className="flex items-center justify-between mb-2">
