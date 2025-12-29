@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { RoleBasedLayout } from '@/components/layout/RoleBasedLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useSmartCredit } from '@/hooks/useSmartCredit';
 import {
   Link2,
   Shield,
@@ -18,82 +19,82 @@ import {
   ExternalLink,
   FileText,
   Clock,
+  Upload,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// Mock connection status
-const mockConnectionStatus = {
-  connected: false,
-  lastSync: null as string | null,
-  bureausAvailable: ['Experian', 'Equifax', 'TransUnion'],
-};
+const bureausAvailable = ['Experian', 'Equifax', 'TransUnion'];
 
 export default function SmartCreditConnect() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const { toast } = useToast();
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState(mockConnectionStatus);
+  const { 
+    isProcessing, 
+    connectionStatus, 
+    initConnection, 
+    syncReport, 
+    disconnect, 
+    checkStatus 
+  } = useSmartCredit();
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  // Refresh status when component mounts
+  useEffect(() => {
+    if (user) {
+      checkStatus();
+    }
+  }, [user]);
+
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsConnecting(true);
     
-    // Simulate OAuth flow
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setConnectionStatus({
-      connected: true,
-      lastSync: new Date().toISOString(),
-      bureausAvailable: ['Experian', 'Equifax', 'TransUnion'],
-    });
-    
-    toast({
-      title: 'SmartCredit Connected!',
-      description: 'Your credit reports are now syncing. This may take a few minutes.',
-    });
-    
-    setIsConnecting(false);
-    setEmail('');
-    setPassword('');
+    try {
+      await initConnection();
+      setEmail('');
+      setPassword('');
+    } catch (error) {
+      // Error is already handled in the hook
+    }
   };
 
   const handleSync = async () => {
-    setIsSyncing(true);
-    
-    // Simulate sync
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    setConnectionStatus(prev => ({
-      ...prev,
-      lastSync: new Date().toISOString(),
-    }));
-    
-    toast({
-      title: 'Sync Complete',
-      description: 'Your credit reports have been updated.',
-    });
-    
-    setIsSyncing(false);
+    try {
+      // Simulate fetching new credit data
+      const mockReportData = {
+        summary: {
+          experianScore: 612,
+          equifaxScore: 598,
+          transunionScore: 605,
+          totalAccounts: 15,
+          negativeItems: 4,
+        },
+        negativeItems: [
+          { creditor: 'Capital One', type: 'collection', balance: 2450, bureaus: ['experian', 'equifax'] },
+          { creditor: 'Midland Credit', type: 'collection', balance: 1890, bureaus: ['transunion'] },
+        ],
+        reportDate: new Date().toISOString(),
+      };
+      
+      await syncReport(mockReportData);
+    } catch (error) {
+      // Error is already handled in the hook
+    }
   };
 
-  const handleDisconnect = () => {
-    setConnectionStatus({
-      connected: false,
-      lastSync: null,
-      bureausAvailable: [],
-    });
-    
-    toast({
-      title: 'Disconnected',
-      description: 'SmartCredit has been disconnected from your account.',
-    });
+  const handleDisconnect = async () => {
+    try {
+      await disconnect();
+    } catch (error) {
+      // Error is already handled in the hook
+    }
   };
 
   // VA can only view, not initiate connection
   const canInitiateConnection = role === 'client' || role === 'agency_owner';
+  const isConnected = connectionStatus.status === 'connected';
+  const isPending = connectionStatus.status === 'pending';
 
   return (
     <RoleBasedLayout>
@@ -109,48 +110,60 @@ export default function SmartCreditConnect() {
         {/* Connection Status Card */}
         <Card className={cn(
           'card-elevated',
-          connectionStatus.connected ? 'border-success/30 bg-success/5' : 'border-warning/30 bg-warning/5'
+          isConnected ? 'border-success/30 bg-success/5' : 
+          isPending ? 'border-warning/30 bg-warning/5' : 
+          'border-warning/30 bg-warning/5'
         )}>
           <CardContent className="py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className={cn(
                   'w-12 h-12 rounded-full flex items-center justify-center',
-                  connectionStatus.connected ? 'bg-success/10' : 'bg-warning/10'
+                  isConnected ? 'bg-success/10' : 
+                  isPending ? 'bg-warning/10' : 
+                  'bg-warning/10'
                 )}>
-                  {connectionStatus.connected ? (
+                  {isConnected ? (
                     <CheckCircle2 className="w-6 h-6 text-success" />
+                  ) : isPending ? (
+                    <Loader2 className="w-6 h-6 text-warning animate-spin" />
                   ) : (
                     <AlertTriangle className="w-6 h-6 text-warning" />
                   )}
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">
-                    {connectionStatus.connected ? 'Connected' : 'Not Connected'}
+                    {isConnected ? 'Connected' : isPending ? 'Connecting...' : 'Not Connected'}
                   </h3>
-                  {connectionStatus.lastSync && (
+                  {connectionStatus.connectedAt && (
+                    <p className="text-sm text-muted-foreground flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      Connected: {new Date(connectionStatus.connectedAt).toLocaleDateString()}
+                    </p>
+                  )}
+                  {connectionStatus.lastSyncAt && (
                     <p className="text-sm text-muted-foreground flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      Last synced: {new Date(connectionStatus.lastSync).toLocaleString()}
+                      Last synced: {new Date(connectionStatus.lastSyncAt).toLocaleString()}
                     </p>
                   )}
                 </div>
               </div>
-              {connectionStatus.connected && canInitiateConnection && (
+              {isConnected && canInitiateConnection && (
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     onClick={handleSync}
-                    disabled={isSyncing}
+                    disabled={isProcessing}
                   >
-                    {isSyncing ? (
+                    {isProcessing ? (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     ) : (
                       <RefreshCw className="w-4 h-4 mr-2" />
                     )}
                     Sync Now
                   </Button>
-                  <Button variant="ghost" onClick={handleDisconnect}>
+                  <Button variant="ghost" onClick={handleDisconnect} disabled={isProcessing}>
                     Disconnect
                   </Button>
                 </div>
@@ -160,7 +173,7 @@ export default function SmartCreditConnect() {
         </Card>
 
         {/* Connect Form or Status */}
-        {!connectionStatus.connected ? (
+        {!isConnected ? (
           canInitiateConnection ? (
             <Card className="card-elevated">
               <CardHeader>
@@ -207,9 +220,9 @@ export default function SmartCreditConnect() {
                   <Button
                     type="submit"
                     className="w-full bg-gradient-primary hover:opacity-90"
-                    disabled={isConnecting}
+                    disabled={isProcessing || isPending}
                   >
-                    {isConnecting ? (
+                    {isProcessing || isPending ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         Connecting...
@@ -252,7 +265,7 @@ export default function SmartCreditConnect() {
           )
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {connectionStatus.bureausAvailable.map((bureau) => (
+            {bureausAvailable.map((bureau) => (
               <Card key={bureau} className="card-elevated">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-3 mb-4">
@@ -272,6 +285,33 @@ export default function SmartCreditConnect() {
               </Card>
             ))}
           </div>
+        )}
+
+        {/* Manual Upload Option */}
+        {!isConnected && canInitiateConnection && (
+          <Card className="card-elevated">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="w-5 h-5 text-primary" />
+                Manual Report Upload
+              </CardTitle>
+              <CardDescription>
+                Don't want to connect SmartCredit? You can manually upload your credit reports.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+                <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-sm text-muted-foreground mb-4">
+                  Drag & drop your credit report PDF here, or click to browse
+                </p>
+                <Button variant="outline">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Credit Report
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* How it Works */}
