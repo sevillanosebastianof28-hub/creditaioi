@@ -8,8 +8,12 @@ interface ScoreGaugeProps {
 }
 
 export function ScoreGauge({ score, previousScore, bureau, size = 'md' }: ScoreGaugeProps) {
-  const change = previousScore ? score - previousScore : 0;
-  const percentage = ((score - 300) / (850 - 300)) * 100;
+  // Ensure score is a valid number
+  const safeScore = typeof score === 'number' && !isNaN(score) ? score : 0;
+  const safePreviousScore = typeof previousScore === 'number' && !isNaN(previousScore) ? previousScore : undefined;
+  
+  const change = safePreviousScore ? safeScore - safePreviousScore : 0;
+  const percentage = Math.max(0, Math.min(100, ((safeScore - 300) / (850 - 300)) * 100));
 
   const getScoreColor = (score: number) => {
     if (score >= 750) return 'text-success';
@@ -60,16 +64,16 @@ export function ScoreGauge({ score, previousScore, bureau, size = 'md' }: ScoreG
           />
           <defs>
             <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" className={cn('stop-color-current', getScoreColor(score))} />
-              <stop offset="100%" className={cn('stop-color-current', getScoreColor(score))} style={{ stopOpacity: 0.7 }} />
+              <stop offset="0%" className={cn('stop-color-current', getScoreColor(safeScore))} />
+              <stop offset="100%" className={cn('stop-color-current', getScoreColor(safeScore))} style={{ stopOpacity: 0.7 }} />
             </linearGradient>
           </defs>
         </svg>
 
         {/* Score Value */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={cn('font-bold', sizes[size].text, getScoreColor(score))}>
-            {score}
+          <span className={cn('font-bold', sizes[size].text, getScoreColor(safeScore))}>
+            {safeScore > 0 ? safeScore : '--'}
           </span>
           {change !== 0 && (
             <span

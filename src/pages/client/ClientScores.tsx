@@ -73,14 +73,32 @@ export default function ClientScores() {
     );
   }
 
-  const currentScores = creditData.scores;
-  const previousScores = creditData.previousScores;
+  // Safely extract numeric scores (handle both number and {date, score} formats)
+  const getNumericScore = (value: any): number => {
+    if (typeof value === 'number') return value;
+    if (value && typeof value === 'object' && 'score' in value) return Number(value.score) || 0;
+    return Number(value) || 0;
+  };
+
+  const currentScores = {
+    experian: getNumericScore(creditData.scores?.experian),
+    equifax: getNumericScore(creditData.scores?.equifax),
+    transunion: getNumericScore(creditData.scores?.transunion),
+  };
+  
+  const previousScores = {
+    experian: getNumericScore(creditData.previousScores?.experian),
+    equifax: getNumericScore(creditData.previousScores?.equifax),
+    transunion: getNumericScore(creditData.previousScores?.transunion),
+  };
+  
   const scoreHistory = creditData.scoreHistory || [];
 
   const getChange = (current: number, previous: number) => current - previous;
   const targetScore = 720;
-  const pointsToGo = Math.max(0, targetScore - (averageScore || 0));
-  const progressToTarget = Math.min(100, Math.round(((averageScore || 0) - 550) / (targetScore - 550) * 100));
+  const avgScore = Math.round((currentScores.experian + currentScores.equifax + currentScores.transunion) / 3);
+  const pointsToGo = Math.max(0, targetScore - avgScore);
+  const progressToTarget = Math.min(100, Math.max(0, Math.round((avgScore - 550) / (targetScore - 550) * 100)));
 
   return (
     <RoleBasedLayout>
