@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScoreGauge } from '@/components/dashboard/ScoreGauge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useCreditData } from '@/hooks/useCreditData';
 import {
   TrendingUp,
   FileText,
@@ -16,42 +18,122 @@ import {
   Calendar,
   MessageSquare,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-// Mock data for client dashboard
-const clientScores = [
-  { bureau: 'Experian', score: 642, previousScore: 598 },
-  { bureau: 'Equifax', score: 635, previousScore: 590 },
-  { bureau: 'TransUnion', score: 628, previousScore: 585 },
-];
-
-const disputeProgress = {
-  total: 12,
-  deleted: 5,
-  inProgress: 4,
-  pending: 3,
-};
-
-const recentUpdates = [
-  { id: 1, type: 'deletion', message: 'Collection account from ABC Collections deleted from Experian', date: '2 days ago' },
-  { id: 2, type: 'letter', message: 'Round 2 dispute letters sent to all bureaus', date: '5 days ago' },
-  { id: 3, type: 'score', message: 'Your Experian score increased by 22 points!', date: '1 week ago' },
-  { id: 4, type: 'update', message: 'Credit report synced successfully', date: '1 week ago' },
-];
-
-const upcomingMilestones = [
-  { id: 1, title: 'Bureau Response Expected', date: 'Dec 15, 2024', status: 'upcoming' },
-  { id: 2, title: 'Round 3 Letters Ready', date: 'Dec 20, 2024', status: 'upcoming' },
-  { id: 3, title: 'Estimated 700+ Score', date: 'Jan 2025', status: 'goal' },
-];
-
 export default function ClientDashboard() {
   const { profile } = useAuth();
-  const avgScore = Math.round(clientScores.reduce((acc, s) => acc + s.score, 0) / clientScores.length);
-  const avgPrevScore = Math.round(clientScores.reduce((acc, s) => acc + s.previousScore, 0) / clientScores.length);
-  const totalIncrease = avgScore - avgPrevScore;
-  const progressPercent = Math.round((disputeProgress.deleted / disputeProgress.total) * 100);
+  const { 
+    isLoading, 
+    isRefreshing,
+    creditData, 
+    connectionStatus,
+    averageScore,
+    averagePreviousScore,
+    totalScoreIncrease,
+    disputeProgress,
+    refreshData
+  } = useCreditData();
+
+  const progressPercent = disputeProgress 
+    ? Math.round((disputeProgress.deleted / Math.max(disputeProgress.total, 1)) * 100)
+    : 0;
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <RoleBasedLayout>
+        <div className="space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <Skeleton className="h-9 w-64 mb-2" />
+              <Skeleton className="h-5 w-96" />
+            </div>
+            <Skeleton className="h-10 w-40" />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="card-elevated">
+                <CardContent className="pt-6">
+                  <Skeleton className="h-40 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </RoleBasedLayout>
+    );
+  }
+
+  // No data state
+  if (!creditData || connectionStatus.status !== 'connected') {
+    return (
+      <RoleBasedLayout>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">
+              Welcome, {profile?.first_name || 'there'}! 👋
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Connect your credit report to get started with your credit repair journey.
+            </p>
+          </div>
+
+          <Card className="card-elevated border-primary/20">
+            <CardContent className="py-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <Link2 className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Connect SmartCredit</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                Link your SmartCredit account to automatically sync your credit reports and start tracking your progress.
+              </p>
+              <Link to="/client-dashboard/smartcredit">
+                <Button className="bg-gradient-primary hover:opacity-90">
+                  <Link2 className="w-4 h-4 mr-2" />
+                  Connect Now
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </RoleBasedLayout>
+    );
+  }
+
+  const clientScores = [
+    { bureau: 'Experian', score: creditData.scores.experian, previousScore: creditData.previousScores.experian },
+    { bureau: 'Equifax', score: creditData.scores.equifax, previousScore: creditData.previousScores.equifax },
+    { bureau: 'TransUnion', score: creditData.scores.transunion, previousScore: creditData.previousScores.transunion },
+  ];
+
+  // Recent updates based on actual data
+  const recentUpdates = [
+    ...(creditData.negativeItems
+      .filter(item => item.status === 'deleted')
+      .slice(0, 2)
+      .map((item, idx) => ({
+        id: `del-${idx}`,
+        type: 'deletion' as const,
+        message: `${item.creditor} ${item.type.toLowerCase()} deleted from ${item.bureau}`,
+        date: 'Recently'
+      }))),
+    {
+      id: 'sync',
+      type: 'update' as const,
+      message: 'Credit report synced successfully',
+      date: connectionStatus.lastSyncAt 
+        ? new Date(connectionStatus.lastSyncAt).toLocaleDateString()
+        : 'Recently'
+    },
+    {
+      id: 'score',
+      type: 'score' as const,
+      message: `Your average score increased by ${totalScoreIncrease} points!`,
+      date: 'This month'
+    }
+  ];
 
   return (
     <RoleBasedLayout>
@@ -66,12 +148,22 @@ export default function ClientDashboard() {
               Your credit repair journey is progressing well. Here's your latest update.
             </p>
           </div>
-          <Link to="/client-dashboard/smartcredit">
-            <Button className="bg-gradient-primary hover:opacity-90">
-              <Link2 className="w-4 h-4 mr-2" />
-              Sync Credit Report
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={refreshData}
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh
             </Button>
-          </Link>
+            <Link to="/client-dashboard/smartcredit">
+              <Button className="bg-gradient-primary hover:opacity-90">
+                <Link2 className="w-4 h-4 mr-2" />
+                Sync Report
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Score Overview */}
@@ -105,12 +197,12 @@ export default function ClientDashboard() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Average Score Increase</p>
-                  <p className="text-4xl font-bold text-primary">+{totalIncrease} pts</p>
+                  <p className="text-4xl font-bold text-primary">+{totalScoreIncrease} pts</p>
                 </div>
               </div>
               <div className="text-center md:text-right">
                 <p className="text-sm text-muted-foreground">Current Average Score</p>
-                <p className="text-3xl font-bold text-foreground">{avgScore}</p>
+                <p className="text-3xl font-bold text-foreground">{averageScore}</p>
               </div>
             </div>
           </CardContent>
@@ -137,17 +229,17 @@ export default function ClientDashboard() {
               <div className="grid grid-cols-3 gap-4 pt-4">
                 <div className="text-center p-3 rounded-lg bg-success/10">
                   <CheckCircle2 className="w-5 h-5 text-success mx-auto mb-1" />
-                  <p className="text-2xl font-bold text-success">{disputeProgress.deleted}</p>
+                  <p className="text-2xl font-bold text-success">{disputeProgress?.deleted || 0}</p>
                   <p className="text-xs text-muted-foreground">Deleted</p>
                 </div>
                 <div className="text-center p-3 rounded-lg bg-warning/10">
                   <Clock className="w-5 h-5 text-warning mx-auto mb-1" />
-                  <p className="text-2xl font-bold text-warning">{disputeProgress.inProgress}</p>
+                  <p className="text-2xl font-bold text-warning">{disputeProgress?.inProgress || 0}</p>
                   <p className="text-xs text-muted-foreground">In Progress</p>
                 </div>
                 <div className="text-center p-3 rounded-lg bg-muted">
                   <AlertCircle className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
-                  <p className="text-2xl font-bold">{disputeProgress.pending}</p>
+                  <p className="text-2xl font-bold">{disputeProgress?.pending || 0}</p>
                   <p className="text-xs text-muted-foreground">Pending</p>
                 </div>
               </div>
@@ -161,31 +253,33 @@ export default function ClientDashboard() {
             </CardContent>
           </Card>
 
-          {/* Upcoming Milestones */}
+          {/* Credit Summary */}
           <Card className="card-elevated">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-primary" />
-                Your Roadmap
+                Credit Summary
               </CardTitle>
-              <CardDescription>Upcoming milestones in your journey</CardDescription>
+              <CardDescription>Your credit profile overview</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {upcomingMilestones.map((milestone) => (
-                  <div
-                    key={milestone.id}
-                    className="flex items-center gap-4 p-3 rounded-lg bg-muted/50"
-                  >
-                    <div className={`w-3 h-3 rounded-full ${
-                      milestone.status === 'goal' ? 'bg-primary' : 'bg-info'
-                    }`} />
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{milestone.title}</p>
-                      <p className="text-xs text-muted-foreground">{milestone.date}</p>
-                    </div>
-                  </div>
-                ))}
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <span className="text-sm">Total Accounts</span>
+                  <span className="font-semibold">{creditData.summary.totalAccounts}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <span className="text-sm">On-Time Payments</span>
+                  <span className="font-semibold text-success">{creditData.summary.onTimePayments}%</span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <span className="text-sm">Credit Utilization</span>
+                  <span className="font-semibold">{creditData.summary.creditUtilization}%</span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <span className="text-sm">Average Account Age</span>
+                  <span className="font-semibold">{creditData.summary.avgAccountAge}</span>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -217,12 +311,10 @@ export default function ClientDashboard() {
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                     update.type === 'deletion' ? 'bg-success/10 text-success' :
                     update.type === 'score' ? 'bg-primary/10 text-primary' :
-                    update.type === 'letter' ? 'bg-info/10 text-info' :
                     'bg-muted text-muted-foreground'
                   }`}>
                     {update.type === 'deletion' ? <CheckCircle2 className="w-4 h-4" /> :
                      update.type === 'score' ? <TrendingUp className="w-4 h-4" /> :
-                     update.type === 'letter' ? <FileText className="w-4 h-4" /> :
                      <AlertCircle className="w-4 h-4" />}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -245,10 +337,10 @@ export default function ClientDashboard() {
               <div>
                 <h4 className="font-semibold text-foreground">Why Your Score Increased</h4>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Your Experian score jumped 22 points because the ABC Collections account 
-                  was successfully removed. This collection was weighing down your score by 
-                  approximately 40-60 points. With continued progress on your other disputes, 
-                  we estimate you could reach 700+ by January 2025.
+                  {disputeProgress?.deleted && disputeProgress.deleted > 0 
+                    ? `Your score improved because ${disputeProgress.deleted} negative item(s) were successfully removed from your credit report. Each removal typically improves your score by 10-50 points. With ${disputeProgress.inProgress + disputeProgress.pending} items still in dispute, we expect continued improvement.`
+                    : `Your score is being actively monitored. Once disputes are processed and negative items are removed, you'll see significant improvements. Stay tuned for updates!`
+                  }
                 </p>
               </div>
             </div>
