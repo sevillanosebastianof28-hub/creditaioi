@@ -18,6 +18,7 @@ import {
   Building2,
   ClipboardList,
   Link2,
+  FileEdit,
 } from 'lucide-react';
 
 const menuItems = [
@@ -26,6 +27,7 @@ const menuItems = [
   { icon: ClipboardList, label: 'VA Tasks', path: '/tasks' },
   { icon: FileText, label: 'Disputes', path: '/disputes' },
   { icon: Brain, label: 'AI Engine', path: '/ai-engine' },
+  { icon: FileEdit, label: 'Letter Generator', path: '/dispute-letters' },
   { icon: Calculator, label: 'Score Simulator', path: '/simulator' },
   { icon: Link2, label: 'SmartCredit', path: '/smartcredit' },
   { icon: MessageSquare, label: 'Messages', path: '/messages' },
