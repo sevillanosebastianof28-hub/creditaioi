@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import { RoleBasedLayout } from '@/components/layout/RoleBasedLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCreditData } from '@/hooks/useCreditData';
-import { FileText, Clock, CheckCircle2, AlertCircle, Eye, Send, Link2, RefreshCw } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useCreditData, NegativeItem } from '@/hooks/useCreditData';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { FileText, Clock, CheckCircle2, AlertCircle, Eye, Link2, RefreshCw, Loader2, Download, Printer } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const statusConfig = {
@@ -15,6 +19,12 @@ const statusConfig = {
 };
 
 export default function ClientDisputes() {
+  const { toast } = useToast();
+  const [selectedDispute, setSelectedDispute] = useState<NegativeItem | null>(null);
+  const [letterContent, setLetterContent] = useState<string>('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  
   const { 
     isLoading, 
     isRefreshing,
@@ -23,6 +33,67 @@ export default function ClientDisputes() {
     disputeProgress,
     refreshData 
   } = useCreditData();
+
+  const handleViewLetter = async (dispute: NegativeItem) => {
+    setSelectedDispute(dispute);
+    setDialogOpen(true);
+    setIsGenerating(true);
+    setLetterContent('');
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-dispute-letter', {
+        body: {
+          creditorName: dispute.creditor,
+          accountNumber: 'XXXX-' + Math.random().toString().slice(2, 6),
+          bureau: dispute.bureau,
+          disputeReason: dispute.disputeReason,
+          accountType: dispute.type,
+          balance: dispute.balance,
+          letterType: 'fcra_dispute',
+          tone: 'professional'
+        }
+      });
+
+      if (error) throw error;
+      setLetterContent(data.letter || 'Unable to generate letter');
+    } catch (err: any) {
+      console.error('Letter generation error:', err);
+      setLetterContent('Failed to generate letter. Please try again.');
+      toast({
+        title: 'Error',
+        description: 'Failed to generate dispute letter',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head><title>Dispute Letter - ${selectedDispute?.creditor}</title></head>
+          <body style="font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto;">
+            <pre style="white-space: pre-wrap; font-family: inherit;">${letterContent}</pre>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
+  const handleDownload = () => {
+    const blob = new Blob([letterContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `dispute-letter-${selectedDispute?.creditor?.replace(/\s+/g, '-')}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   // Loading state
   if (isLoading) {
@@ -197,7 +268,7 @@ export default function ClientDisputes() {
                           </div>
                         </div>
                         
-                        <Button variant="outline" size="sm" className="shrink-0">
+                        <Button variant="outline" size="sm" className="shrink-0" onClick={() => handleViewLetter(dispute)}>
                           <Eye className="w-4 h-4 mr-1" />
                           View Letter
                         </Button>
@@ -242,6 +313,42 @@ export default function ClientDisputes() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Letter View Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              Dispute Letter - {selectedDispute?.creditor}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto">
+            {isGenerating ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+                <p className="text-muted-foreground">Generating dispute letter...</p>
+              </div>
+            ) : (
+              <div className="bg-muted/30 rounded-lg p-6">
+                <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">{letterContent}</pre>
+              </div>
+            )}
+          </div>
+          {!isGenerating && letterContent && (
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button variant="outline" onClick={handleDownload}>
+                <Download className="w-4 h-4 mr-2" />
+                Download
+              </Button>
+              <Button onClick={handlePrint}>
+                <Printer className="w-4 h-4 mr-2" />
+                Print
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </RoleBasedLayout>
   );
 }
