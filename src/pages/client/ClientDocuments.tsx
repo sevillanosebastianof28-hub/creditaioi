@@ -1,17 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { RoleBasedLayout } from '@/components/layout/RoleBasedLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Upload, FileText, Image, Shield, Trash2, Download, Eye, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Upload, FileText, Image, Shield, Trash2, Download, Eye, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
-const mockDocuments = [
-  { id: '1', name: 'Drivers_License.jpg', type: 'ID Verification', uploadDate: '2024-05-01', status: 'verified', size: '1.2 MB' },
-  { id: '2', name: 'Utility_Bill.pdf', type: 'Proof of Address', uploadDate: '2024-05-01', status: 'verified', size: '0.8 MB' },
-  { id: '3', name: 'SSN_Card.jpg', type: 'SSN Proof', uploadDate: '2024-05-02', status: 'verified', size: '0.5 MB' },
-  { id: '4', name: 'Credit_Report_May.pdf', type: 'Credit Report', uploadDate: '2024-05-15', status: 'pending', size: '2.1 MB' },
-];
+interface Document {
+  id: string;
+  name: string;
+  file_path: string;
+  file_type: string;
+  document_type: string;
+  size_bytes: number;
+  status: string;
+  uploaded_at: string;
+}
 
 const requiredDocs = [
   { type: 'ID Verification', description: 'Valid government-issued ID', required: true },
@@ -20,22 +26,151 @@ const requiredDocs = [
   { type: 'Credit Report', description: 'Latest 3-bureau credit report', required: false },
 ];
 
+const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+};
+
 export default function ClientDocuments() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedType, setSelectedType] = useState('ID Verification');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleUpload = () => {
+  const fetchDocuments = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('client_documents')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('uploaded_at', { ascending: false });
+
+      if (error) throw error;
+      setDocuments(data || []);
+    } catch (err) {
+      console.error('Error fetching documents:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [user]);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
     setUploading(true);
-    setTimeout(() => {
-      setUploading(false);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${file.name}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('client-documents')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Save to database
+      const { error: dbError } = await supabase
+        .from('client_documents')
+        .insert({
+          user_id: user.id,
+          name: file.name,
+          file_path: filePath,
+          file_type: file.type,
+          document_type: selectedType,
+          size_bytes: file.size,
+          status: 'pending'
+        });
+
+      if (dbError) throw dbError;
+
       toast({
         title: 'Document Uploaded',
         description: 'Your document has been uploaded and is pending review.',
       });
-    }, 1500);
+
+      fetchDocuments();
+    } catch (err: any) {
+      console.error('Upload error:', err);
+      toast({
+        title: 'Upload Failed',
+        description: err.message || 'Failed to upload document',
+        variant: 'destructive'
+      });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
-  const verifiedDocs = mockDocuments.filter(d => d.status === 'verified');
+  const handleDelete = async (doc: Document) => {
+    if (!user) return;
+
+    try {
+      // Delete from storage
+      await supabase.storage
+        .from('client-documents')
+        .remove([doc.file_path]);
+
+      // Delete from database
+      const { error } = await supabase
+        .from('client_documents')
+        .delete()
+        .eq('id', doc.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Document Deleted',
+        description: 'The document has been removed.',
+      });
+
+      fetchDocuments();
+    } catch (err: any) {
+      toast({
+        title: 'Delete Failed',
+        description: err.message || 'Failed to delete document',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleDownload = async (doc: Document) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('client-documents')
+        .download(doc.file_path);
+
+      if (error) throw error;
+
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.name;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      toast({
+        title: 'Download Failed',
+        description: err.message || 'Failed to download document',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const verifiedDocs = documents.filter(d => d.status === 'verified');
 
   return (
     <RoleBasedLayout>
@@ -45,10 +180,36 @@ export default function ClientDocuments() {
             <h1 className="text-3xl font-bold text-foreground">Documents</h1>
             <p className="text-muted-foreground mt-1">Upload and manage your verification documents</p>
           </div>
-          <Button onClick={handleUpload} disabled={uploading} className="bg-gradient-primary">
-            <Upload className="w-4 h-4 mr-2" />
-            {uploading ? 'Uploading...' : 'Upload Document'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <select 
+              className="px-3 py-2 border rounded-md bg-background text-foreground"
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+            >
+              {requiredDocs.map(doc => (
+                <option key={doc.type} value={doc.type}>{doc.type}</option>
+              ))}
+            </select>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              className="hidden"
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+            />
+            <Button 
+              onClick={() => fileInputRef.current?.click()} 
+              disabled={uploading} 
+              className="bg-gradient-primary"
+            >
+              {uploading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4 mr-2" />
+              )}
+              {uploading ? 'Uploading...' : 'Upload Document'}
+            </Button>
+          </div>
         </div>
 
         {/* Verification Status */}
@@ -59,7 +220,7 @@ export default function ClientDocuments() {
                 <Shield className="w-6 h-6 text-success" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">Identity Verified</h3>
+                <h3 className="font-semibold text-lg">Identity Verification</h3>
                 <p className="text-sm text-muted-foreground">
                   {verifiedDocs.length} of {requiredDocs.filter(d => d.required).length} required documents verified
                 </p>
@@ -76,7 +237,7 @@ export default function ClientDocuments() {
           <CardContent>
             <div className="space-y-3">
               {requiredDocs.map((doc) => {
-                const uploaded = mockDocuments.find(d => d.type === doc.type);
+                const uploaded = documents.find(d => d.document_type === doc.type);
                 const isVerified = uploaded?.status === 'verified';
                 return (
                   <div key={doc.type} className="flex items-center justify-between p-3 rounded-lg border border-border">
@@ -114,37 +275,48 @@ export default function ClientDocuments() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {mockDocuments.map((doc) => (
-                <div key={doc.id} className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/30 transition-colors">
-                  <div className="flex items-center gap-3">
-                    {doc.name.endsWith('.pdf') ? (
-                      <FileText className="w-10 h-10 text-primary p-2 bg-primary/10 rounded-lg" />
-                    ) : (
-                      <Image className="w-10 h-10 text-primary p-2 bg-primary/10 rounded-lg" />
-                    )}
-                    <div>
-                      <p className="font-medium">{doc.name}</p>
-                      <p className="text-sm text-muted-foreground">{doc.type} • {doc.size} • {new Date(doc.uploadDate).toLocaleDateString()}</p>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : documents.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>No documents uploaded yet</p>
+                <p className="text-sm">Upload your first document to get started</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {documents.map((doc) => (
+                  <div key={doc.id} className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/30 transition-colors">
+                    <div className="flex items-center gap-3">
+                      {doc.file_type.includes('pdf') ? (
+                        <FileText className="w-10 h-10 text-primary p-2 bg-primary/10 rounded-lg" />
+                      ) : (
+                        <Image className="w-10 h-10 text-primary p-2 bg-primary/10 rounded-lg" />
+                      )}
+                      <div>
+                        <p className="font-medium">{doc.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {doc.document_type} • {formatFileSize(doc.size_bytes)} • {new Date(doc.uploaded_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge className={doc.status === 'verified' ? 'bg-success/10 text-success border-success/20' : 'bg-warning/10 text-warning border-warning/20'}>
+                        {doc.status === 'verified' ? 'Verified' : 'Pending'}
+                      </Badge>
+                      <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)}>
+                        <Download className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(doc)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={doc.status === 'verified' ? 'bg-success/10 text-success border-success/20' : 'bg-warning/10 text-warning border-warning/20'}>
-                      {doc.status === 'verified' ? 'Verified' : 'Pending'}
-                    </Badge>
-                    <Button variant="ghost" size="icon">
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Download className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
