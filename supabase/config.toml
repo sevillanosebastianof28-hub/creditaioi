@@ -2,3 +2,6 @@ project_id = "ctzckttucdjlysiohlwh"
 
 [functions.analyze-credit-report]
 verify_jwt = true
+
+[functions.generate-dispute-letter]
+verify_jwt = true

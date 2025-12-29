@@ -15,6 +15,7 @@ import ClientDetail from "./pages/ClientDetail";
 import Tasks from "./pages/Tasks";
 import Disputes from "./pages/Disputes";
 import AIEngine from "./pages/AIEngine";
+import DisputeLetters from "./pages/DisputeLetters";
 import ScoreSimulator from "./pages/ScoreSimulator";
 import Analytics from "./pages/Analytics";
 import Messages from "./pages/Messages";
@@ -122,6 +123,11 @@ function AppRouter() {
       <Route path="/ai-engine" element={
         <ProtectedRoute allowedRoles={['agency_owner']}>
           <AIEngine />
+        </ProtectedRoute>
+      } />
+      <Route path="/dispute-letters" element={
+        <ProtectedRoute allowedRoles={['agency_owner', 'va_staff']}>
+          <DisputeLetters />
         </ProtectedRoute>
       } />
       <Route path="/simulator" element={

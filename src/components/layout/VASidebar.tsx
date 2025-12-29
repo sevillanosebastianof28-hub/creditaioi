@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Sparkles,
   UserCog,
+  FileEdit,
 } from 'lucide-react';
 
 const vaMenuItems = [
@@ -21,6 +22,7 @@ const vaMenuItems = [
   { icon: Users, label: 'My Clients', path: '/va-dashboard/clients' },
   { icon: ClipboardList, label: 'Tasks', path: '/va-dashboard/tasks' },
   { icon: FileText, label: 'Dispute Letters', path: '/va-dashboard/disputes' },
+  { icon: FileEdit, label: 'Letter Generator', path: '/dispute-letters' },
   { icon: FolderOpen, label: 'Client Documents', path: '/va-dashboard/documents' },
   { icon: Brain, label: 'AI Training', path: '/va-dashboard/training' },
   { icon: MessageSquare, label: 'Messages', path: '/va-dashboard/messages' },
