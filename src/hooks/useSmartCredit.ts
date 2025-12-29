@@ -7,6 +7,7 @@ interface ConnectionStatus {
   status: 'not_connected' | 'pending' | 'connected' | 'disconnected' | 'error';
   connectedAt?: string;
   lastSyncAt?: string;
+  hasReport?: boolean;
 }
 
 export function useSmartCredit() {
@@ -37,7 +38,8 @@ export function useSmartCredit() {
       setConnectionStatus({
         status: data.status,
         connectedAt: data.connectedAt,
-        lastSyncAt: data.lastSyncAt
+        lastSyncAt: data.lastSyncAt,
+        hasReport: data.hasReport
       });
     } catch (error) {
       console.error('Error checking SmartCredit status:', error);
@@ -146,7 +148,8 @@ export function useSmartCredit() {
       
       setConnectionStatus(prev => ({
         ...prev,
-        lastSyncAt: data.lastSyncAt
+        lastSyncAt: data.lastSyncAt,
+        hasReport: true
       }));
       
       toast({
@@ -160,6 +163,57 @@ export function useSmartCredit() {
       toast({
         title: "Sync Failed",
         description: error.message || "Failed to sync credit report.",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // New function to import raw SmartCredit JSON file
+  const importRawReport = async (rawJsonData: any) => {
+    if (!user) {
+      toast({
+        title: "Not Logged In",
+        description: "Please log in to import a report.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      console.log('Importing raw SmartCredit report...');
+      
+      const { data, error } = await supabase.functions.invoke('smartcredit-sync', {
+        body: {
+          action: 'import_raw_report',
+          userId: user.id,
+          reportData: rawJsonData
+        }
+      });
+
+      if (error) throw error;
+      
+      setConnectionStatus({ 
+        status: 'connected',
+        connectedAt: new Date().toISOString(),
+        lastSyncAt: data.lastSyncAt,
+        hasReport: true
+      });
+      
+      toast({
+        title: "Report Imported!",
+        description: `Successfully imported SmartCredit report with ${data.creditData?.negativeItems?.length || 0} disputable items.`,
+      });
+
+      return data;
+    } catch (error: any) {
+      console.error('Error importing raw report:', error);
+      toast({
+        title: "Import Failed",
+        description: error.message || "Failed to import credit report.",
         variant: "destructive",
       });
       throw error;
@@ -202,6 +256,7 @@ export function useSmartCredit() {
     initConnection,
     completeConnection,
     syncReport,
+    importRawReport,
     disconnect,
     checkStatus
   };

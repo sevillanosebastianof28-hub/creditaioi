@@ -6,103 +6,185 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Generate AI-analyzed credit report data
-async function generateCreditReportData(userId: string) {
-  const apiKey = Deno.env.get('LOVABLE_API_KEY');
-  if (!apiKey) {
-    console.error("LOVABLE_API_KEY not set, using demo data");
-    return generateDemoData();
+// Transform SmartCredit raw report format to our internal format
+function transformSmartCreditReport(rawReport: any) {
+  console.log("Transforming SmartCredit report...");
+  
+  // Extract scores from personal_info
+  const scores: Record<string, number> = {
+    experian: 0,
+    equifax: 0,
+    transunion: 0
+  };
+  
+  const previousScores: Record<string, number> = {
+    experian: 0,
+    equifax: 0,
+    transunion: 0
+  };
+
+  if (rawReport.personal_info && Array.isArray(rawReport.personal_info)) {
+    for (const info of rawReport.personal_info) {
+      const bureau = info.report_type?.toLowerCase();
+      if (bureau && scores.hasOwnProperty(bureau)) {
+        scores[bureau] = info.score || 0;
+        // Estimate previous scores (typically 20-40 points lower for demo purposes)
+        previousScores[bureau] = (info.score || 0) - Math.floor(Math.random() * 20 + 20);
+      }
+    }
   }
 
-  try {
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: `You are a credit report analysis AI. Generate a realistic credit report analysis with scores and disputable items. Return ONLY valid JSON with this exact structure:
-{
-  "scores": {
-    "experian": <number 550-750>,
-    "equifax": <number 550-750>,
-    "transunion": <number 550-750>
-  },
-  "previousScores": {
-    "experian": <number, 20-50 points lower than current>,
-    "equifax": <number, 20-50 points lower than current>,
-    "transunion": <number, 20-50 points lower than current>
-  },
-  "negativeItems": [
-    {
-      "id": "<uuid>",
-      "creditor": "<creditor name>",
-      "bureau": "<Experian|Equifax|TransUnion|All Three>",
-      "type": "<Late Payment|Collection|Charge-Off|Medical Collection|Inquiry>",
-      "status": "<pending|in_progress|deleted|verified>",
-      "balance": <number or null>,
-      "dateOpened": "<YYYY-MM-DD>",
-      "disputeReason": "<reason for dispute>",
-      "deletionProbability": <0.0-1.0>
+  // Extract summary data
+  const summaryData = {
+    totalAccounts: 0,
+    negativeAccounts: 0,
+    onTimePayments: 85,
+    creditUtilization: 0,
+    avgAccountAge: "0 years",
+    totalDebt: 0
+  };
+
+  if (rawReport.summary && Array.isArray(rawReport.summary)) {
+    let totalAccounts = 0;
+    let totalBalance = 0;
+    let delinquent = 0;
+    
+    for (const sum of rawReport.summary) {
+      totalAccounts += parseInt(sum.total_account) || 0;
+      totalBalance += parseInt(sum.balances) || 0;
+      delinquent += parseInt(sum.delinquent) || 0;
     }
-  ],
-  "inquiries": [
-    {
-      "creditor": "<name>",
-      "date": "<YYYY-MM-DD>",
-      "bureau": "<bureau name>"
-    }
-  ],
-  "summary": {
-    "totalAccounts": <number>,
-    "negativeAccounts": <number>,
-    "onTimePayments": <percentage number>,
-    "creditUtilization": <percentage number>,
-    "avgAccountAge": "<X years Y months>",
-    "totalDebt": <number>
-  },
-  "scoreHistory": [
-    {"date": "<YYYY-MM-DD>", "experian": <number>, "equifax": <number>, "transunion": <number>}
-  ]
-}
-Generate 4-8 negative items with varied statuses. Include 3-5 inquiries. Score history should have 5 entries going back 5 months.`
-          },
-          {
-            role: "user",
-            content: `Generate a credit report analysis for user ${userId}. Make it realistic with a mix of collection accounts, late payments, and inquiries. Current scores should be in the 600-680 range.`
+    
+    // Average across bureaus
+    summaryData.totalAccounts = Math.round(totalAccounts / 3);
+    summaryData.negativeAccounts = delinquent;
+    summaryData.totalDebt = Math.round(totalBalance / 3);
+  }
+
+  // Extract negative items and tradelines from credit_accounts
+  const negativeItems: any[] = [];
+  const tradelines: any[] = [];
+
+  if (rawReport.credit_accounts && Array.isArray(rawReport.credit_accounts)) {
+    for (const account of rawReport.credit_accounts) {
+      const creditorName = account.creditor_name || "Unknown Creditor";
+      const accountType = account.account_type || "Unknown";
+      
+      if (account.credit_account_details && Array.isArray(account.credit_account_details)) {
+        for (const detail of account.credit_account_details) {
+          const bureau = detail.report_type || "unknown";
+          const balance = parseInt(detail.balance_owed) || 0;
+          const highBalance = parseInt(detail.high_balance) || 0;
+          const creditLimit = parseInt(detail.credit_limit) || 0;
+          const accountStatus = detail.account_status || "-";
+          const accountNumber = detail.account_number || "";
+          
+          // Check payment history for negative marks
+          let hasNegativeMarks = false;
+          let latePaymentCount = 0;
+          
+          if (detail.history && Array.isArray(detail.history)) {
+            for (const historyEntry of detail.history) {
+              const paymentStatus = historyEntry.payment_status || "";
+              // Count late payments (1, 2, 3, 4, 5 = 30, 60, 90, 120, 150+ days late)
+              const lateMarks = (paymentStatus.match(/[1-9]/g) || []).length;
+              if (lateMarks > 0) {
+                hasNegativeMarks = true;
+                latePaymentCount += lateMarks;
+              }
+            }
           }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000
-      }),
-    });
 
-    if (!response.ok) {
-      console.error("AI API error:", response.status);
-      return generateDemoData();
-    }
+          // Add to tradelines
+          tradelines.push({
+            id: crypto.randomUUID(),
+            creditor: creditorName || `Account ${accountNumber.slice(-4)}`,
+            bureau: bureau.charAt(0).toUpperCase() + bureau.slice(1),
+            accountType: accountType,
+            balance: balance,
+            creditLimit: creditLimit,
+            highBalance: highBalance,
+            accountNumber: accountNumber.slice(-4),
+            status: accountStatus,
+            hasNegativeMarks: hasNegativeMarks
+          });
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
-    
-    // Extract JSON from response
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+          // If has negative marks, add to negative items
+          if (hasNegativeMarks) {
+            const itemType = latePaymentCount > 3 ? "Charge-Off" : 
+                            latePaymentCount > 1 ? "Late Payment (Multiple)" : "Late Payment";
+            
+            negativeItems.push({
+              id: crypto.randomUUID(),
+              creditor: creditorName || `Account ${accountNumber.slice(-4)}`,
+              bureau: bureau.charAt(0).toUpperCase() + bureau.slice(1),
+              type: itemType,
+              status: "pending",
+              balance: balance > 0 ? balance : highBalance,
+              dateOpened: detail.last_payment || new Date().toISOString().split('T')[0],
+              disputeReason: "Payment history inaccuracy - requires verification",
+              deletionProbability: Math.min(0.45 + (latePaymentCount * 0.05), 0.85),
+              accountNumber: accountNumber.slice(-4),
+              latePaymentCount: latePaymentCount
+            });
+          }
+        }
+      }
     }
-    
-    return generateDemoData();
-  } catch (error) {
-    console.error("Error calling AI:", error);
-    return generateDemoData();
   }
+
+  // Calculate credit utilization from tradelines
+  let totalCreditLimit = 0;
+  let totalCreditBalance = 0;
+  for (const tradeline of tradelines) {
+    if (tradeline.creditLimit > 0) {
+      totalCreditLimit += tradeline.creditLimit;
+      totalCreditBalance += tradeline.balance;
+    }
+  }
+  if (totalCreditLimit > 0) {
+    summaryData.creditUtilization = Math.round((totalCreditBalance / totalCreditLimit) * 100);
+  }
+
+  // Generate score history (last 6 months simulated based on current score)
+  const scoreHistory = [];
+  for (let i = 5; i >= 0; i--) {
+    const date = new Date();
+    date.setMonth(date.getMonth() - i);
+    const variance = (5 - i) * 8; // Scores improve over time
+    scoreHistory.push({
+      date: date.toISOString().split('T')[0],
+      experian: Math.max(500, scores.experian - variance + Math.floor(Math.random() * 10)),
+      equifax: Math.max(500, scores.equifax - variance + Math.floor(Math.random() * 10)),
+      transunion: Math.max(500, scores.transunion - variance + Math.floor(Math.random() * 10))
+    });
+  }
+
+  // Extract inquiries (not in sample data, but we'll create a placeholder)
+  const inquiries: any[] = [];
+
+  const transformedData = {
+    scores,
+    previousScores,
+    negativeItems,
+    tradelines,
+    inquiries,
+    summary: summaryData,
+    scoreHistory,
+    rawReportDate: new Date().toISOString(),
+    bureauData: {
+      experian: rawReport.personal_info?.find((p: any) => p.report_type === 'experian'),
+      equifax: rawReport.personal_info?.find((p: any) => p.report_type === 'equifax'),
+      transunion: rawReport.personal_info?.find((p: any) => p.report_type === 'transunion')
+    }
+  };
+
+  console.log(`Transformed report: ${negativeItems.length} negative items, ${tradelines.length} tradelines`);
+  
+  return transformedData;
 }
 
+// Fallback demo data if no real report provided
 function generateDemoData() {
   const baseExperian = 640 + Math.floor(Math.random() * 40);
   const baseEquifax = 635 + Math.floor(Math.random() * 40);
@@ -125,7 +207,7 @@ function generateDemoData() {
         creditor: "Capital One",
         bureau: "Experian",
         type: "Late Payment",
-        status: "in_progress",
+        status: "pending",
         balance: 2450,
         dateOpened: "2023-06-15",
         disputeReason: "Inaccurate payment history reported",
@@ -141,54 +223,20 @@ function generateDemoData() {
         dateOpened: "2022-11-20",
         disputeReason: "Debt validation required - no original agreement",
         deletionProbability: 0.78
-      },
-      {
-        id: crypto.randomUUID(),
-        creditor: "Medical Associates",
-        bureau: "Equifax",
-        type: "Medical Collection",
-        status: "deleted",
-        balance: 450,
-        dateOpened: "2023-01-10",
-        disputeReason: "Insurance should have covered - billing error",
-        deletionProbability: 0.92
-      },
-      {
-        id: crypto.randomUUID(),
-        creditor: "Chase Bank",
-        bureau: "TransUnion",
-        type: "Charge-Off",
-        status: "pending",
-        balance: 3200,
-        dateOpened: "2022-08-05",
-        disputeReason: "Account closed in good standing - reporting error",
-        deletionProbability: 0.55
-      },
-      {
-        id: crypto.randomUUID(),
-        creditor: "Portfolio Recovery",
-        bureau: "Experian",
-        type: "Collection",
-        status: "in_progress",
-        balance: 890,
-        dateOpened: "2023-03-22",
-        disputeReason: "Duplicate account - already paid original creditor",
-        deletionProbability: 0.82
       }
     ],
+    tradelines: [],
     inquiries: [
       { creditor: "Auto Loan Direct", date: "2024-09-15", bureau: "Experian" },
-      { creditor: "Credit One Bank", date: "2024-08-22", bureau: "TransUnion" },
-      { creditor: "Synchrony Bank", date: "2024-07-10", bureau: "Equifax" },
-      { creditor: "Wells Fargo", date: "2024-06-05", bureau: "Experian" }
+      { creditor: "Credit One Bank", date: "2024-08-22", bureau: "TransUnion" }
     ],
     summary: {
       totalAccounts: 12,
-      negativeAccounts: 5,
+      negativeAccounts: 2,
       onTimePayments: 87,
       creditUtilization: 42,
       avgAccountAge: "4 years 3 months",
-      totalDebt: 8865
+      totalDebt: 4325
     },
     scoreHistory: [
       { date: new Date(Date.now() - 150 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], experian: baseExperian - 65, equifax: baseEquifax - 60, transunion: baseTransunion - 58 },
@@ -267,9 +315,23 @@ serve(async (req) => {
       }
 
       case "sync_report": {
-        // Generate AI-analyzed credit data
-        console.log(`SmartCredit: Generating credit report for user ${userId}`);
-        const creditData = reportData || await generateCreditReportData(userId);
+        console.log(`SmartCredit: Processing report sync for user ${userId}`);
+        
+        let creditData;
+        
+        // Check if real SmartCredit report data was provided
+        if (reportData && reportData.personal_info && reportData.credit_accounts) {
+          console.log("SmartCredit: Using REAL report data from SmartCredit format");
+          creditData = transformSmartCreditReport(reportData);
+        } else if (reportData && reportData.scores) {
+          // Already in our internal format
+          console.log("SmartCredit: Using pre-transformed report data");
+          creditData = reportData;
+        } else {
+          // No report data provided, use demo data
+          console.log("SmartCredit: No report data provided, using demo data");
+          creditData = generateDemoData();
+        }
         
         // Update last sync time
         const { error: updateError } = await supabase
@@ -298,11 +360,78 @@ serve(async (req) => {
 
         if (analysisError) throw analysisError;
 
-        console.log(`SmartCredit: Synced report for user ${userId}`);
+        console.log(`SmartCredit: Synced report for user ${userId} - ${creditData.negativeItems?.length || 0} negative items`);
 
         return new Response(JSON.stringify({ 
           success: true, 
           message: 'Report synced',
+          lastSyncAt: new Date().toISOString(),
+          creditData
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      case "import_raw_report": {
+        // New action specifically for importing raw SmartCredit JSON
+        console.log(`SmartCredit: Importing raw report for user ${userId}`);
+        
+        if (!reportData) {
+          throw new Error("No report data provided");
+        }
+
+        const creditData = transformSmartCreditReport(reportData);
+        
+        // Ensure connection exists and is marked as connected
+        const { data: existing } = await supabase
+          .from('smartcredit_connections')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
+
+        if (existing) {
+          await supabase
+            .from('smartcredit_connections')
+            .update({ 
+              connection_status: 'connected',
+              connected_at: new Date().toISOString(),
+              last_sync_at: new Date().toISOString()
+            })
+            .eq('user_id', userId);
+        } else {
+          await supabase
+            .from('smartcredit_connections')
+            .insert({ 
+              user_id: userId, 
+              connection_status: 'connected',
+              connected_at: new Date().toISOString(),
+              last_sync_at: new Date().toISOString()
+            });
+        }
+
+        // Delete existing and store new analysis
+        await supabase
+          .from('credit_report_analyses')
+          .delete()
+          .eq('user_id', userId);
+
+        const { error: analysisError } = await supabase
+          .from('credit_report_analyses')
+          .insert({
+            user_id: userId,
+            raw_text: JSON.stringify(reportData),
+            summary: creditData.summary || {},
+            disputable_items: creditData.negativeItems || [],
+            analysis_result: creditData,
+          });
+
+        if (analysisError) throw analysisError;
+
+        console.log(`SmartCredit: Imported raw report for user ${userId}`);
+
+        return new Response(JSON.stringify({ 
+          success: true, 
+          message: 'Raw report imported successfully',
           lastSyncAt: new Date().toISOString(),
           creditData
         }), {
@@ -363,7 +492,7 @@ serve(async (req) => {
         if (error && error.code !== 'PGRST116') throw error;
 
         // Also check if we have report data
-        const { data: reportData } = await supabase
+        const { data: reportDataCheck } = await supabase
           .from('credit_report_analyses')
           .select('id, updated_at')
           .eq('user_id', userId)
@@ -376,8 +505,8 @@ serve(async (req) => {
           status: data?.connection_status || 'not_connected',
           connectedAt: data?.connected_at,
           lastSyncAt: data?.last_sync_at,
-          hasReport: !!reportData,
-          reportUpdatedAt: reportData?.updated_at
+          hasReport: !!reportDataCheck,
+          reportUpdatedAt: reportDataCheck?.updated_at
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
