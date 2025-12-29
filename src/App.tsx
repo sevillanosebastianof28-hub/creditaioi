@@ -25,6 +25,8 @@ import Compliance from "./pages/Compliance";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import AIAutomation from "./pages/AIAutomation";
+import RoundManager from "./pages/RoundManager";
+import OutcomeTracker from "./pages/OutcomeTracker";
 
 // Role-specific pages
 import ClientDashboard from "./pages/ClientDashboard";
@@ -138,6 +140,16 @@ function AppRouter() {
       <Route path="/analytics" element={
         <ProtectedRoute allowedRoles={['agency_owner']}>
           <Analytics />
+        </ProtectedRoute>
+      } />
+      <Route path="/round-manager" element={
+        <ProtectedRoute allowedRoles={['agency_owner', 'va_staff']}>
+          <RoundManager />
+        </ProtectedRoute>
+      } />
+      <Route path="/outcome-tracker" element={
+        <ProtectedRoute allowedRoles={['agency_owner']}>
+          <OutcomeTracker />
         </ProtectedRoute>
       } />
       <Route path="/messages" element={
