@@ -11,3 +11,15 @@ verify_jwt = true
 
 [functions.ai-outcome-tracker]
 verify_jwt = true
+
+[functions.ai-progress-explainer]
+verify_jwt = true
+
+[functions.ai-score-simulator]
+verify_jwt = true
+
+[functions.ocr-document-parser]
+verify_jwt = true
+
+[functions.smartcredit-sync]
+verify_jwt = true
