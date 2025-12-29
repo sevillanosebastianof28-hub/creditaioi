@@ -106,10 +106,17 @@ export default function ClientDashboard() {
     );
   }
 
+  // Safely extract numeric scores (handle both number and {date, score} formats)
+  const getNumericScore = (value: any): number => {
+    if (typeof value === 'number') return value;
+    if (value && typeof value === 'object' && 'score' in value) return Number(value.score) || 0;
+    return Number(value) || 0;
+  };
+
   const clientScores = [
-    { bureau: 'Experian', score: creditData.scores.experian, previousScore: creditData.previousScores.experian },
-    { bureau: 'Equifax', score: creditData.scores.equifax, previousScore: creditData.previousScores.equifax },
-    { bureau: 'TransUnion', score: creditData.scores.transunion, previousScore: creditData.previousScores.transunion },
+    { bureau: 'Experian', score: getNumericScore(creditData.scores.experian), previousScore: getNumericScore(creditData.previousScores.experian) },
+    { bureau: 'Equifax', score: getNumericScore(creditData.scores.equifax), previousScore: getNumericScore(creditData.previousScores.equifax) },
+    { bureau: 'TransUnion', score: getNumericScore(creditData.scores.transunion), previousScore: getNumericScore(creditData.previousScores.transunion) },
   ];
 
   // Recent updates based on actual data
