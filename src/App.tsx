@@ -41,6 +41,7 @@ import ClientMessages from "./pages/client/ClientMessages";
 import ClientBilling from "./pages/client/ClientBilling";
 import ClientNotifications from "./pages/client/ClientNotifications";
 import ClientProfile from "./pages/client/ClientProfile";
+import ClientAITools from "./pages/client/ClientAITools";
 
 // VA pages
 import VAClients from "./pages/va/VAClients";
@@ -182,6 +183,7 @@ function AppRouter() {
       <Route path="/client-dashboard" element={<ProtectedRoute allowedRoles={['client']}><ClientDashboard /></ProtectedRoute>} />
       <Route path="/client-dashboard/scores" element={<ProtectedRoute allowedRoles={['client']}><ClientScores /></ProtectedRoute>} />
       <Route path="/client-dashboard/disputes" element={<ProtectedRoute allowedRoles={['client']}><ClientDisputes /></ProtectedRoute>} />
+      <Route path="/client-dashboard/ai-tools" element={<ProtectedRoute allowedRoles={['client']}><ClientAITools /></ProtectedRoute>} />
       <Route path="/client-dashboard/documents" element={<ProtectedRoute allowedRoles={['client']}><ClientDocuments /></ProtectedRoute>} />
       <Route path="/client-dashboard/smartcredit" element={<ProtectedRoute allowedRoles={['client']}><SmartCreditConnect /></ProtectedRoute>} />
       <Route path="/client-dashboard/messages" element={<ProtectedRoute allowedRoles={['client']}><ClientMessages /></ProtectedRoute>} />
