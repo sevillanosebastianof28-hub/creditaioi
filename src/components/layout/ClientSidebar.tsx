@@ -15,12 +15,14 @@ import {
   Sparkles,
   Link2,
   User,
+  Brain,
 } from 'lucide-react';
 
 const clientMenuItems = [
   { icon: LayoutDashboard, label: 'My Dashboard', path: '/client-dashboard' },
   { icon: TrendingUp, label: 'Score Progress', path: '/client-dashboard/scores' },
   { icon: FileText, label: 'My Disputes', path: '/client-dashboard/disputes' },
+  { icon: Brain, label: 'AI Tools', path: '/client-dashboard/ai-tools' },
   { icon: Upload, label: 'Documents', path: '/client-dashboard/documents' },
   { icon: Link2, label: 'Connect SmartCredit', path: '/client-dashboard/smartcredit' },
   { icon: MessageSquare, label: 'Messages', path: '/client-dashboard/messages' },
