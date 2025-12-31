@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { ScoreGauge } from '@/components/dashboard/ScoreGauge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCreditData } from '@/hooks/useCreditData';
+import { AICreditCoach } from '@/components/ai/AICreditCoach';
 import {
   TrendingUp,
   FileText,
@@ -357,6 +358,9 @@ export default function ClientDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* AI Credit Coach Floating Button */}
+        <AICreditCoach />
       </div>
     </RoleBasedLayout>
   );
