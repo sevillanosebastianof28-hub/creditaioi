@@ -23,3 +23,12 @@ verify_jwt = true
 
 [functions.smartcredit-sync]
 verify_jwt = true
+
+[functions.ai-credit-coach]
+verify_jwt = true
+
+[functions.ai-goal-roadmap]
+verify_jwt = true
+
+[functions.ai-smart-analyzer]
+verify_jwt = true

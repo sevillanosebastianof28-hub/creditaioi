@@ -53,6 +53,60 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_predictions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          item_id: string | null
+          prediction_data: Json
+          prediction_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          item_id?: string | null
+          prediction_data: Json
+          prediction_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          item_id?: string | null
+          prediction_data?: Json
+          prediction_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       bureau_patterns: {
         Row: {
           bureau: Database["public"]["Enums"]["bureau_type"]
@@ -125,6 +179,42 @@ export type Database = {
           uploaded_at?: string
           user_id?: string
           verified_at?: string | null
+        }
+        Relationships: []
+      }
+      client_goals: {
+        Row: {
+          ai_roadmap: Json | null
+          created_at: string
+          current_score: number | null
+          goal_type: string
+          id: string
+          target_date: string | null
+          target_score: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_roadmap?: Json | null
+          created_at?: string
+          current_score?: number | null
+          goal_type?: string
+          id?: string
+          target_date?: string | null
+          target_score: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_roadmap?: Json | null
+          created_at?: string
+          current_score?: number | null
+          goal_type?: string
+          id?: string
+          target_date?: string | null
+          target_score?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
