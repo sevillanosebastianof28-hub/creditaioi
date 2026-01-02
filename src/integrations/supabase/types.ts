@@ -140,6 +140,56 @@ export type Database = {
         }
         Relationships: []
       }
+      bureau_responses: {
+        Row: {
+          ai_analysis: Json | null
+          bureau: string
+          created_at: string
+          dispute_item_id: string | null
+          file_path: string | null
+          id: string
+          outcome: string | null
+          response_content: string | null
+          response_date: string
+          response_type: string
+          user_id: string
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          bureau: string
+          created_at?: string
+          dispute_item_id?: string | null
+          file_path?: string | null
+          id?: string
+          outcome?: string | null
+          response_content?: string | null
+          response_date?: string
+          response_type: string
+          user_id: string
+        }
+        Update: {
+          ai_analysis?: Json | null
+          bureau?: string
+          created_at?: string
+          dispute_item_id?: string | null
+          file_path?: string | null
+          id?: string
+          outcome?: string | null
+          response_content?: string | null
+          response_date?: string
+          response_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bureau_responses_dispute_item_id_fkey"
+            columns: ["dispute_item_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_documents: {
         Row: {
           created_at: string
@@ -316,6 +366,53 @@ export type Database = {
           },
         ]
       }
+      dispute_letters: {
+        Row: {
+          created_at: string
+          dispute_item_id: string | null
+          id: string
+          letter_content: string
+          letter_type: string
+          sent_at: string | null
+          status: string
+          tracking_number: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dispute_item_id?: string | null
+          id?: string
+          letter_content: string
+          letter_type: string
+          sent_at?: string | null
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dispute_item_id?: string | null
+          id?: string
+          letter_content?: string
+          letter_type?: string
+          sent_at?: string | null
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_letters_dispute_item_id_fkey"
+            columns: ["dispute_item_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dispute_rounds: {
         Row: {
           ai_recommendations: Json | null
@@ -352,6 +449,42 @@ export type Database = {
           started_at?: string
           status?: Database["public"]["Enums"]["dispute_status"]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          action_url: string | null
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          related_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          action_url?: string | null
+          created_at?: string
+          id?: string
+          message: string
+          read?: boolean
+          related_id?: string | null
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          action_url?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          related_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -449,6 +582,36 @@ export type Database = {
           },
         ]
       }
+      score_history: {
+        Row: {
+          equifax: number | null
+          experian: number | null
+          id: string
+          recorded_at: string
+          source: string | null
+          transunion: number | null
+          user_id: string
+        }
+        Insert: {
+          equifax?: number | null
+          experian?: number | null
+          id?: string
+          recorded_at?: string
+          source?: string | null
+          transunion?: number | null
+          user_id: string
+        }
+        Update: {
+          equifax?: number | null
+          experian?: number | null
+          id?: string
+          recorded_at?: string
+          source?: string | null
+          transunion?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       smartcredit_connections: {
         Row: {
           access_token_encrypted: string | null
@@ -478,6 +641,85 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      tasks: {
+        Row: {
+          agency_id: string | null
+          ai_generated: boolean | null
+          assigned_to: string | null
+          client_id: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string
+          related_dispute_id: string | null
+          related_letter_id: string | null
+          status: string
+          task_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          ai_generated?: boolean | null
+          assigned_to?: string | null
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          related_dispute_id?: string | null
+          related_letter_id?: string | null
+          status?: string
+          task_type?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          ai_generated?: boolean | null
+          assigned_to?: string | null
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          related_dispute_id?: string | null
+          related_letter_id?: string | null
+          status?: string
+          task_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_related_dispute_id_fkey"
+            columns: ["related_dispute_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_related_letter_id_fkey"
+            columns: ["related_letter_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_letters"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

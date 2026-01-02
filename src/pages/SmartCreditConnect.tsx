@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useSmartCredit } from '@/hooks/useSmartCredit';
+import { useDisputeWorkflow } from '@/hooks/useDisputeWorkflow';
+import { useScoreHistory } from '@/hooks/useScoreHistory';
 import { supabase } from '@/integrations/supabase/client';
 import {
   CheckCircle2,
@@ -86,6 +88,8 @@ export default function SmartCreditConnect() {
     disconnect, 
     checkStatus 
   } = useSmartCredit();
+  const { createDisputesFromAnalysis } = useDisputeWorkflow();
+  const { recordScore } = useScoreHistory();
   
   const [selectedProvider, setSelectedProvider] = useState<CreditProvider>('smartcredit');
   const [isUploading, setIsUploading] = useState(false);
@@ -250,6 +254,16 @@ export default function SmartCreditConnect() {
             connected_at: new Date().toISOString(),
             last_sync_at: new Date().toISOString(),
           });
+      }
+
+      // Record score history
+      if (scores.experian || scores.equifax || scores.transunion) {
+        await recordScore(scores.experian || null, scores.equifax || null, scores.transunion || null, 'import');
+      }
+
+      // Create disputes from negative items
+      if (negativeItems.length > 0) {
+        await createDisputesFromAnalysis(negativeItems);
       }
 
       toast({
