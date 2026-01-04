@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { RoleBasedLayout } from '@/components/layout/RoleBasedLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -5,18 +6,32 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScoreGauge } from '@/components/dashboard/ScoreGauge';
 import { useCreditData } from '@/hooks/useCreditData';
+import { useScoreHistory } from '@/hooks/useScoreHistory';
 import { TrendingUp, TrendingDown, Calendar, Target, Link2, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function ClientScores() {
   const { 
-    isLoading, 
+    isLoading: isCreditLoading, 
     isRefreshing,
     creditData, 
     connectionStatus,
     averageScore,
     refreshData 
   } = useCreditData();
+
+  const { 
+    isLoading: isHistoryLoading, 
+    history, 
+    fetchHistory,
+    getScoreChange 
+  } = useScoreHistory();
+
+  const isLoading = isCreditLoading || isHistoryLoading;
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
 
   // Loading state
   if (isLoading) {
@@ -91,23 +106,18 @@ export default function ClientScores() {
     equifax: getNumericScore(creditData.previousScores?.equifax),
     transunion: getNumericScore(creditData.previousScores?.transunion),
   };
-  
-  // Generate score history if not available
-  let scoreHistory = creditData.scoreHistory || [];
-  if (!scoreHistory.length && (currentScores.experian || currentScores.equifax || currentScores.transunion)) {
-    scoreHistory = [];
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date();
-      date.setMonth(date.getMonth() - i);
-      const variance = (5 - i) * 8;
-      scoreHistory.push({
-        date: date.toISOString().split('T')[0],
-        experian: Math.max(500, currentScores.experian - variance + Math.floor(Math.random() * 10)),
-        equifax: Math.max(500, currentScores.equifax - variance + Math.floor(Math.random() * 10)),
-        transunion: Math.max(500, currentScores.transunion - variance + Math.floor(Math.random() * 10)),
-      });
-    }
-  }
+
+  // Use real history from database
+  const scoreHistory = history.length > 0 
+    ? history.map(h => ({
+        date: h.recorded_at,
+        experian: h.experian || 0,
+        equifax: h.equifax || 0,
+        transunion: h.transunion || 0,
+      }))
+    : [];
+
+  const scoreChanges = getScoreChange(30);
 
   const getChange = (current: number, previous: number) => current - previous;
   const targetScore = 720;
@@ -139,8 +149,8 @@ export default function ClientScores() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
                 Experian
-                <Badge variant={getChange(currentScores.experian, previousScores.experian) > 0 ? 'default' : 'destructive'} className="text-xs">
-                  {getChange(currentScores.experian, previousScores.experian) > 0 ? '+' : ''}{getChange(currentScores.experian, previousScores.experian)}
+                <Badge variant={getChange(currentScores.experian, previousScores.experian) >= 0 ? 'default' : 'destructive'} className="text-xs">
+                  {getChange(currentScores.experian, previousScores.experian) >= 0 ? '+' : ''}{getChange(currentScores.experian, previousScores.experian)}
                 </Badge>
               </CardTitle>
             </CardHeader>
@@ -153,8 +163,8 @@ export default function ClientScores() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
                 Equifax
-                <Badge variant={getChange(currentScores.equifax, previousScores.equifax) > 0 ? 'default' : 'destructive'} className="text-xs">
-                  {getChange(currentScores.equifax, previousScores.equifax) > 0 ? '+' : ''}{getChange(currentScores.equifax, previousScores.equifax)}
+                <Badge variant={getChange(currentScores.equifax, previousScores.equifax) >= 0 ? 'default' : 'destructive'} className="text-xs">
+                  {getChange(currentScores.equifax, previousScores.equifax) >= 0 ? '+' : ''}{getChange(currentScores.equifax, previousScores.equifax)}
                 </Badge>
               </CardTitle>
             </CardHeader>
@@ -167,8 +177,8 @@ export default function ClientScores() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
                 TransUnion
-                <Badge variant={getChange(currentScores.transunion, previousScores.transunion) > 0 ? 'default' : 'destructive'} className="text-xs">
-                  {getChange(currentScores.transunion, previousScores.transunion) > 0 ? '+' : ''}{getChange(currentScores.transunion, previousScores.transunion)}
+                <Badge variant={getChange(currentScores.transunion, previousScores.transunion) >= 0 ? 'default' : 'destructive'} className="text-xs">
+                  {getChange(currentScores.transunion, previousScores.transunion) >= 0 ? '+' : ''}{getChange(currentScores.transunion, previousScores.transunion)}
                 </Badge>
               </CardTitle>
             </CardHeader>
@@ -177,6 +187,35 @@ export default function ClientScores() {
             </CardContent>
           </Card>
         </div>
+
+        {/* 30-Day Score Changes */}
+        {history.length > 1 && (
+          <Card className="card-elevated bg-gradient-to-r from-primary/5 to-transparent border-primary/20">
+            <CardContent className="py-6">
+              <h3 className="font-semibold mb-4">30-Day Score Changes</h3>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <p className="text-sm text-muted-foreground">Experian</p>
+                  <p className={`text-2xl font-bold ${scoreChanges.experian >= 0 ? 'text-success' : 'text-destructive'}`}>
+                    {scoreChanges.experian >= 0 ? '+' : ''}{scoreChanges.experian}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Equifax</p>
+                  <p className={`text-2xl font-bold ${scoreChanges.equifax >= 0 ? 'text-success' : 'text-destructive'}`}>
+                    {scoreChanges.equifax >= 0 ? '+' : ''}{scoreChanges.equifax}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">TransUnion</p>
+                  <p className={`text-2xl font-bold ${scoreChanges.transunion >= 0 ? 'text-success' : 'text-destructive'}`}>
+                    {scoreChanges.transunion >= 0 ? '+' : ''}{scoreChanges.transunion}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Score History */}
         <Card className="card-elevated">
@@ -187,30 +226,37 @@ export default function ClientScores() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {scoreHistory.slice().reverse().map((entry, index) => (
-                <div key={entry.date} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                  <div>
-                    <p className="font-medium">{new Date(entry.date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
-                    <p className="text-sm text-muted-foreground">Monthly report</p>
+            {scoreHistory.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Calendar className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>No score history yet. History will be recorded with each credit report sync.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {scoreHistory.slice().reverse().map((entry, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                    <div>
+                      <p className="font-medium">{new Date(entry.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                      <p className="text-sm text-muted-foreground">Synced report</p>
+                    </div>
+                    <div className="flex gap-6">
+                      <div className="text-center">
+                        <p className="text-xs text-muted-foreground">EXP</p>
+                        <p className="font-semibold">{entry.experian}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-muted-foreground">EQF</p>
+                        <p className="font-semibold">{entry.equifax}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-muted-foreground">TU</p>
+                        <p className="font-semibold">{entry.transunion}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex gap-6">
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground">EXP</p>
-                      <p className="font-semibold">{entry.experian}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground">EQF</p>
-                      <p className="font-semibold">{entry.equifax}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground">TU</p>
-                      <p className="font-semibold">{entry.transunion}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
