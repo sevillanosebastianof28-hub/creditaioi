@@ -2,20 +2,15 @@ import { RoleBasedLayout } from '@/components/layout/RoleBasedLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, Download, CheckCircle2, Calendar, DollarSign } from 'lucide-react';
-
-const mockInvoices = [
-  { id: '1', date: '2024-05-01', amount: 99.00, status: 'paid', description: 'Monthly Credit Repair Service' },
-  { id: '2', date: '2024-04-01', amount: 99.00, status: 'paid', description: 'Monthly Credit Repair Service' },
-  { id: '3', date: '2024-03-01', amount: 99.00, status: 'paid', description: 'Monthly Credit Repair Service' },
-  { id: '4', date: '2024-02-01', amount: 149.00, status: 'paid', description: 'Setup Fee + First Month' },
-];
+import { Skeleton } from '@/components/ui/skeleton';
+import { CreditCard, Download, CheckCircle2, Calendar, DollarSign, Clock } from 'lucide-react';
+import { useInvoices } from '@/hooks/useInvoices';
+import { format } from 'date-fns';
 
 const currentPlan = {
   name: 'Professional Plan',
   price: 99,
   billing: 'monthly',
-  nextBilling: '2024-06-01',
   features: [
     '3-Bureau Credit Monitoring',
     'Unlimited Dispute Letters',
@@ -27,6 +22,29 @@ const currentPlan = {
 };
 
 export default function ClientBilling() {
+  const { invoices, isLoading } = useInvoices();
+
+  // Get next pending invoice for billing date
+  const pendingInvoice = invoices.find(i => i.status === 'pending');
+  const nextBillingDate = pendingInvoice?.due_date 
+    ? format(new Date(pendingInvoice.due_date), 'MMMM d, yyyy')
+    : 'N/A';
+
+  if (isLoading) {
+    return (
+      <RoleBasedLayout>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Billing</h1>
+          </div>
+          <Skeleton className="h-48" />
+          <Skeleton className="h-32" />
+          <Skeleton className="h-64" />
+        </div>
+      </RoleBasedLayout>
+    );
+  }
+
   return (
     <RoleBasedLayout>
       <div className="space-y-6">
@@ -55,7 +73,7 @@ export default function ClientBilling() {
                 </p>
                 <p className="text-sm text-muted-foreground mt-2 flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
-                  Next billing: {new Date(currentPlan.nextBilling).toLocaleDateString()}
+                  Next billing: {nextBillingDate}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -107,27 +125,45 @@ export default function ClientBilling() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {mockInvoices.map((invoice) => (
-                <div key={invoice.id} className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/30 transition-colors">
-                  <div>
-                    <p className="font-medium">{invoice.description}</p>
-                    <p className="text-sm text-muted-foreground">{new Date(invoice.date).toLocaleDateString()}</p>
+            {invoices.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Clock className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>No invoices yet</p>
+                <p className="text-sm">Your billing history will appear here</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {invoices.map((invoice) => (
+                  <div key={invoice.id} className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/30 transition-colors">
+                    <div>
+                      <p className="font-medium">{invoice.description || 'Service Invoice'}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(invoice.created_at), 'MMMM d, yyyy')}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="font-semibold">${Number(invoice.amount).toFixed(2)}</span>
+                      <Badge 
+                        className={
+                          invoice.status === 'paid' 
+                            ? 'bg-success/10 text-success border-success/20'
+                            : invoice.status === 'pending'
+                            ? 'bg-warning/10 text-warning border-warning/20'
+                            : 'bg-destructive/10 text-destructive border-destructive/20'
+                        }
+                      >
+                        {invoice.status === 'paid' && <CheckCircle2 className="w-3 h-3 mr-1" />}
+                        {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                      </Badge>
+                      <Button variant="ghost" size="sm">
+                        <Download className="w-4 h-4 mr-1" />
+                        PDF
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className="font-semibold">${invoice.amount.toFixed(2)}</span>
-                    <Badge className="bg-success/10 text-success border-success/20">
-                      <CheckCircle2 className="w-3 h-3 mr-1" />
-                      Paid
-                    </Badge>
-                    <Button variant="ghost" size="sm">
-                      <Download className="w-4 h-4 mr-1" />
-                      PDF
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
