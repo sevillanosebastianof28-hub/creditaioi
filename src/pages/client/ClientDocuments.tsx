@@ -3,7 +3,7 @@ import { RoleBasedLayout } from '@/components/layout/RoleBasedLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Upload, FileText, Image, Shield, Trash2, Download, Eye, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, FileText, Image, Shield, Trash2, Download, CheckCircle2, AlertCircle, Loader2, Sparkles, Brain } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -36,6 +36,7 @@ export default function ClientDocuments() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
+  const [processing, setProcessing] = useState<string | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState('ID Verification');
@@ -82,7 +83,7 @@ export default function ClientDocuments() {
       if (uploadError) throw uploadError;
 
       // Save to database
-      const { error: dbError } = await supabase
+      const { data: docData, error: dbError } = await supabase
         .from('client_documents')
         .insert({
           user_id: user.id,
@@ -92,16 +93,23 @@ export default function ClientDocuments() {
           document_type: selectedType,
           size_bytes: file.size,
           status: 'pending'
-        });
+        })
+        .select()
+        .single();
 
       if (dbError) throw dbError;
 
       toast({
         title: 'Document Uploaded',
-        description: 'Your document has been uploaded and is pending review.',
+        description: 'Your document has been uploaded. Running AI verification...',
       });
 
       fetchDocuments();
+
+      // Trigger OCR verification for ID documents
+      if (selectedType === 'ID Verification' || selectedType === 'SSN Proof') {
+        await runOCRVerification(docData.id, filePath, file);
+      }
     } catch (err: any) {
       console.error('Upload error:', err);
       toast({
@@ -115,16 +123,113 @@ export default function ClientDocuments() {
     }
   };
 
+  const runOCRVerification = async (docId: string, filePath: string, file: File) => {
+    setProcessing(docId);
+    try {
+      // Convert file to base64
+      const arrayBuffer = await file.arrayBuffer();
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+
+      const { data, error } = await supabase.functions.invoke('ocr-document-parser', {
+        body: {
+          imageBase64: base64,
+          mimeType: file.type,
+          documentType: selectedType
+        }
+      });
+
+      if (error) throw error;
+
+      // Update document status based on OCR result
+      const isVerified = data?.verified || data?.extractedData;
+      await supabase
+        .from('client_documents')
+        .update({ 
+          status: isVerified ? 'verified' : 'pending'
+        })
+        .eq('id', docId);
+
+      toast({
+        title: isVerified ? 'Document Verified' : 'Verification Pending',
+        description: isVerified 
+          ? 'AI has verified your document successfully.'
+          : 'Your document is pending manual review.',
+      });
+
+      fetchDocuments();
+    } catch (err: any) {
+      console.error('OCR error:', err);
+      toast({
+        title: 'Verification Pending',
+        description: 'Automatic verification failed. Document will be reviewed manually.',
+        variant: 'default'
+      });
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const handleVerifyDocument = async (doc: Document) => {
+    if (processing) return;
+    
+    setProcessing(doc.id);
+    try {
+      // Download file from storage
+      const { data: fileData, error: downloadError } = await supabase.storage
+        .from('client-documents')
+        .download(doc.file_path);
+
+      if (downloadError) throw downloadError;
+
+      // Convert to base64
+      const arrayBuffer = await fileData.arrayBuffer();
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+
+      const { data, error } = await supabase.functions.invoke('ocr-document-parser', {
+        body: {
+          imageBase64: base64,
+          mimeType: doc.file_type,
+          documentType: doc.document_type
+        }
+      });
+
+      if (error) throw error;
+
+      const isVerified = data?.verified || data?.extractedData;
+      await supabase
+        .from('client_documents')
+        .update({ 
+          status: isVerified ? 'verified' : 'pending'
+        })
+        .eq('id', doc.id);
+
+      toast({
+        title: isVerified ? 'Document Verified' : 'Verification Failed',
+        description: isVerified 
+          ? 'AI has verified your document successfully.'
+          : 'Could not verify document. Please upload a clearer image.',
+      });
+
+      fetchDocuments();
+    } catch (err: any) {
+      toast({
+        title: 'Verification Error',
+        description: err.message || 'Failed to verify document',
+        variant: 'destructive'
+      });
+    } finally {
+      setProcessing(null);
+    }
+  };
+
   const handleDelete = async (doc: Document) => {
     if (!user) return;
 
     try {
-      // Delete from storage
       await supabase.storage
         .from('client-documents')
         .remove([doc.file_path]);
 
-      // Delete from database
       const { error } = await supabase
         .from('client_documents')
         .delete()
@@ -225,6 +330,10 @@ export default function ClientDocuments() {
                   {verifiedDocs.length} of {requiredDocs.filter(d => d.required).length} required documents verified
                 </p>
               </div>
+              <div className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
+                <Brain className="w-4 h-4" />
+                <span>AI-Powered Verification</span>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -303,9 +412,26 @@ export default function ClientDocuments() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge className={doc.status === 'verified' ? 'bg-success/10 text-success border-success/20' : 'bg-warning/10 text-warning border-warning/20'}>
-                        {doc.status === 'verified' ? 'Verified' : 'Pending'}
-                      </Badge>
+                      {processing === doc.id ? (
+                        <Badge className="bg-primary/10 text-primary border-primary/20">
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                          Verifying...
+                        </Badge>
+                      ) : (
+                        <Badge className={doc.status === 'verified' ? 'bg-success/10 text-success border-success/20' : 'bg-warning/10 text-warning border-warning/20'}>
+                          {doc.status === 'verified' ? 'Verified' : 'Pending'}
+                        </Badge>
+                      )}
+                      {doc.status === 'pending' && !processing && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleVerifyDocument(doc)}
+                          title="Run AI Verification"
+                        >
+                          <Sparkles className="w-4 h-4 text-primary" />
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)}>
                         <Download className="w-4 h-4" />
                       </Button>

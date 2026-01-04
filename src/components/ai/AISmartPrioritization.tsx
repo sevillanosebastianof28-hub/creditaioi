@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { BarChart3, Sparkles, TrendingUp, AlertTriangle, CheckCircle2, ArrowUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCreditData } from '@/hooks/useCreditData';
+import { useAIPredictions } from '@/hooks/useAIPredictions';
 import { toast } from 'sonner';
 
 interface PrioritizedItem {
@@ -31,8 +32,20 @@ interface PrioritizationResult {
 
 export function AISmartPrioritization() {
   const { creditData } = useCreditData();
+  const { getCachedPrediction, cachePrediction } = useAIPredictions();
   const [result, setResult] = useState<PrioritizationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Load cached prediction on mount
+  useEffect(() => {
+    const loadCached = async () => {
+      const cached = await getCachedPrediction('smart_priority');
+      if (cached) {
+        setResult(cached.prediction_data as PrioritizationResult);
+      }
+    };
+    loadCached();
+  }, [getCachedPrediction]);
 
   const analyzeItems = async () => {
     if (!creditData?.negativeItems?.length) {
@@ -61,6 +74,9 @@ export function AISmartPrioritization() {
 
       if (error) throw error;
       setResult(data.result);
+      
+      // Cache the prediction
+      await cachePrediction('smart_priority', data.result);
     } catch (error) {
       console.error('Analysis error:', error);
       toast.error('Failed to analyze items');
