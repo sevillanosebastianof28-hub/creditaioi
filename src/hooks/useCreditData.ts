@@ -192,14 +192,29 @@ export function useCreditData() {
     fetchCreditData();
   }, [fetchCreditData]);
 
-  // Computed values
+  // Helper to safely get numeric score
+  const getNumericScore = (val: any): number => {
+    if (typeof val === 'number') return val;
+    if (val && typeof val === 'object' && 'score' in val) return Number(val.score) || 0;
+    return Number(val) || 0;
+  };
+
+  // Computed values with safe numeric extraction
   const averageScore = creditData?.scores 
-    ? Math.round((creditData.scores.experian + creditData.scores.equifax + creditData.scores.transunion) / 3)
-    : null;
+    ? Math.round((
+        getNumericScore(creditData.scores.experian) + 
+        getNumericScore(creditData.scores.equifax) + 
+        getNumericScore(creditData.scores.transunion)
+      ) / 3)
+    : 0;
 
   const averagePreviousScore = creditData?.previousScores
-    ? Math.round((creditData.previousScores.experian + creditData.previousScores.equifax + creditData.previousScores.transunion) / 3)
-    : null;
+    ? Math.round((
+        getNumericScore(creditData.previousScores.experian) + 
+        getNumericScore(creditData.previousScores.equifax) + 
+        getNumericScore(creditData.previousScores.transunion)
+      ) / 3)
+    : 0;
 
   const totalScoreIncrease = averageScore && averagePreviousScore 
     ? averageScore - averagePreviousScore 
