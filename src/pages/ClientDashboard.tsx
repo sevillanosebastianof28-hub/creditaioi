@@ -246,12 +246,12 @@ export default function ClientDashboard() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Average Score Increase</p>
-                  <p className="text-4xl font-bold text-primary">+{totalScoreIncrease} pts</p>
+                  <p className="text-4xl font-bold text-primary">+{typeof totalScoreIncrease === 'number' ? totalScoreIncrease : 0} pts</p>
                 </div>
               </div>
               <div className="text-center md:text-right">
                 <p className="text-sm text-muted-foreground">Current Average Score</p>
-                <p className="text-3xl font-bold text-foreground">{averageScore}</p>
+                <p className="text-3xl font-bold text-foreground">{typeof averageScore === 'number' ? averageScore : 0}</p>
               </div>
             </div>
           </CardContent>
