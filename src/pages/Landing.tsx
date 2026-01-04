@@ -345,9 +345,9 @@ const Landing = () => {
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-foreground mb-4 sm:mb-6 leading-[1.1] tracking-tight">
                 The Future of{' '}
                 <span className="relative inline-block">
-                  <GlowText className="bg-gradient-to-r from-primary via-emerald-400 to-primary bg-clip-text text-transparent bg-[size:200%] animate-[gradient_3s_ease_infinite]">
+                  <span className="bg-gradient-to-r from-primary via-emerald-400 to-primary bg-clip-text text-transparent bg-[size:200%] animate-[gradient_3s_ease_infinite]">
                     Credit Repair
-                  </GlowText>
+                  </span>
                   <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 300 12" fill="none">
                     <motion.path 
                       d="M2 10C50 4 100 4 150 6C200 8 250 4 298 10" 
@@ -360,7 +360,8 @@ const Landing = () => {
                     />
                   </svg>
                 </span>
-                {' '}is Here
+                <br className="hidden sm:block" />
+                <span className="sm:ml-0">is Here</span>
               </h1>
             </TextReveal>
             
