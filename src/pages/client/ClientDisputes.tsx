@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { RoleBasedLayout } from '@/components/layout/RoleBasedLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useCreditData, NegativeItem } from '@/hooks/useCreditData';
+import { useLetterTracking } from '@/hooks/useLetterTracking';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Clock, CheckCircle2, AlertCircle, Eye, Link2, RefreshCw, Loader2, Download, Printer } from 'lucide-react';
+import { FileText, Clock, CheckCircle2, AlertCircle, Eye, Link2, RefreshCw, Loader2, Download, Printer, Save } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const statusConfig = {
@@ -34,11 +35,25 @@ export default function ClientDisputes() {
     refreshData 
   } = useCreditData();
 
+  const { saveLetter, fetchLetters, letters } = useLetterTracking();
+
+  useEffect(() => {
+    fetchLetters();
+  }, [fetchLetters]);
+
   const handleViewLetter = async (dispute: NegativeItem) => {
     setSelectedDispute(dispute);
     setDialogOpen(true);
     setIsGenerating(true);
     setLetterContent('');
+
+    // Check if we have a saved letter for this item
+    const existingLetter = letters.find(l => l.dispute_item_id === dispute.id);
+    if (existingLetter) {
+      setLetterContent(existingLetter.letter_content);
+      setIsGenerating(false);
+      return;
+    }
 
     try {
       const { data, error } = await supabase.functions.invoke('generate-dispute-letter', {
@@ -69,6 +84,16 @@ export default function ClientDisputes() {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleSaveLetter = async () => {
+    if (!selectedDispute || !letterContent) return;
+    
+    await saveLetter('factual_dispute', letterContent, selectedDispute.id);
+    toast({ 
+      title: "Letter Saved", 
+      description: "Your dispute letter has been saved successfully." 
+    });
   };
 
   const handlePrint = () => {
@@ -202,8 +227,8 @@ export default function ClientDisputes() {
           </Card>
           <Card className="card-elevated">
             <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-info">{currentRound}</div>
-              <p className="text-sm text-muted-foreground">Current Round</p>
+              <div className="text-2xl font-bold text-info">{letters.length}</div>
+              <p className="text-sm text-muted-foreground">Saved Letters</p>
             </CardContent>
           </Card>
         </div>
@@ -224,6 +249,8 @@ export default function ClientDisputes() {
                 disputes.map((dispute) => {
                   const config = statusConfig[dispute.status as keyof typeof statusConfig] || statusConfig.pending;
                   const StatusIcon = config.icon;
+                  const hasSavedLetter = letters.some(l => l.dispute_item_id === dispute.id);
+                  
                   return (
                     <div key={dispute.id} className="p-4 rounded-lg border border-border hover:border-primary/30 transition-colors">
                       <div className="flex items-start justify-between gap-4">
@@ -237,6 +264,11 @@ export default function ClientDisputes() {
                             <Badge variant="secondary" className="text-xs">
                               {dispute.bureau || 'Unknown Bureau'}
                             </Badge>
+                            {hasSavedLetter && (
+                              <Badge variant="outline" className="bg-success/10 text-success border-success/20 text-xs">
+                                Letter Saved
+                              </Badge>
+                            )}
                           </div>
                           
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
@@ -339,6 +371,10 @@ export default function ClientDisputes() {
           </div>
           {!isGenerating && letterContent && (
             <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button variant="outline" onClick={handleSaveLetter}>
+                <Save className="w-4 h-4 mr-2" />
+                Save Letter
+              </Button>
               <Button variant="outline" onClick={handleDownload}>
                 <Download className="w-4 h-4 mr-2" />
                 Download

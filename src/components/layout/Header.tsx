@@ -1,4 +1,4 @@
-import { Bell, Search, Moon, Sun, User, LogOut, Settings } from 'lucide-react';
+import { Bell, Search, Moon, Sun, User, LogOut, Settings, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,14 +11,19 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useNotifications } from '@/hooks/useNotifications';
+import { formatDistanceToNow } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 export function Header() {
   const [darkMode, setDarkMode] = useState(false);
   const { user, profile, role, signOut } = useAuth();
   const navigate = useNavigate();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -40,6 +45,19 @@ export function Header() {
         return <Badge variant="outline" className="bg-info/10 text-info border-info/20 text-xs">Client</Badge>;
       default:
         return null;
+    }
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'success':
+        return 'bg-success/10 text-success';
+      case 'warning':
+        return 'bg-warning/10 text-warning';
+      case 'error':
+        return 'bg-destructive/10 text-destructive';
+      default:
+        return 'bg-primary/10 text-primary';
     }
   };
 
@@ -73,27 +91,59 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="w-96">
+            <DropdownMenuLabel className="flex items-center justify-between">
+              <span>Notifications</span>
+              {unreadCount > 0 && (
+                <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={markAllAsRead}>
+                  <Check className="w-3 h-3 mr-1" />
+                  Mark all read
+                </Button>
+              )}
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="flex flex-col items-start gap-1 p-3">
-              <span className="font-medium text-sm">New dispute response received</span>
-              <span className="text-xs text-muted-foreground">Marcus Johnson - Equifax responded</span>
-              <span className="text-xs text-muted-foreground">2 minutes ago</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="flex flex-col items-start gap-1 p-3">
-              <span className="font-medium text-sm">AI analysis complete</span>
-              <span className="text-xs text-muted-foreground">Jennifer Williams - 5 disputable items found</span>
-              <span className="text-xs text-muted-foreground">15 minutes ago</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="flex flex-col items-start gap-1 p-3">
-              <span className="font-medium text-sm">Payment received</span>
-              <span className="text-xs text-muted-foreground">David Martinez - $199.00</span>
-              <span className="text-xs text-muted-foreground">1 hour ago</span>
-            </DropdownMenuItem>
+            <ScrollArea className="max-h-80">
+              {notifications.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground text-sm">
+                  No notifications yet
+                </div>
+              ) : (
+                notifications.slice(0, 10).map((notification) => (
+                  <DropdownMenuItem 
+                    key={notification.id}
+                    className={cn(
+                      "flex flex-col items-start gap-1 p-3 cursor-pointer",
+                      !notification.read && "bg-primary/5"
+                    )}
+                    onClick={() => {
+                      markAsRead(notification.id);
+                      if (notification.action_url) {
+                        navigate(notification.action_url);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center gap-2 w-full">
+                      <div className={cn("w-2 h-2 rounded-full", getNotificationIcon(notification.type))} />
+                      <span className="font-medium text-sm flex-1">{notification.title}</span>
+                      {!notification.read && (
+                        <div className="w-2 h-2 bg-primary rounded-full" />
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground pl-4">{notification.message}</span>
+                    <span className="text-xs text-muted-foreground pl-4">
+                      {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                    </span>
+                  </DropdownMenuItem>
+                ))
+              )}
+            </ScrollArea>
           </DropdownMenuContent>
         </DropdownMenu>
 

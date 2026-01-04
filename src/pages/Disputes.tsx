@@ -1,11 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { mockDisputes, mockClients } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -13,7 +12,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { useDisputeWorkflow, DisputeItem, DisputeRound } from '@/hooks/useDisputeWorkflow';
+import { useLetterTracking } from '@/hooks/useLetterTracking';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import {
   FileText,
   Send,
@@ -27,35 +37,143 @@ import {
   Sparkles,
   Download,
   Eye,
+  Loader2,
+  Save,
 } from 'lucide-react';
 
 const Disputes = () => {
+  const { toast } = useToast();
   const [bureauFilter, setBureauFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedItem, setSelectedItem] = useState<DisputeItem | null>(null);
+  const [letterContent, setLetterContent] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-  const filteredDisputes = mockDisputes.filter((dispute) => {
-    const matchesBureau = bureauFilter === 'all' || dispute.bureau === bureauFilter;
-    const matchesStatus = statusFilter === 'all' || dispute.status === statusFilter;
+  const { 
+    isLoading, 
+    rounds, 
+    currentRound, 
+    fetchRounds, 
+    createRound,
+    updateItemOutcome 
+  } = useDisputeWorkflow();
+
+  const { saveLetter, updateLetterStatus } = useLetterTracking();
+
+  useEffect(() => {
+    fetchRounds();
+  }, [fetchRounds]);
+
+  // Flatten all items from all rounds
+  const allItems = rounds.flatMap(round => 
+    round.items.map(item => ({ ...item, round_number: round.round_number, round_status: round.status }))
+  );
+
+  const filteredItems = allItems.filter((item) => {
+    const matchesBureau = bureauFilter === 'all' || item.bureau === bureauFilter;
+    const matchesStatus = statusFilter === 'all' || item.outcome === statusFilter;
     return matchesBureau && matchesStatus;
   });
 
-  const pendingApproval = mockDisputes.filter((d) => d.status === 'pending_approval');
-  const sent = mockDisputes.filter((d) => d.status === 'sent' || d.status === 'approved');
-  const responses = mockDisputes.filter((d) => d.status === 'response_received');
+  const pendingItems = allItems.filter((d) => d.outcome === 'pending');
+  const inProgressItems = allItems.filter((d) => d.outcome === 'in_progress');
+  const respondedItems = allItems.filter((d) => ['responded', 'deleted', 'verified', 'updated'].includes(d.outcome));
 
-  const statusColors = {
-    draft: 'bg-muted text-muted-foreground',
-    pending_approval: 'bg-warning/10 text-warning border-warning/20',
-    approved: 'bg-info/10 text-info border-info/20',
-    sent: 'bg-primary/10 text-primary border-primary/20',
-    response_received: 'bg-success/10 text-success border-success/20',
-    closed: 'bg-muted text-muted-foreground',
+  const statusColors: Record<string, string> = {
+    pending: 'bg-muted text-muted-foreground',
+    in_progress: 'bg-warning/10 text-warning border-warning/20',
+    responded: 'bg-info/10 text-info border-info/20',
+    deleted: 'bg-success/10 text-success border-success/20',
+    verified: 'bg-destructive/10 text-destructive border-destructive/20',
+    updated: 'bg-primary/10 text-primary border-primary/20',
+    failed: 'bg-destructive/10 text-destructive border-destructive/20',
   };
 
-  const getClientName = (clientId: string) => {
-    const client = mockClients.find((c) => c.id === clientId);
-    return client ? `${client.firstName} ${client.lastName}` : 'Unknown';
+  const handleViewLetter = async (item: DisputeItem) => {
+    setSelectedItem(item);
+    setDialogOpen(true);
+    
+    if (item.letter_content) {
+      setLetterContent(item.letter_content);
+      return;
+    }
+
+    setIsGenerating(true);
+    setLetterContent('');
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-dispute-letter', {
+        body: {
+          letterType: item.letter_type || 'factual_dispute',
+          disputableItem: {
+            creditor: item.creditor_name,
+            accountNumber: item.account_number,
+            issueType: item.dispute_reason,
+            disputeReason: item.dispute_reason,
+            applicableLaw: 'FCRA',
+            bureaus: [item.bureau]
+          }
+        }
+      });
+
+      if (error) throw error;
+      setLetterContent(data.letter || 'Unable to generate letter');
+    } catch (err: any) {
+      console.error('Letter generation error:', err);
+      setLetterContent('Failed to generate letter. Please try again.');
+      toast({
+        title: 'Error',
+        description: 'Failed to generate dispute letter',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
+
+  const handleSaveLetter = async () => {
+    if (!selectedItem || !letterContent) return;
+    
+    const saved = await saveLetter(
+      selectedItem.letter_type || 'factual_dispute',
+      letterContent,
+      selectedItem.id
+    );
+
+    if (saved) {
+      toast({ title: "Letter Saved", description: "Letter saved to database successfully." });
+    }
+  };
+
+  const handleMarkAsSent = async () => {
+    if (!selectedItem) return;
+    await updateItemOutcome(selectedItem.id, 'in_progress');
+    setDialogOpen(false);
+    toast({ title: "Marked as Sent", description: "Dispute item marked as sent to bureau." });
+  };
+
+  const handleNewRound = async () => {
+    await createRound();
+  };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <Skeleton className="h-10 w-64" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="p-4">
+                <Skeleton className="h-12 w-full" />
+              </Card>
+            ))}
+          </div>
+          <Skeleton className="h-96 w-full" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -68,7 +186,7 @@ const Disputes = () => {
               Manage all dispute letters and track bureau responses.
             </p>
           </div>
-          <Button className="bg-gradient-primary hover:opacity-90">
+          <Button className="bg-gradient-primary hover:opacity-90" onClick={handleNewRound}>
             <Plus className="w-4 h-4 mr-2" />
             New Dispute Round
           </Button>
@@ -82,8 +200,8 @@ const Disputes = () => {
                 <Clock className="w-5 h-5 text-warning" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{pendingApproval.length}</p>
-                <p className="text-sm text-muted-foreground">Pending Approval</p>
+                <p className="text-2xl font-bold">{pendingItems.length}</p>
+                <p className="text-sm text-muted-foreground">Pending</p>
               </div>
             </div>
           </Card>
@@ -93,7 +211,7 @@ const Disputes = () => {
                 <Send className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{sent.length}</p>
+                <p className="text-2xl font-bold">{inProgressItems.length}</p>
                 <p className="text-sm text-muted-foreground">Sent to Bureaus</p>
               </div>
             </div>
@@ -104,7 +222,7 @@ const Disputes = () => {
                 <CheckCircle className="w-5 h-5 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{responses.length}</p>
+                <p className="text-2xl font-bold">{respondedItems.length}</p>
                 <p className="text-sm text-muted-foreground">Responses</p>
               </div>
             </div>
@@ -115,8 +233,8 @@ const Disputes = () => {
                 <FileText className="w-5 h-5 text-info" />
               </div>
               <div>
-                <p className="text-2xl font-bold">324</p>
-                <p className="text-sm text-muted-foreground">Total This Month</p>
+                <p className="text-2xl font-bold">{rounds.length}</p>
+                <p className="text-sm text-muted-foreground">Total Rounds</p>
               </div>
             </div>
           </Card>
@@ -143,111 +261,138 @@ const Disputes = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="pending_approval">Pending Approval</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="sent">Sent</SelectItem>
-                <SelectItem value="response_received">Response Received</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="responded">Responded</SelectItem>
+                <SelectItem value="deleted">Deleted</SelectItem>
+                <SelectItem value="verified">Verified</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </Card>
 
+        {/* No Data State */}
+        {allItems.length === 0 && (
+          <Card className="p-12 text-center">
+            <FileText className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <h3 className="text-xl font-semibold mb-2">No Dispute Items Yet</h3>
+            <p className="text-muted-foreground mb-4">
+              Import a credit report to automatically create dispute items, or create a new round manually.
+            </p>
+            <Button onClick={handleNewRound}>
+              <Plus className="w-4 h-4 mr-2" />
+              Create First Round
+            </Button>
+          </Card>
+        )}
+
         {/* Disputes List */}
         <div className="space-y-4">
-          {filteredDisputes.map((dispute) => (
-            <Card key={dispute.id} className="p-5 hover:border-primary/30 transition-colors">
+          {filteredItems.map((item) => (
+            <Card key={item.id} className="p-5 hover:border-primary/30 transition-colors">
               <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center flex-wrap gap-3 mb-2">
-                    <h3 className="font-semibold text-foreground">{dispute.letterType}</h3>
+                    <h3 className="font-semibold text-foreground">{item.creditor_name}</h3>
                     <Badge
                       variant="outline"
-                      className={cn('capitalize', statusColors[dispute.status])}
+                      className={cn('capitalize', statusColors[item.outcome] || statusColors.pending)}
                     >
-                      {dispute.status.replace('_', ' ')}
+                      {item.outcome.replace('_', ' ')}
                     </Badge>
                     <Badge variant="secondary" className="capitalize">
-                      {dispute.bureau}
+                      {item.bureau}
                     </Badge>
-                    <Badge variant="outline">Round {dispute.round}</Badge>
+                    <Badge variant="outline">Round {(item as any).round_number}</Badge>
                   </div>
 
                   <p className="text-sm text-muted-foreground mb-3">
-                    <span className="font-medium text-foreground">{getClientName(dispute.clientId)}</span>
+                    <span className="font-medium text-foreground">{item.letter_type}</span>
                     {' · '}
-                    {dispute.reason}
+                    {item.dispute_reason}
                   </p>
 
-                  {dispute.aiRecommendation && (
-                    <div className="flex items-start gap-2 p-3 rounded-lg bg-accent/50 mb-3">
-                      <Sparkles className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                      <p className="text-sm text-accent-foreground">{dispute.aiRecommendation}</p>
-                    </div>
-                  )}
-
                   <div className="flex items-center flex-wrap gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      Created {dispute.createdDate}
-                    </span>
-                    {dispute.sentDate && (
+                    {item.account_number && (
+                      <span className="flex items-center gap-1">
+                        Account: {item.account_number}
+                      </span>
+                    )}
+                    {item.sent_at && (
                       <span className="flex items-center gap-1">
                         <Mail className="w-3 h-3" />
-                        Sent {dispute.sentDate}
+                        Sent {new Date(item.sent_at).toLocaleDateString()}
                       </span>
                     )}
-                    {dispute.responseDate && (
+                    {item.response_received_at && (
                       <span className="flex items-center gap-1">
                         <CheckCircle className="w-3 h-3" />
-                        Response {dispute.responseDate}
-                      </span>
-                    )}
-                    {dispute.documents.length > 0 && (
-                      <span className="flex items-center gap-1">
-                        <FileText className="w-3 h-3" />
-                        {dispute.documents.length} docs attached
+                        Response {new Date(item.response_received_at).toLocaleDateString()}
                       </span>
                     )}
                   </div>
                 </div>
 
                 <div className="flex flex-col items-end gap-3">
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground mb-1">Deletion Probability</p>
-                    <div className="flex items-center gap-2">
-                      <Progress value={dispute.deletionProbability} className="w-24 h-2" />
-                      <span className="text-lg font-bold text-success">
-                        {dispute.deletionProbability}%
-                      </span>
-                    </div>
-                  </div>
-
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" onClick={() => handleViewLetter(item)}>
                       <Eye className="w-4 h-4 mr-1" />
-                      View
+                      View Letter
                     </Button>
-                    {dispute.status === 'pending_approval' && (
-                      <Button size="sm" className="bg-gradient-primary">
-                        <CheckCircle className="w-4 h-4 mr-1" />
-                        Approve
-                      </Button>
-                    )}
-                    {dispute.status === 'approved' && (
-                      <Button size="sm" className="bg-gradient-primary">
+                    {item.outcome === 'pending' && (
+                      <Button 
+                        size="sm" 
+                        className="bg-gradient-primary"
+                        onClick={() => {
+                          handleViewLetter(item);
+                        }}
+                      >
                         <Send className="w-4 h-4 mr-1" />
-                        Send
+                        Generate & Send
                       </Button>
                     )}
-                    <Button size="sm" variant="outline">
-                      <Download className="w-4 h-4" />
-                    </Button>
                   </div>
                 </div>
               </div>
             </Card>
           ))}
         </div>
+
+        {/* Letter View Dialog */}
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-primary" />
+                Dispute Letter - {selectedItem?.creditor_name}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto">
+              {isGenerating ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+                  <p className="text-muted-foreground">Generating dispute letter...</p>
+                </div>
+              ) : (
+                <div className="bg-muted/30 rounded-lg p-6">
+                  <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">{letterContent}</pre>
+                </div>
+              )}
+            </div>
+            {!isGenerating && letterContent && (
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={handleSaveLetter}>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Letter
+                </Button>
+                <Button onClick={handleMarkAsSent}>
+                  <Send className="w-4 h-4 mr-2" />
+                  Mark as Sent
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
