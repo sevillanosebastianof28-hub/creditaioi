@@ -859,7 +859,7 @@ const Landing = () => {
                 <Button 
                   size="lg" 
                   variant="outline"
-                  className="border-white/30 text-white hover:bg-white/10 px-6 sm:px-8 py-5 sm:py-6 text-base sm:text-lg w-full sm:w-auto"
+                  className="border-2 border-white/50 bg-white/10 text-white hover:bg-white/20 hover:border-white/70 px-6 sm:px-8 py-5 sm:py-6 text-base sm:text-lg w-full sm:w-auto backdrop-blur-sm"
                 >
                   Schedule Demo
                 </Button>
