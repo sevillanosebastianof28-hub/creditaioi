@@ -18,27 +18,16 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    const systemPrompt = `You are an elite credit repair analyst with 15+ years of experience and deep expertise in FCRA, FDCPA, HIPAA, and consumer protection laws. Provide data-driven, actionable analysis.`;
+
     let prompt = "";
     let toolSchema: any = {};
 
     if (analysisType === "success_prediction") {
-      prompt = `Analyze these dispute items and predict success probability for each:
-
-ITEMS TO ANALYZE:
-${JSON.stringify(items, null, 2)}
-
-For each item, consider:
-- Type of negative item (collection, late payment, inquiry, etc.)
-- Age of the item
-- Whether documentation issues exist
-- Bureau-specific patterns
-- Legal violation potential (FCRA, FDCPA, etc.)
-
-Provide realistic success predictions based on industry data.`;
-
+      prompt = `Analyze dispute items and predict success probability:\n\n${JSON.stringify(items, null, 2)}\n\nEvaluate legal vulnerabilities, deletion probability factors, and provide strategic recommendations.`;
       toolSchema = {
         name: "predict_success",
-        description: "Predict dispute success for items",
+        description: "Predict dispute success",
         parameters: {
           type: "object",
           properties: {
@@ -48,7 +37,7 @@ Provide realistic success predictions based on industry data.`;
                 type: "object",
                 properties: {
                   itemId: { type: "string" },
-                  successProbability: { type: "number", minimum: 0, maximum: 100 },
+                  successProbability: { type: "number" },
                   confidence: { type: "string", enum: ["high", "medium", "low"] },
                   bestStrategy: { type: "string" },
                   estimatedDays: { type: "number" },
@@ -63,19 +52,7 @@ Provide realistic success predictions based on industry data.`;
         }
       };
     } else if (analysisType === "bureau_forecast") {
-      prompt = `Predict bureau response timeline and likely outcomes for disputes sent to ${bureau}:
-
-PENDING DISPUTES:
-${JSON.stringify(items, null, 2)}
-
-Consider:
-- ${bureau}'s typical response patterns
-- Current time of year (holiday delays, etc.)
-- Item types and complexity
-- Historical patterns for similar disputes
-
-Provide realistic forecasts.`;
-
+      prompt = `Forecast bureau responses for ${bureau}:\n\n${JSON.stringify(items, null, 2)}`;
       toolSchema = {
         name: "forecast_responses",
         description: "Forecast bureau responses",
@@ -110,19 +87,7 @@ Provide realistic forecasts.`;
         }
       };
     } else if (analysisType === "smart_priority") {
-      prompt = `Analyze and prioritize these disputable items by potential score impact:
-
-ITEMS:
-${JSON.stringify(items, null, 2)}
-
-Rank by:
-1. Potential score impact (highest first)
-2. Success probability
-3. Strategic timing
-4. Effort required
-
-Consider item age, balance, type, and bureau reporting patterns.`;
-
+      prompt = `Prioritize disputable items by score impact:\n\n${JSON.stringify(items, null, 2)}`;
       toolSchema = {
         name: "prioritize_items",
         description: "Prioritize items by score impact",
@@ -171,7 +136,7 @@ Consider item age, balance, type, and bureau reporting patterns.`;
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: "You are an expert credit repair analyst with deep knowledge of FCRA, FDCPA, and bureau patterns. Provide accurate, data-driven predictions." },
+          { role: "system", content: systemPrompt },
           { role: "user", content: prompt },
         ],
         tools: [{ type: "function", function: toolSchema }],

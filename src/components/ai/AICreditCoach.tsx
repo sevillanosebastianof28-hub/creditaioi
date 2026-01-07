@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Bot, Send, User, Sparkles, X, Maximize2, Minimize2 } from 'lucide-react';
+import { Bot, Send, User, Sparkles, X, Maximize2, Minimize2, MessageCircle, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCreditData } from '@/hooks/useCreditData';
 import { toast } from 'sonner';
@@ -133,122 +134,193 @@ export function AICreditCoach() {
 
   if (!isOpen) {
     return (
-      <Button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-gradient-primary shadow-lg hover:opacity-90 z-50"
+      <motion.div
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="fixed bottom-6 right-6 z-50"
       >
-        <Bot className="w-6 h-6" />
-      </Button>
+        <Button
+          onClick={() => setIsOpen(true)}
+          className="h-16 w-16 rounded-full bg-gradient-primary shadow-2xl hover:opacity-90 relative overflow-hidden group"
+        >
+          <motion.div
+            animate={{ rotate: [0, 10, -10, 0] }}
+            transition={{ repeat: Infinity, duration: 2, repeatDelay: 3 }}
+          >
+            <Bot className="w-7 h-7" />
+          </motion.div>
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-success rounded-full animate-pulse" />
+          <motion.div 
+            className="absolute inset-0 bg-white/20 rounded-full"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1.5, opacity: 0 }}
+            transition={{ repeat: Infinity, duration: 2 }}
+          />
+        </Button>
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 1 }}
+          className="absolute bottom-0 right-20 bg-card border shadow-lg rounded-lg px-3 py-2 text-sm whitespace-nowrap"
+        >
+          <MessageCircle className="w-3 h-3 inline mr-1" />
+          AI Coach is ready!
+        </motion.div>
+      </motion.div>
     );
   }
 
   return (
-    <Card className={`fixed z-50 shadow-2xl transition-all duration-300 ${
-      isExpanded 
-        ? 'inset-4 md:inset-8' 
-        : 'bottom-6 right-6 w-[380px] h-[500px]'
-    }`}>
-      <CardHeader className="pb-2 border-b">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <CardTitle className="text-base">AI Credit Coach</CardTitle>
-              <p className="text-xs text-muted-foreground">24/7 Credit Guidance</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" onClick={() => setIsExpanded(!isExpanded)}>
-              {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="p-0 flex flex-col h-[calc(100%-80px)]">
-        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-          <div className="space-y-4">
-            {messages.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                {msg.role === 'assistant' && (
-                  <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Bot className="w-3 h-3 text-primary" />
-                  </div>
-                )}
-                <div
-                  className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
-                    msg.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted'
-                  }`}
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        className={`fixed z-50 ${
+          isExpanded 
+            ? 'inset-4 md:inset-8' 
+            : 'bottom-6 right-6 w-[400px] h-[550px]'
+        }`}
+      >
+        <Card className="h-full shadow-2xl border-primary/20 overflow-hidden">
+          <CardHeader className="pb-2 border-b bg-gradient-to-r from-primary/5 to-transparent">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <motion.div 
+                  className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center"
+                  whileHover={{ scale: 1.05 }}
                 >
-                  {msg.content || (isLoading && idx === messages.length - 1 ? (
-                    <span className="flex items-center gap-1">
-                      <span className="animate-pulse">●</span>
-                      <span className="animate-pulse delay-100">●</span>
-                      <span className="animate-pulse delay-200">●</span>
-                    </span>
-                  ) : null)}
+                  <Sparkles className="w-5 h-5 text-white" />
+                </motion.div>
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    AI Credit Coach
+                    <Badge variant="outline" className="text-[10px] animate-pulse">
+                      <Zap className="w-2 h-2 mr-1" />
+                      Online
+                    </Badge>
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">Your 24/7 Credit Expert</p>
                 </div>
-                {msg.role === 'user' && (
-                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <User className="w-3 h-3 text-primary-foreground" />
-                  </div>
-                )}
               </div>
-            ))}
-          </div>
-        </ScrollArea>
-
-        {messages.length === 1 && (
-          <div className="px-4 pb-2">
-            <p className="text-xs text-muted-foreground mb-2">Quick questions:</p>
-            <div className="flex flex-wrap gap-1">
-              {quickQuestions.map((q, idx) => (
-                <Badge
-                  key={idx}
-                  variant="outline"
-                  className="cursor-pointer hover:bg-primary/10 text-xs"
-                  onClick={() => {
-                    setInput(q);
-                    setTimeout(sendMessage, 100);
-                  }}
-                >
-                  {q}
-                </Badge>
-              ))}
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" onClick={() => setIsExpanded(!isExpanded)}>
+                  {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          </CardHeader>
+          <CardContent className="p-0 flex flex-col h-[calc(100%-90px)]">
+            <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+              <div className="space-y-4">
+                {messages.map((msg, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    {msg.role === 'assistant' && (
+                      <div className="w-7 h-7 rounded-lg bg-gradient-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Bot className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+                    <div
+                      className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
+                        msg.role === 'user'
+                          ? 'bg-primary text-primary-foreground rounded-br-sm'
+                          : 'bg-muted rounded-bl-sm'
+                      }`}
+                    >
+                      {msg.content || (isLoading && idx === messages.length - 1 ? (
+                        <span className="flex items-center gap-1 py-1">
+                          <motion.span 
+                            animate={{ opacity: [0.4, 1, 0.4] }}
+                            transition={{ repeat: Infinity, duration: 1 }}
+                            className="w-2 h-2 rounded-full bg-current"
+                          />
+                          <motion.span 
+                            animate={{ opacity: [0.4, 1, 0.4] }}
+                            transition={{ repeat: Infinity, duration: 1, delay: 0.2 }}
+                            className="w-2 h-2 rounded-full bg-current"
+                          />
+                          <motion.span 
+                            animate={{ opacity: [0.4, 1, 0.4] }}
+                            transition={{ repeat: Infinity, duration: 1, delay: 0.4 }}
+                            className="w-2 h-2 rounded-full bg-current"
+                          />
+                        </span>
+                      ) : null)}
+                    </div>
+                    {msg.role === 'user' && (
+                      <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <User className="w-4 h-4 text-primary-foreground" />
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            </ScrollArea>
 
-        <div className="p-4 border-t">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              sendMessage();
-            }}
-            className="flex gap-2"
-          >
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about your credit..."
-              disabled={isLoading}
-              className="flex-1"
-            />
-            <Button type="submit" disabled={isLoading || !input.trim()} size="icon">
-              <Send className="w-4 h-4" />
-            </Button>
-          </form>
-        </div>
-      </CardContent>
-    </Card>
+            {messages.length === 1 && (
+              <div className="px-4 pb-3">
+                <p className="text-xs text-muted-foreground mb-2 font-medium">Quick questions:</p>
+                <div className="flex flex-wrap gap-2">
+                  {quickQuestions.map((q, idx) => (
+                    <motion.div
+                      key={idx}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: idx * 0.1 }}
+                    >
+                      <Badge
+                        variant="outline"
+                        className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-xs py-1.5 px-3"
+                        onClick={() => {
+                          setInput(q);
+                          setTimeout(sendMessage, 100);
+                        }}
+                      >
+                        {q}
+                      </Badge>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="p-4 border-t bg-muted/30">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  sendMessage();
+                }}
+                className="flex gap-2"
+              >
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Ask me anything about your credit..."
+                  disabled={isLoading}
+                  className="flex-1 bg-background"
+                />
+                <Button 
+                  type="submit" 
+                  disabled={isLoading || !input.trim()} 
+                  size="icon"
+                  className="bg-gradient-primary hover:opacity-90"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </form>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </AnimatePresence>
   );
 }
