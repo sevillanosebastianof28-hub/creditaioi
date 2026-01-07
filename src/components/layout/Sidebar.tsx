@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useBrand } from '@/contexts/BrandContext';
 import {
   LayoutDashboard,
   Users,
@@ -41,6 +42,7 @@ const menuItems = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { brand } = useBrand();
 
   return (
     <aside
@@ -53,11 +55,19 @@ export function Sidebar() {
       <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <img src="/images/credit-ai-logo.png" alt="Credit AI" className="h-8 w-auto" />
+            {brand.logo_url ? (
+              <img src={brand.logo_url} alt={brand.company_name} className="h-8 w-auto" />
+            ) : (
+              <img src="/images/credit-ai-logo.png" alt="Credit AI" className="h-8 w-auto" />
+            )}
           </div>
         )}
         {collapsed && (
-          <img src="/images/credit-ai-logo.png" alt="Credit AI" className="h-8 w-auto mx-auto" />
+          brand.logo_url ? (
+            <img src={brand.logo_url} alt={brand.company_name} className="h-8 w-auto mx-auto" />
+          ) : (
+            <img src="/images/credit-ai-logo.png" alt="Credit AI" className="h-8 w-auto mx-auto" />
+          )
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}

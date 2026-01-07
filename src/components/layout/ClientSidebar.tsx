@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useBrand } from '@/contexts/BrandContext';
 import {
   LayoutDashboard,
   FileText,
@@ -34,6 +35,7 @@ const clientMenuItems = [
 export function ClientSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { brand } = useBrand();
 
   return (
     <aside
@@ -46,16 +48,26 @@ export function ClientSidebar() {
       <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-sidebar-primary-foreground" />
-            </div>
-            <span className="font-bold text-lg text-sidebar-accent-foreground">CreditAI</span>
+            {brand.logo_url ? (
+              <img src={brand.logo_url} alt={brand.company_name} className="h-8 w-auto" />
+            ) : (
+              <>
+                <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-sidebar-primary-foreground" />
+                </div>
+                <span className="font-bold text-lg text-sidebar-accent-foreground">{brand.company_name}</span>
+              </>
+            )}
           </div>
         )}
         {collapsed && (
-          <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center mx-auto">
-            <Sparkles className="w-5 h-5 text-sidebar-primary-foreground" />
-          </div>
+          brand.logo_url ? (
+            <img src={brand.logo_url} alt={brand.company_name} className="h-8 w-auto mx-auto" />
+          ) : (
+            <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center mx-auto">
+              <Sparkles className="w-5 h-5 text-sidebar-primary-foreground" />
+            </div>
+          )
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}

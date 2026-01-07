@@ -107,6 +107,65 @@ export type Database = {
         }
         Relationships: []
       }
+      brand_settings: {
+        Row: {
+          accent_color: string | null
+          agency_id: string | null
+          company_name: string
+          created_at: string
+          custom_domain: string | null
+          favicon_url: string | null
+          footer_text: string | null
+          id: string
+          logo_url: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          support_email: string | null
+          support_phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string | null
+          agency_id?: string | null
+          company_name?: string
+          created_at?: string
+          custom_domain?: string | null
+          favicon_url?: string | null
+          footer_text?: string | null
+          id?: string
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          support_email?: string | null
+          support_phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string | null
+          agency_id?: string | null
+          company_name?: string
+          created_at?: string
+          custom_domain?: string | null
+          favicon_url?: string | null
+          footer_text?: string | null
+          id?: string
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          support_email?: string | null
+          support_phone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_settings_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: true
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bureau_patterns: {
         Row: {
           bureau: Database["public"]["Enums"]["bureau_type"]
