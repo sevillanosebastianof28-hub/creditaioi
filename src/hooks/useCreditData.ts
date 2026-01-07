@@ -101,7 +101,14 @@ export function useCreditData() {
           // Transform scores if they're objects with {date, score} format or have capitalized keys
           const transformScore = (val: any): number => {
             if (typeof val === 'number') return val;
-            if (val && typeof val === 'object' && 'score' in val) return Number(val.score) || 0;
+            if (val && typeof val === 'object') {
+              // Handle {score: X} format
+              if ('score' in val) return Number(val.score) || 0;
+              // If it's an object with bureau keys, it's malformed - return 0
+              if ('Experian' in val || 'experian' in val || 'Equifax' in val || 'equifax' in val) {
+                return 0; // This is a nested object error, don't render it
+              }
+            }
             return Number(val) || 0;
           };
 
@@ -117,16 +124,30 @@ export function useCreditData() {
           const report = reportData.report;
           
           // Handle scores object that might have capitalized keys
+          // First check if scores is a properly structured object
+          let scoresObj = report.scores || {};
+          
+          // If scores is empty or not an object, try to find scores in other places
+          if (!scoresObj || typeof scoresObj !== 'object') {
+            scoresObj = {};
+          }
+          
           const transformedScores = {
-            experian: getScoreFromObject(report.scores, 'experian'),
-            equifax: getScoreFromObject(report.scores, 'equifax'),
-            transunion: getScoreFromObject(report.scores, 'transunion'),
+            experian: getScoreFromObject(scoresObj, 'experian'),
+            equifax: getScoreFromObject(scoresObj, 'equifax'),
+            transunion: getScoreFromObject(scoresObj, 'transunion'),
           };
 
+          // Handle previousScores
+          let previousScoresObj = report.previousScores || {};
+          if (!previousScoresObj || typeof previousScoresObj !== 'object') {
+            previousScoresObj = {};
+          }
+
           const transformedPreviousScores = {
-            experian: getScoreFromObject(report.previousScores, 'experian') || Math.max(0, transformedScores.experian - 25),
-            equifax: getScoreFromObject(report.previousScores, 'equifax') || Math.max(0, transformedScores.equifax - 25),
-            transunion: getScoreFromObject(report.previousScores, 'transunion') || Math.max(0, transformedScores.transunion - 25),
+            experian: getScoreFromObject(previousScoresObj, 'experian') || Math.max(0, transformedScores.experian - 25),
+            equifax: getScoreFromObject(previousScoresObj, 'equifax') || Math.max(0, transformedScores.equifax - 25),
+            transunion: getScoreFromObject(previousScoresObj, 'transunion') || Math.max(0, transformedScores.transunion - 25),
           };
 
           // Generate score history if empty
@@ -146,18 +167,32 @@ export function useCreditData() {
             }
           }
 
+          // Helper to extract a single number from potentially object values
+          const extractNumber = (val: any): number => {
+            if (typeof val === 'number') return val;
+            if (val && typeof val === 'object') {
+              // If it's an object with bureau keys (e.g., {Equifax: 23, Experian: 24}), average them
+              const values = Object.values(val).filter((v): v is number => typeof v === 'number');
+              if (values.length > 0) {
+                return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+              }
+              return 0;
+            }
+            return Number(val) || 0;
+          };
+
           const transformedData: CreditReportData = {
             ...report,
             scores: transformedScores,
             previousScores: transformedPreviousScores,
             scoreHistory,
             summary: {
-              totalAccounts: report.summary?.totalAccounts || 0,
-              negativeAccounts: report.summary?.negativeCount || report.summary?.negativeAccounts || 0,
-              onTimePayments: report.summary?.onTimePaymentPercentage || report.summary?.onTimePayments || 85,
-              creditUtilization: report.summary?.creditUtilization || 30,
-              avgAccountAge: report.summary?.avgAccountAge || '3 years',
-              totalDebt: report.summary?.totalDebt || 0,
+              totalAccounts: extractNumber(report.summary?.totalAccounts),
+              negativeAccounts: extractNumber(report.summary?.negativeCount) || extractNumber(report.summary?.negativeAccounts),
+              onTimePayments: extractNumber(report.summary?.onTimePaymentPercentage) || extractNumber(report.summary?.onTimePayments) || 85,
+              creditUtilization: extractNumber(report.summary?.creditUtilization) || 30,
+              avgAccountAge: typeof report.summary?.avgAccountAge === 'string' ? report.summary.avgAccountAge : '3 years',
+              totalDebt: extractNumber(report.summary?.totalDebt),
             },
           };
 
