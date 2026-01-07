@@ -111,17 +111,27 @@ export default function ClientDashboard() {
     );
   }
 
-  // Safely extract numeric scores (handle both number and {date, score} formats)
+  // Safely extract numeric scores (handle both number and {date, score} formats, and case variations)
   const getNumericScore = (value: any): number => {
     if (typeof value === 'number') return value;
     if (value && typeof value === 'object' && 'score' in value) return Number(value.score) || 0;
     return Number(value) || 0;
   };
 
+  // Handle both lowercase and capitalized score keys
+  const getScoreValue = (scores: any, bureau: 'experian' | 'equifax' | 'transunion'): number => {
+    if (!scores || typeof scores !== 'object') return 0;
+    
+    // Try lowercase first, then capitalized
+    const capitalizedKey = bureau.charAt(0).toUpperCase() + bureau.slice(1);
+    const value = scores[bureau] ?? scores[capitalizedKey] ?? scores[bureau.toLowerCase()] ?? 0;
+    return getNumericScore(value);
+  };
+
   const clientScores = [
-    { bureau: 'Experian', score: getNumericScore(creditData.scores.experian), previousScore: getNumericScore(creditData.previousScores.experian) },
-    { bureau: 'Equifax', score: getNumericScore(creditData.scores.equifax), previousScore: getNumericScore(creditData.previousScores.equifax) },
-    { bureau: 'TransUnion', score: getNumericScore(creditData.scores.transunion), previousScore: getNumericScore(creditData.previousScores.transunion) },
+    { bureau: 'Experian', score: getScoreValue(creditData.scores, 'experian'), previousScore: getScoreValue(creditData.previousScores, 'experian') },
+    { bureau: 'Equifax', score: getScoreValue(creditData.scores, 'equifax'), previousScore: getScoreValue(creditData.previousScores, 'equifax') },
+    { bureau: 'TransUnion', score: getScoreValue(creditData.scores, 'transunion'), previousScore: getScoreValue(creditData.previousScores, 'transunion') },
   ];
 
   // Recent updates based on actual data
