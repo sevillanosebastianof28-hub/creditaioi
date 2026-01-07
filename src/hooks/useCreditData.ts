@@ -98,24 +98,35 @@ export function useCreditData() {
         if (reportError) throw reportError;
 
         if (reportData.report) {
-          // Transform scores if they're objects with {date, score} format
+          // Transform scores if they're objects with {date, score} format or have capitalized keys
           const transformScore = (val: any): number => {
             if (typeof val === 'number') return val;
             if (val && typeof val === 'object' && 'score' in val) return Number(val.score) || 0;
             return Number(val) || 0;
           };
 
+          // Helper to get score with case-insensitive key lookup
+          const getScoreFromObject = (obj: any, key: string): number => {
+            if (!obj || typeof obj !== 'object') return 0;
+            // Try exact key, capitalized key, and lowercase key
+            const capitalizedKey = key.charAt(0).toUpperCase() + key.slice(1);
+            const value = obj[key] ?? obj[capitalizedKey] ?? obj[key.toLowerCase()];
+            return transformScore(value);
+          };
+
           const report = reportData.report;
+          
+          // Handle scores object that might have capitalized keys
           const transformedScores = {
-            experian: transformScore(report.scores?.experian),
-            equifax: transformScore(report.scores?.equifax),
-            transunion: transformScore(report.scores?.transunion),
+            experian: getScoreFromObject(report.scores, 'experian'),
+            equifax: getScoreFromObject(report.scores, 'equifax'),
+            transunion: getScoreFromObject(report.scores, 'transunion'),
           };
 
           const transformedPreviousScores = {
-            experian: transformScore(report.previousScores?.experian) || Math.max(0, transformedScores.experian - 25),
-            equifax: transformScore(report.previousScores?.equifax) || Math.max(0, transformedScores.equifax - 25),
-            transunion: transformScore(report.previousScores?.transunion) || Math.max(0, transformedScores.transunion - 25),
+            experian: getScoreFromObject(report.previousScores, 'experian') || Math.max(0, transformedScores.experian - 25),
+            equifax: getScoreFromObject(report.previousScores, 'equifax') || Math.max(0, transformedScores.equifax - 25),
+            transunion: getScoreFromObject(report.previousScores, 'transunion') || Math.max(0, transformedScores.transunion - 25),
           };
 
           // Generate score history if empty
