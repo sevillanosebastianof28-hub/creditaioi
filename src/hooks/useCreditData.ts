@@ -59,6 +59,94 @@ export interface ConnectionStatus {
   reportUpdatedAt?: string;
 }
 
+// Helper functions for data transformation (defined outside component to avoid recreation)
+const transformScore = (val: any): number => {
+  if (typeof val === 'number') return val;
+  if (val && typeof val === 'object') {
+    if ('score' in val) return Number(val.score) || 0;
+    if ('Experian' in val || 'experian' in val || 'Equifax' in val || 'equifax' in val) {
+      return 0;
+    }
+  }
+  return Number(val) || 0;
+};
+
+const getScoreFromObject = (obj: any, key: string): number => {
+  if (!obj || typeof obj !== 'object') return 0;
+  const capitalizedKey = key.charAt(0).toUpperCase() + key.slice(1);
+  const value = obj[key] ?? obj[capitalizedKey] ?? obj[key.toLowerCase()];
+  return transformScore(value);
+};
+
+const extractNumber = (val: any): number => {
+  if (typeof val === 'number') return val;
+  if (val && typeof val === 'object') {
+    const values = Object.values(val).filter((v): v is number => typeof v === 'number');
+    if (values.length > 0) {
+      return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+    }
+    return 0;
+  }
+  return Number(val) || 0;
+};
+
+// Transform raw API data to safe CreditReportData format
+function transformCreditData(report: any): CreditReportData {
+  let scoresObj = report.scores || {};
+  if (!scoresObj || typeof scoresObj !== 'object') {
+    scoresObj = {};
+  }
+
+  const transformedScores = {
+    experian: getScoreFromObject(scoresObj, 'experian'),
+    equifax: getScoreFromObject(scoresObj, 'equifax'),
+    transunion: getScoreFromObject(scoresObj, 'transunion'),
+  };
+
+  let previousScoresObj = report.previousScores || {};
+  if (!previousScoresObj || typeof previousScoresObj !== 'object') {
+    previousScoresObj = {};
+  }
+
+  const transformedPreviousScores = {
+    experian: getScoreFromObject(previousScoresObj, 'experian') || Math.max(0, transformedScores.experian - 25),
+    equifax: getScoreFromObject(previousScoresObj, 'equifax') || Math.max(0, transformedScores.equifax - 25),
+    transunion: getScoreFromObject(previousScoresObj, 'transunion') || Math.max(0, transformedScores.transunion - 25),
+  };
+
+  let scoreHistory = report.scoreHistory || [];
+  if (!scoreHistory.length && (transformedScores.experian || transformedScores.equifax || transformedScores.transunion)) {
+    scoreHistory = [];
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const variance = (5 - i) * 8;
+      scoreHistory.push({
+        date: date.toISOString().split('T')[0],
+        experian: Math.max(500, transformedScores.experian - variance + Math.floor(Math.random() * 10)),
+        equifax: Math.max(500, transformedScores.equifax - variance + Math.floor(Math.random() * 10)),
+        transunion: Math.max(500, transformedScores.transunion - variance + Math.floor(Math.random() * 10)),
+      });
+    }
+  }
+
+  return {
+    scores: transformedScores,
+    previousScores: transformedPreviousScores,
+    scoreHistory,
+    negativeItems: Array.isArray(report.negativeItems) ? report.negativeItems : [],
+    inquiries: Array.isArray(report.inquiries) ? report.inquiries : [],
+    summary: {
+      totalAccounts: extractNumber(report.summary?.totalAccounts),
+      negativeAccounts: extractNumber(report.summary?.negativeCount) || extractNumber(report.summary?.negativeAccounts),
+      onTimePayments: extractNumber(report.summary?.onTimePaymentPercentage) || extractNumber(report.summary?.onTimePayments) || 85,
+      creditUtilization: extractNumber(report.summary?.creditUtilization) || 30,
+      avgAccountAge: typeof report.summary?.avgAccountAge === 'string' ? report.summary.avgAccountAge : '3 years',
+      totalDebt: extractNumber(report.summary?.totalDebt),
+    },
+  };
+}
+
 export function useCreditData() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -74,7 +162,6 @@ export function useCreditData() {
     }
 
     try {
-      // Get connection status and report
       const { data: statusData, error: statusError } = await supabase.functions.invoke('smartcredit-sync', {
         body: { action: 'get_status', userId: user.id }
       });
@@ -89,7 +176,6 @@ export function useCreditData() {
         reportUpdatedAt: statusData.reportUpdatedAt
       });
 
-      // If connected and has report, fetch the report data
       if (statusData.hasReport) {
         const { data: reportData, error: reportError } = await supabase.functions.invoke('smartcredit-sync', {
           body: { action: 'get_report', userId: user.id }
@@ -98,104 +184,7 @@ export function useCreditData() {
         if (reportError) throw reportError;
 
         if (reportData.report) {
-          // Transform scores if they're objects with {date, score} format or have capitalized keys
-          const transformScore = (val: any): number => {
-            if (typeof val === 'number') return val;
-            if (val && typeof val === 'object') {
-              // Handle {score: X} format
-              if ('score' in val) return Number(val.score) || 0;
-              // If it's an object with bureau keys, it's malformed - return 0
-              if ('Experian' in val || 'experian' in val || 'Equifax' in val || 'equifax' in val) {
-                return 0; // This is a nested object error, don't render it
-              }
-            }
-            return Number(val) || 0;
-          };
-
-          // Helper to get score with case-insensitive key lookup
-          const getScoreFromObject = (obj: any, key: string): number => {
-            if (!obj || typeof obj !== 'object') return 0;
-            // Try exact key, capitalized key, and lowercase key
-            const capitalizedKey = key.charAt(0).toUpperCase() + key.slice(1);
-            const value = obj[key] ?? obj[capitalizedKey] ?? obj[key.toLowerCase()];
-            return transformScore(value);
-          };
-
-          const report = reportData.report;
-          
-          // Handle scores object that might have capitalized keys
-          // First check if scores is a properly structured object
-          let scoresObj = report.scores || {};
-          
-          // If scores is empty or not an object, try to find scores in other places
-          if (!scoresObj || typeof scoresObj !== 'object') {
-            scoresObj = {};
-          }
-          
-          const transformedScores = {
-            experian: getScoreFromObject(scoresObj, 'experian'),
-            equifax: getScoreFromObject(scoresObj, 'equifax'),
-            transunion: getScoreFromObject(scoresObj, 'transunion'),
-          };
-
-          // Handle previousScores
-          let previousScoresObj = report.previousScores || {};
-          if (!previousScoresObj || typeof previousScoresObj !== 'object') {
-            previousScoresObj = {};
-          }
-
-          const transformedPreviousScores = {
-            experian: getScoreFromObject(previousScoresObj, 'experian') || Math.max(0, transformedScores.experian - 25),
-            equifax: getScoreFromObject(previousScoresObj, 'equifax') || Math.max(0, transformedScores.equifax - 25),
-            transunion: getScoreFromObject(previousScoresObj, 'transunion') || Math.max(0, transformedScores.transunion - 25),
-          };
-
-          // Generate score history if empty
-          let scoreHistory = report.scoreHistory || [];
-          if (!scoreHistory.length && (transformedScores.experian || transformedScores.equifax || transformedScores.transunion)) {
-            scoreHistory = [];
-            for (let i = 5; i >= 0; i--) {
-              const date = new Date();
-              date.setMonth(date.getMonth() - i);
-              const variance = (5 - i) * 8;
-              scoreHistory.push({
-                date: date.toISOString().split('T')[0],
-                experian: Math.max(500, transformedScores.experian - variance + Math.floor(Math.random() * 10)),
-                equifax: Math.max(500, transformedScores.equifax - variance + Math.floor(Math.random() * 10)),
-                transunion: Math.max(500, transformedScores.transunion - variance + Math.floor(Math.random() * 10)),
-              });
-            }
-          }
-
-          // Helper to extract a single number from potentially object values
-          const extractNumber = (val: any): number => {
-            if (typeof val === 'number') return val;
-            if (val && typeof val === 'object') {
-              // If it's an object with bureau keys (e.g., {Equifax: 23, Experian: 24}), average them
-              const values = Object.values(val).filter((v): v is number => typeof v === 'number');
-              if (values.length > 0) {
-                return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
-              }
-              return 0;
-            }
-            return Number(val) || 0;
-          };
-
-          const transformedData: CreditReportData = {
-            ...report,
-            scores: transformedScores,
-            previousScores: transformedPreviousScores,
-            scoreHistory,
-            summary: {
-              totalAccounts: extractNumber(report.summary?.totalAccounts),
-              negativeAccounts: extractNumber(report.summary?.negativeCount) || extractNumber(report.summary?.negativeAccounts),
-              onTimePayments: extractNumber(report.summary?.onTimePaymentPercentage) || extractNumber(report.summary?.onTimePayments) || 85,
-              creditUtilization: extractNumber(report.summary?.creditUtilization) || 30,
-              avgAccountAge: typeof report.summary?.avgAccountAge === 'string' ? report.summary.avgAccountAge : '3 years',
-              totalDebt: extractNumber(report.summary?.totalDebt),
-            },
-          };
-
+          const transformedData = transformCreditData(reportData.report);
           setCreditData(transformedData);
         }
       }
@@ -219,7 +208,9 @@ export function useCreditData() {
       if (error) throw error;
 
       if (data.creditData) {
-        setCreditData(data.creditData as CreditReportData);
+        // Apply the same transformation to refreshed data
+        const transformedData = transformCreditData(data.creditData);
+        setCreditData(transformedData);
         setConnectionStatus(prev => ({
           ...prev,
           lastSyncAt: data.lastSyncAt,
