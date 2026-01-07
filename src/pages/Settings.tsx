@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import { BrandingSettings } from '@/components/settings/BrandingSettings';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Settings as SettingsIcon,
   User,
@@ -17,9 +19,13 @@ import {
   Key,
   Globe,
   Palette,
+  Brush,
 } from 'lucide-react';
 
 const Settings = () => {
+  const { role } = useAuth();
+  const isAgencyOwner = role === 'agency_owner';
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -35,12 +41,15 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="bg-secondary">
+          <TabsList className="bg-secondary flex-wrap">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
             <TabsTrigger value="appearance">Appearance</TabsTrigger>
+            {isAgencyOwner && (
+              <TabsTrigger value="branding">White Label</TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="profile">
@@ -270,6 +279,12 @@ const Settings = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {isAgencyOwner && (
+            <TabsContent value="branding">
+              <BrandingSettings />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </DashboardLayout>
