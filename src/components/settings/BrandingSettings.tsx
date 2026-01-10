@@ -6,9 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { useBrandSettings, BrandSettings } from '@/hooks/useBrandSettings';
+import { ColorPicker } from './ColorPicker';
+import { LogoUploader } from './LogoUploader';
+import { BrandPreviewPanel } from './BrandPreviewPanel';
 import { 
   Palette, 
-  Image, 
+  Building2, 
   Globe, 
   Mail, 
   Phone, 
@@ -16,12 +19,15 @@ import {
   Loader2,
   Eye,
   RefreshCw,
+  Sparkles,
+  Check,
 } from 'lucide-react';
 
 export function BrandingSettings() {
   const { brandSettings, isLoading, isSaving, saveBrandSettings } = useBrandSettings();
   const [formData, setFormData] = useState<Partial<BrandSettings>>({});
   const [previewMode, setPreviewMode] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
     if (!isLoading) {
@@ -31,14 +37,19 @@ export function BrandingSettings() {
 
   const handleChange = (field: keyof BrandSettings, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    setHasChanges(true);
   };
 
   const handleSave = async () => {
-    await saveBrandSettings(formData);
+    const success = await saveBrandSettings(formData);
+    if (success) {
+      setHasChanges(false);
+      // Apply colors globally
+      applyColorsGlobally();
+    }
   };
 
-  const handlePreview = () => {
-    // Apply colors temporarily for preview
+  const applyColorsGlobally = () => {
     const root = document.documentElement;
     if (formData.primary_color) {
       root.style.setProperty('--primary', formData.primary_color);
@@ -49,17 +60,21 @@ export function BrandingSettings() {
     if (formData.accent_color) {
       root.style.setProperty('--accent', formData.accent_color);
     }
+  };
+
+  const handlePreview = () => {
+    applyColorsGlobally();
     setPreviewMode(true);
   };
 
   const handleReset = () => {
-    // Reset to saved values
     const root = document.documentElement;
     root.style.setProperty('--primary', brandSettings.primary_color);
     root.style.setProperty('--secondary', brandSettings.secondary_color);
     root.style.setProperty('--accent', brandSettings.accent_color);
     setFormData(brandSettings);
     setPreviewMode(false);
+    setHasChanges(false);
   };
 
   if (isLoading) {
@@ -73,20 +88,40 @@ export function BrandingSettings() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Brand Identity */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Image className="w-5 h-5" />
-            Brand Identity
-          </CardTitle>
-          <CardDescription>
-            Upload your logo and customize your brand name to white-label the platform.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Settings Column */}
+      <div className="lg:col-span-2 space-y-6">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-primary" />
+              White Label Settings
+            </h2>
+            <p className="text-muted-foreground mt-1">
+              Customize your platform's appearance for your clients
+            </p>
+          </div>
+          {hasChanges && (
+            <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-3 py-1 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              Unsaved changes
+            </div>
+          )}
+        </div>
+
+        {/* Brand Identity */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-primary" />
+              Brand Identity
+            </CardTitle>
+            <CardDescription>
+              Upload your logo and set your company name to personalize the platform for your clients.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="company_name">Company Name</Label>
               <Input
@@ -94,178 +129,125 @@ export function BrandingSettings() {
                 value={formData.company_name || ''}
                 onChange={(e) => handleChange('company_name', e.target.value)}
                 placeholder="Your Company Name"
+                className="max-w-md"
               />
               <p className="text-xs text-muted-foreground">
-                This will appear in the header and browser title
+                This appears in the header, browser title, and throughout the platform
               </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="logo_url">Logo URL</Label>
-              <Input
-                id="logo_url"
-                value={formData.logo_url || ''}
-                onChange={(e) => handleChange('logo_url', e.target.value)}
-                placeholder="https://example.com/logo.png"
-              />
-              <p className="text-xs text-muted-foreground">
-                Recommended size: 200x50px (PNG or SVG)
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="favicon_url">Favicon URL</Label>
-              <Input
-                id="favicon_url"
-                value={formData.favicon_url || ''}
-                onChange={(e) => handleChange('favicon_url', e.target.value)}
-                placeholder="https://example.com/favicon.ico"
-              />
-              <p className="text-xs text-muted-foreground">
-                Browser tab icon (ICO or PNG, 32x32px)
-              </p>
-            </div>
-          </div>
 
-          {formData.logo_url && (
-            <div className="p-4 bg-muted rounded-lg">
-              <p className="text-sm font-medium mb-2">Logo Preview</p>
-              <img 
-                src={formData.logo_url} 
-                alt="Logo preview" 
-                className="h-12 object-contain"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
+            <Separator />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <LogoUploader
+                label="Company Logo"
+                value={formData.logo_url}
+                onChange={(url) => handleChange('logo_url', url)}
+                description="Recommended: 200x50px transparent PNG or SVG"
+                type="logo"
+              />
+              <LogoUploader
+                label="Favicon"
+                value={formData.favicon_url}
+                onChange={(url) => handleChange('favicon_url', url)}
+                description="Browser tab icon: 32x32px PNG or ICO"
+                type="favicon"
               />
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Brand Colors */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Palette className="w-5 h-5" />
-            Brand Colors
-          </CardTitle>
-          <CardDescription>
-            Customize the color scheme to match your brand identity. Use HSL format (e.g., "142 76% 36%").
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="primary_color">Primary Color</Label>
-              <div className="flex gap-2">
-                <div 
-                  className="w-10 h-10 rounded-lg border border-border flex-shrink-0"
-                  style={{ backgroundColor: `hsl(${formData.primary_color || '142 76% 36%'})` }}
-                />
-                <Input
-                  id="primary_color"
-                  value={formData.primary_color || ''}
-                  onChange={(e) => handleChange('primary_color', e.target.value)}
-                  placeholder="142 76% 36%"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Main brand color (buttons, links)
-              </p>
+        {/* Brand Colors */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Palette className="w-5 h-5 text-primary" />
+              Brand Colors
+            </CardTitle>
+            <CardDescription>
+              Define your brand's color palette. These colors will be applied across the entire platform.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <ColorPicker
+                label="Primary Color"
+                value={formData.primary_color || '142 76% 36%'}
+                onChange={(value) => handleChange('primary_color', value)}
+                description="Buttons, links, and key actions"
+              />
+              <ColorPicker
+                label="Secondary Color"
+                value={formData.secondary_color || '215 28% 17%'}
+                onChange={(value) => handleChange('secondary_color', value)}
+                description="Sidebar and navigation"
+              />
+              <ColorPicker
+                label="Accent Color"
+                value={formData.accent_color || '142 71% 45%'}
+                onChange={(value) => handleChange('accent_color', value)}
+                description="Highlights and emphasis"
+              />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="secondary_color">Secondary Color</Label>
-              <div className="flex gap-2">
-                <div 
-                  className="w-10 h-10 rounded-lg border border-border flex-shrink-0"
-                  style={{ backgroundColor: `hsl(${formData.secondary_color || '215 28% 17%'})` }}
-                />
-                <Input
-                  id="secondary_color"
-                  value={formData.secondary_color || ''}
-                  onChange={(e) => handleChange('secondary_color', e.target.value)}
-                  placeholder="215 28% 17%"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Sidebar and secondary elements
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="accent_color">Accent Color</Label>
-              <div className="flex gap-2">
-                <div 
-                  className="w-10 h-10 rounded-lg border border-border flex-shrink-0"
-                  style={{ backgroundColor: `hsl(${formData.accent_color || '142 71% 45%'})` }}
-                />
-                <Input
-                  id="accent_color"
-                  value={formData.accent_color || ''}
-                  onChange={(e) => handleChange('accent_color', e.target.value)}
-                  placeholder="142 71% 45%"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Highlights and accents
-              </p>
-            </div>
-          </div>
 
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handlePreview}>
-              <Eye className="w-4 h-4 mr-2" />
-              Preview Colors
-            </Button>
-            {previewMode && (
-              <Button variant="outline" size="sm" onClick={handleReset}>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Reset Preview
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" size="sm" onClick={handlePreview}>
+                <Eye className="w-4 h-4 mr-2" />
+                Apply Preview
               </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              {previewMode && (
+                <Button variant="outline" size="sm" onClick={handleReset}>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Reset Colors
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Contact Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe className="w-5 h-5" />
-            Contact & Support
-          </CardTitle>
-          <CardDescription>
-            Set your support contact details that will be shown to your clients.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="support_email" className="flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                Support Email
-              </Label>
-              <Input
-                id="support_email"
-                type="email"
-                value={formData.support_email || ''}
-                onChange={(e) => handleChange('support_email', e.target.value)}
-                placeholder="support@yourcompany.com"
-              />
+        {/* Contact & Support */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="w-5 h-5 text-primary" />
+              Contact & Support
+            </CardTitle>
+            <CardDescription>
+              Set your support contact details that clients will see throughout the platform.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="support_email" className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-muted-foreground" />
+                  Support Email
+                </Label>
+                <Input
+                  id="support_email"
+                  type="email"
+                  value={formData.support_email || ''}
+                  onChange={(e) => handleChange('support_email', e.target.value)}
+                  placeholder="support@yourcompany.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="support_phone" className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-muted-foreground" />
+                  Support Phone
+                </Label>
+                <Input
+                  id="support_phone"
+                  value={formData.support_phone || ''}
+                  onChange={(e) => handleChange('support_phone', e.target.value)}
+                  placeholder="(555) 123-4567"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="support_phone" className="flex items-center gap-2">
-                <Phone className="w-4 h-4" />
-                Support Phone
-              </Label>
-              <Input
-                id="support_phone"
-                value={formData.support_phone || ''}
-                onChange={(e) => handleChange('support_phone', e.target.value)}
-                placeholder="(555) 123-4567"
-              />
-            </div>
+
             <div className="space-y-2">
               <Label htmlFor="custom_domain" className="flex items-center gap-2">
-                <Globe className="w-4 h-4" />
+                <Globe className="w-4 h-4 text-muted-foreground" />
                 Custom Domain
               </Label>
               <Input
@@ -275,45 +257,56 @@ export function BrandingSettings() {
                 placeholder="app.yourcompany.com"
               />
               <p className="text-xs text-muted-foreground">
-                Contact support to set up your custom domain
+                Contact support to complete custom domain setup
               </p>
             </div>
-          </div>
-          
-          <Separator />
 
-          <div className="space-y-2">
-            <Label htmlFor="footer_text" className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              Custom Footer Text
-            </Label>
-            <Textarea
-              id="footer_text"
-              value={formData.footer_text || ''}
-              onChange={(e) => handleChange('footer_text', e.target.value)}
-              placeholder="© 2025 Your Company. All rights reserved."
-              rows={2}
-            />
-          </div>
-        </CardContent>
-      </Card>
+            <Separator />
 
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button 
-          onClick={handleSave} 
-          disabled={isSaving}
-          className="bg-gradient-primary hover:opacity-90"
-        >
-          {isSaving ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            'Save Brand Settings'
-          )}
-        </Button>
+            <div className="space-y-2">
+              <Label htmlFor="footer_text" className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-muted-foreground" />
+                Custom Footer Text
+              </Label>
+              <Textarea
+                id="footer_text"
+                value={formData.footer_text || ''}
+                onChange={(e) => handleChange('footer_text', e.target.value)}
+                placeholder={`© ${new Date().getFullYear()} Your Company. All rights reserved.`}
+                rows={2}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Save Button */}
+        <div className="flex justify-end gap-3 sticky bottom-4 bg-background/80 backdrop-blur-sm p-4 rounded-lg border border-border">
+          <Button variant="outline" onClick={handleReset} disabled={!hasChanges}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSave} 
+            disabled={isSaving || !hasChanges}
+            className="bg-gradient-primary hover:opacity-90 min-w-32"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4 mr-2" />
+                Save Changes
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Preview Column */}
+      <div className="hidden lg:block">
+        <BrandPreviewPanel settings={formData} />
       </div>
     </div>
   );
