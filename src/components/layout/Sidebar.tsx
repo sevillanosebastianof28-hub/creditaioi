@@ -20,6 +20,7 @@ import {
   ClipboardList,
   Link2,
   FileEdit,
+  Palette,
 } from 'lucide-react';
 
 const menuItems = [
@@ -34,8 +35,9 @@ const menuItems = [
   { icon: MessageSquare, label: 'Messages', path: '/messages' },
   { icon: BarChart3, label: 'Analytics', path: '/analytics' },
   { icon: CreditCard, label: 'Billing', path: '/billing' },
-  { icon: Building2, label: 'Agency', path: '/agency' },
+  { icon: Building2, label: 'Business', path: '/agency' },
   { icon: Shield, label: 'Compliance', path: '/compliance' },
+  { icon: Palette, label: 'White Label', path: '/white-label' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 

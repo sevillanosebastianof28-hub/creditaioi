@@ -28,6 +28,7 @@ import NotFound from "./pages/NotFound";
 import AIAutomation from "./pages/AIAutomation";
 import RoundManager from "./pages/RoundManager";
 import OutcomeTracker from "./pages/OutcomeTracker";
+import WhiteLabel from "./pages/WhiteLabel";
 
 // Role-specific pages
 import ClientDashboard from "./pages/ClientDashboard";
@@ -177,6 +178,11 @@ function AppRouter() {
       <Route path="/settings" element={
         <ProtectedRoute>
           <Settings />
+        </ProtectedRoute>
+      } />
+      <Route path="/white-label" element={
+        <ProtectedRoute allowedRoles={['agency_owner']}>
+          <WhiteLabel />
         </ProtectedRoute>
       } />
 
