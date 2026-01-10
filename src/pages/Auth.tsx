@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth, AppRole } from '@/contexts/AuthContext';
+import { useBrand } from '@/contexts/BrandContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,14 +32,14 @@ const roleOptions: { value: AppRole; label: string; description: string; icon: R
   },
   {
     value: 'agency_owner',
-    label: 'Agency Owner',
+    label: 'Business Owner',
     description: 'Credit repair business owner with full platform access',
     icon: Building2,
   },
   {
     value: 'va_staff',
     label: 'VA / Staff',
-    description: 'Agency employee with limited operations access',
+    description: 'Business employee with limited operations access',
     icon: UserCog,
   },
 ];
@@ -55,6 +56,7 @@ export default function Auth() {
   const [step, setStep] = useState<'role' | 'details'>('role');
   
   const { signIn, signUp } = useAuth();
+  const { brand } = useBrand();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -104,7 +106,7 @@ export default function Auth() {
     } else {
       toast({
         title: 'Account created!',
-        description: 'Welcome to CreditAI. Your account has been set up.',
+        description: `Welcome to ${brand.company_name}. Your account has been set up.`,
       });
       navigate('/');
     }
@@ -117,11 +119,28 @@ export default function Auth() {
     }
   };
 
+  // Dynamic styles based on brand settings
+  const backgroundStyle = brand.login_background_url
+    ? { backgroundImage: `url(${brand.login_background_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : {};
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/30 to-accent/20 flex items-center justify-center p-4 relative overflow-hidden">
+    <div 
+      className="min-h-screen bg-gradient-to-br from-background via-secondary/30 to-accent/20 flex items-center justify-center p-4 relative overflow-hidden"
+      style={backgroundStyle}
+    >
       {/* Background decorations */}
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+      {!brand.login_background_url && (
+        <>
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+        </>
+      )}
+      
+      {/* Overlay for custom background */}
+      {brand.login_background_url && (
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+      )}
       
       <div className="w-full max-w-lg relative z-10">
         {/* Back to home */}
@@ -134,8 +153,17 @@ export default function Auth() {
         </Link>
 
         {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <img src="/images/credit-ai-logo.png" alt="Credit AI Platform" className="h-14 w-auto" />
+        <div className="flex flex-col items-center justify-center gap-3 mb-8">
+          {brand.logo_url ? (
+            <img src={brand.logo_url} alt={brand.company_name} className="h-14 w-auto" />
+          ) : (
+            <img src="/images/credit-ai-logo.png" alt="Credit AI Platform" className="h-14 w-auto" />
+          )}
+          {brand.login_tagline && (
+            <p className="text-muted-foreground text-center text-sm max-w-sm">
+              {brand.login_tagline}
+            </p>
+          )}
         </div>
 
         <Card className="border-border bg-card/80 backdrop-blur-xl shadow-xl">
@@ -217,7 +245,7 @@ export default function Auth() {
                     <div>
                       <CardTitle className="text-xl text-foreground">Choose Your Role</CardTitle>
                       <CardDescription className="text-muted-foreground">
-                        Select how you'll be using Credit AI
+                        Select how you'll be using {brand.company_name}
                       </CardDescription>
                     </div>
                     <div className="space-y-3">
@@ -305,10 +333,10 @@ export default function Auth() {
 
                     {selectedRole === 'agency_owner' && (
                       <div className="space-y-2">
-                        <Label htmlFor="agencyName" className="text-foreground">Agency Name</Label>
+                        <Label htmlFor="agencyName" className="text-foreground">Business Name</Label>
                         <Input
                           id="agencyName"
-                          placeholder="Your Credit Repair Agency"
+                          placeholder="Your Credit Repair Business"
                           value={agencyName}
                           onChange={(e) => setAgencyName(e.target.value)}
                           className="bg-background border-border"
@@ -372,10 +400,31 @@ export default function Auth() {
 
         <p className="text-center text-muted-foreground text-sm mt-6">
           By signing up, you agree to our{' '}
-          <a href="#" className="text-primary hover:underline">Terms of Service</a>
+          <a 
+            href={brand.terms_url || '#'} 
+            className="text-primary hover:underline"
+            target={brand.terms_url ? '_blank' : undefined}
+            rel={brand.terms_url ? 'noopener noreferrer' : undefined}
+          >
+            Terms of Service
+          </a>
           {' '}and{' '}
-          <a href="#" className="text-primary hover:underline">Privacy Policy</a>
+          <a 
+            href={brand.privacy_url || '#'} 
+            className="text-primary hover:underline"
+            target={brand.privacy_url ? '_blank' : undefined}
+            rel={brand.privacy_url ? 'noopener noreferrer' : undefined}
+          >
+            Privacy Policy
+          </a>
         </p>
+
+        {/* Powered by badge - can be hidden */}
+        {!brand.hide_powered_by && (
+          <p className="text-center text-muted-foreground/50 text-xs mt-4">
+            Powered by Credit AI Platform
+          </p>
+        )}
       </div>
     </div>
   );

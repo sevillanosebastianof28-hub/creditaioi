@@ -111,50 +111,83 @@ export type Database = {
         Row: {
           accent_color: string | null
           agency_id: string | null
+          button_style: string | null
           company_name: string
           created_at: string
+          custom_css: string | null
           custom_domain: string | null
+          email_footer_text: string | null
+          email_header_logo_url: string | null
           favicon_url: string | null
           footer_text: string | null
+          hide_powered_by: boolean | null
           id: string
+          login_background_url: string | null
+          login_tagline: string | null
           logo_url: string | null
           primary_color: string | null
+          privacy_url: string | null
           secondary_color: string | null
+          sidebar_style: string | null
           support_email: string | null
           support_phone: string | null
+          terms_url: string | null
           updated_at: string
+          welcome_message: string | null
         }
         Insert: {
           accent_color?: string | null
           agency_id?: string | null
+          button_style?: string | null
           company_name?: string
           created_at?: string
+          custom_css?: string | null
           custom_domain?: string | null
+          email_footer_text?: string | null
+          email_header_logo_url?: string | null
           favicon_url?: string | null
           footer_text?: string | null
+          hide_powered_by?: boolean | null
           id?: string
+          login_background_url?: string | null
+          login_tagline?: string | null
           logo_url?: string | null
           primary_color?: string | null
+          privacy_url?: string | null
           secondary_color?: string | null
+          sidebar_style?: string | null
           support_email?: string | null
           support_phone?: string | null
+          terms_url?: string | null
           updated_at?: string
+          welcome_message?: string | null
         }
         Update: {
           accent_color?: string | null
           agency_id?: string | null
+          button_style?: string | null
           company_name?: string
           created_at?: string
+          custom_css?: string | null
           custom_domain?: string | null
+          email_footer_text?: string | null
+          email_header_logo_url?: string | null
           favicon_url?: string | null
           footer_text?: string | null
+          hide_powered_by?: boolean | null
           id?: string
+          login_background_url?: string | null
+          login_tagline?: string | null
           logo_url?: string | null
           primary_color?: string | null
+          privacy_url?: string | null
           secondary_color?: string | null
+          sidebar_style?: string | null
           support_email?: string | null
           support_phone?: string | null
+          terms_url?: string | null
           updated_at?: string
+          welcome_message?: string | null
         }
         Relationships: [
           {
