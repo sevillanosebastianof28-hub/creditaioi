@@ -125,14 +125,17 @@ export type Database = {
           hide_powered_by: boolean | null
           id: string
           integrations: Json | null
+          is_published: boolean | null
           login_background_url: string | null
           login_tagline: string | null
           logo_url: string | null
           notification_settings: Json | null
           primary_color: string | null
           privacy_url: string | null
+          published_at: string | null
           secondary_color: string | null
           sidebar_style: string | null
+          subdomain: string | null
           subscription_features: Json | null
           support_email: string | null
           support_phone: string | null
@@ -157,14 +160,17 @@ export type Database = {
           hide_powered_by?: boolean | null
           id?: string
           integrations?: Json | null
+          is_published?: boolean | null
           login_background_url?: string | null
           login_tagline?: string | null
           logo_url?: string | null
           notification_settings?: Json | null
           primary_color?: string | null
           privacy_url?: string | null
+          published_at?: string | null
           secondary_color?: string | null
           sidebar_style?: string | null
+          subdomain?: string | null
           subscription_features?: Json | null
           support_email?: string | null
           support_phone?: string | null
@@ -189,14 +195,17 @@ export type Database = {
           hide_powered_by?: boolean | null
           id?: string
           integrations?: Json | null
+          is_published?: boolean | null
           login_background_url?: string | null
           login_tagline?: string | null
           logo_url?: string | null
           notification_settings?: Json | null
           primary_color?: string | null
           privacy_url?: string | null
+          published_at?: string | null
           secondary_color?: string | null
           sidebar_style?: string | null
+          subdomain?: string | null
           subscription_features?: Json | null
           support_email?: string | null
           support_phone?: string | null
@@ -1007,6 +1016,30 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_brand_settings_by_subdomain: {
+        Args: { p_subdomain: string }
+        Returns: {
+          accent_color: string
+          button_style: string
+          client_portal_config: Json
+          company_name: string
+          enabled_features: Json
+          favicon_url: string
+          footer_text: string
+          hide_powered_by: boolean
+          id: string
+          login_background_url: string
+          login_tagline: string
+          logo_url: string
+          primary_color: string
+          privacy_url: string
+          secondary_color: string
+          support_email: string
+          support_phone: string
+          terms_url: string
+          welcome_message: string
+        }[]
+      }
       get_user_agency_id: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
