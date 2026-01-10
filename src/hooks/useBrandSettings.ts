@@ -3,6 +3,84 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
+export interface IntegrationConfig {
+  enabled: boolean;
+  api_key?: string | null;
+  webhook_url?: string | null;
+  list_id?: string | null;
+  account_sid?: string | null;
+  auth_token?: string | null;
+  phone_number?: string | null;
+  app_id?: string | null;
+  subdomain?: string | null;
+  tracking_id?: string | null;
+  pixel_id?: string | null;
+  url?: string | null;
+  publishable_key?: string | null;
+  api_token?: string | null;
+}
+
+export interface EnabledFeatures {
+  ai_credit_coach?: boolean;
+  ai_goal_roadmap?: boolean;
+  ai_smart_prioritization?: boolean;
+  ai_dispute_predictor?: boolean;
+  ai_bureau_forecaster?: boolean;
+  score_simulator?: boolean;
+  round_manager?: boolean;
+  document_vault?: boolean;
+  messaging?: boolean;
+  billing?: boolean;
+  analytics?: boolean;
+  compliance_logs?: boolean;
+  dispute_letters?: boolean;
+}
+
+export interface ClientPortalConfig {
+  show_scores?: boolean;
+  show_disputes?: boolean;
+  show_documents?: boolean;
+  show_billing?: boolean;
+  show_messages?: boolean;
+  show_ai_tools?: boolean;
+  show_progress?: boolean;
+  allow_document_upload?: boolean;
+  allow_dispute_requests?: boolean;
+}
+
+export interface NotificationSettingsConfig {
+  email_notifications?: boolean;
+  sms_notifications?: boolean;
+  score_change_alerts?: boolean;
+  dispute_updates?: boolean;
+  billing_reminders?: boolean;
+  marketing_emails?: boolean;
+}
+
+export interface SubscriptionFeatures {
+  max_clients?: number | null;
+  max_staff?: number | null;
+  max_disputes_per_month?: number | null;
+  white_label_enabled?: boolean;
+  api_access?: boolean;
+  priority_support?: boolean;
+  custom_integrations?: boolean;
+}
+
+export interface Integrations {
+  stripe?: IntegrationConfig;
+  zapier?: IntegrationConfig;
+  mailchimp?: IntegrationConfig;
+  twilio?: IntegrationConfig;
+  sendgrid?: IntegrationConfig;
+  hubspot?: IntegrationConfig;
+  calendly?: IntegrationConfig;
+  google_analytics?: IntegrationConfig;
+  facebook_pixel?: IntegrationConfig;
+  intercom?: IntegrationConfig;
+  zendesk?: IntegrationConfig;
+}
+
 export interface BrandSettings {
   id?: string;
   agency_id?: string;
@@ -16,7 +94,7 @@ export interface BrandSettings {
   support_email?: string;
   support_phone?: string;
   footer_text?: string;
-  // New white-label fields
+  // White-label fields
   login_background_url?: string;
   login_tagline?: string;
   email_header_logo_url?: string;
@@ -28,6 +106,12 @@ export interface BrandSettings {
   welcome_message?: string;
   sidebar_style?: 'default' | 'minimal' | 'expanded';
   button_style?: 'rounded' | 'square' | 'pill';
+  // Platform configuration
+  enabled_features?: EnabledFeatures;
+  integrations?: Integrations;
+  client_portal_config?: ClientPortalConfig;
+  notification_settings?: NotificationSettingsConfig;
+  subscription_features?: SubscriptionFeatures;
 }
 
 const defaultBrandSettings: BrandSettings = {
@@ -63,6 +147,7 @@ export function useBrandSettings() {
       if (error) throw error;
 
       if (data) {
+        const dbData = data as any;
         setBrandSettings({
           id: data.id,
           agency_id: data.agency_id || undefined,
@@ -76,18 +161,24 @@ export function useBrandSettings() {
           support_email: data.support_email || undefined,
           support_phone: data.support_phone || undefined,
           footer_text: data.footer_text || undefined,
-          // New fields
-          login_background_url: (data as any).login_background_url || undefined,
-          login_tagline: (data as any).login_tagline || undefined,
-          email_header_logo_url: (data as any).email_header_logo_url || undefined,
-          email_footer_text: (data as any).email_footer_text || undefined,
-          terms_url: (data as any).terms_url || undefined,
-          privacy_url: (data as any).privacy_url || undefined,
-          hide_powered_by: (data as any).hide_powered_by || false,
-          custom_css: (data as any).custom_css || undefined,
-          welcome_message: (data as any).welcome_message || undefined,
-          sidebar_style: (data as any).sidebar_style || 'default',
-          button_style: (data as any).button_style || 'rounded',
+          // White-label fields
+          login_background_url: dbData.login_background_url || undefined,
+          login_tagline: dbData.login_tagline || undefined,
+          email_header_logo_url: dbData.email_header_logo_url || undefined,
+          email_footer_text: dbData.email_footer_text || undefined,
+          terms_url: dbData.terms_url || undefined,
+          privacy_url: dbData.privacy_url || undefined,
+          hide_powered_by: dbData.hide_powered_by || false,
+          custom_css: dbData.custom_css || undefined,
+          welcome_message: dbData.welcome_message || undefined,
+          sidebar_style: dbData.sidebar_style || 'default',
+          button_style: dbData.button_style || 'rounded',
+          // Platform configuration
+          enabled_features: dbData.enabled_features || undefined,
+          integrations: dbData.integrations || undefined,
+          client_portal_config: dbData.client_portal_config || undefined,
+          notification_settings: dbData.notification_settings || undefined,
+          subscription_features: dbData.subscription_features || undefined,
         });
       }
     } catch (error) {
@@ -129,6 +220,12 @@ export function useBrandSettings() {
         welcome_message: updatedSettings.welcome_message,
         sidebar_style: updatedSettings.sidebar_style,
         button_style: updatedSettings.button_style,
+        // Platform configuration
+        enabled_features: updatedSettings.enabled_features,
+        integrations: updatedSettings.integrations,
+        client_portal_config: updatedSettings.client_portal_config,
+        notification_settings: updatedSettings.notification_settings,
+        subscription_features: updatedSettings.subscription_features,
       };
 
       if (brandSettings.id) {

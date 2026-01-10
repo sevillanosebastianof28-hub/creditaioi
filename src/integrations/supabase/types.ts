@@ -112,23 +112,28 @@ export type Database = {
           accent_color: string | null
           agency_id: string | null
           button_style: string | null
+          client_portal_config: Json | null
           company_name: string
           created_at: string
           custom_css: string | null
           custom_domain: string | null
           email_footer_text: string | null
           email_header_logo_url: string | null
+          enabled_features: Json | null
           favicon_url: string | null
           footer_text: string | null
           hide_powered_by: boolean | null
           id: string
+          integrations: Json | null
           login_background_url: string | null
           login_tagline: string | null
           logo_url: string | null
+          notification_settings: Json | null
           primary_color: string | null
           privacy_url: string | null
           secondary_color: string | null
           sidebar_style: string | null
+          subscription_features: Json | null
           support_email: string | null
           support_phone: string | null
           terms_url: string | null
@@ -139,23 +144,28 @@ export type Database = {
           accent_color?: string | null
           agency_id?: string | null
           button_style?: string | null
+          client_portal_config?: Json | null
           company_name?: string
           created_at?: string
           custom_css?: string | null
           custom_domain?: string | null
           email_footer_text?: string | null
           email_header_logo_url?: string | null
+          enabled_features?: Json | null
           favicon_url?: string | null
           footer_text?: string | null
           hide_powered_by?: boolean | null
           id?: string
+          integrations?: Json | null
           login_background_url?: string | null
           login_tagline?: string | null
           logo_url?: string | null
+          notification_settings?: Json | null
           primary_color?: string | null
           privacy_url?: string | null
           secondary_color?: string | null
           sidebar_style?: string | null
+          subscription_features?: Json | null
           support_email?: string | null
           support_phone?: string | null
           terms_url?: string | null
@@ -166,23 +176,28 @@ export type Database = {
           accent_color?: string | null
           agency_id?: string | null
           button_style?: string | null
+          client_portal_config?: Json | null
           company_name?: string
           created_at?: string
           custom_css?: string | null
           custom_domain?: string | null
           email_footer_text?: string | null
           email_header_logo_url?: string | null
+          enabled_features?: Json | null
           favicon_url?: string | null
           footer_text?: string | null
           hide_powered_by?: boolean | null
           id?: string
+          integrations?: Json | null
           login_background_url?: string | null
           login_tagline?: string | null
           logo_url?: string | null
+          notification_settings?: Json | null
           primary_color?: string | null
           privacy_url?: string | null
           secondary_color?: string | null
           sidebar_style?: string | null
+          subscription_features?: Json | null
           support_email?: string | null
           support_phone?: string | null
           terms_url?: string | null
