@@ -12,6 +12,15 @@ interface BrandSettings {
   support_email?: string;
   support_phone?: string;
   footer_text?: string;
+  login_background_url?: string;
+  login_tagline?: string;
+  terms_url?: string;
+  privacy_url?: string;
+  hide_powered_by?: boolean;
+  custom_css?: string;
+  welcome_message?: string;
+  sidebar_style?: string;
+  button_style?: string;
 }
 
 interface BrandContextType {
@@ -24,6 +33,9 @@ const defaultBrand: BrandSettings = {
   primary_color: '142 76% 36%',
   secondary_color: '215 28% 17%',
   accent_color: '142 71% 45%',
+  hide_powered_by: false,
+  sidebar_style: 'default',
+  button_style: 'rounded',
 };
 
 const BrandContext = createContext<BrandContextType>({
@@ -56,7 +68,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
         if (error) throw error;
 
         if (data) {
-          setBrand({
+          const brandData: BrandSettings = {
             company_name: data.company_name || 'Credit AI',
             logo_url: data.logo_url || undefined,
             favicon_url: data.favicon_url || undefined,
@@ -66,10 +78,24 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
             support_email: data.support_email || undefined,
             support_phone: data.support_phone || undefined,
             footer_text: data.footer_text || undefined,
-          });
+            login_background_url: (data as any).login_background_url || undefined,
+            login_tagline: (data as any).login_tagline || undefined,
+            terms_url: (data as any).terms_url || undefined,
+            privacy_url: (data as any).privacy_url || undefined,
+            hide_powered_by: (data as any).hide_powered_by || false,
+            custom_css: (data as any).custom_css || undefined,
+            welcome_message: (data as any).welcome_message || undefined,
+            sidebar_style: (data as any).sidebar_style || 'default',
+            button_style: (data as any).button_style || 'rounded',
+          };
+
+          setBrand(brandData);
 
           // Apply custom CSS variables
           applyBrandColors(data.primary_color, data.secondary_color, data.accent_color);
+
+          // Apply custom CSS
+          applyCustomCSS(brandData.custom_css);
 
           // Update favicon if custom
           if (data.favicon_url) {
@@ -80,6 +106,9 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
           if (data.company_name) {
             document.title = data.company_name;
           }
+
+          // Apply button style class
+          applyButtonStyle(brandData.button_style);
         }
       } catch (error) {
         console.error('Error fetching brand settings:', error);
@@ -109,6 +138,34 @@ function applyBrandColors(primary?: string | null, secondary?: string | null, ac
   }
   if (accent) {
     root.style.setProperty('--accent', accent);
+  }
+}
+
+function applyCustomCSS(css?: string) {
+  // Remove existing custom CSS
+  const existingStyle = document.getElementById('brand-custom-css');
+  if (existingStyle) {
+    existingStyle.remove();
+  }
+
+  // Add new custom CSS if provided
+  if (css) {
+    const style = document.createElement('style');
+    style.id = 'brand-custom-css';
+    style.textContent = css;
+    document.head.appendChild(style);
+  }
+}
+
+function applyButtonStyle(style?: string) {
+  const root = document.documentElement;
+  
+  // Remove existing button style classes
+  root.classList.remove('button-rounded', 'button-square', 'button-pill');
+  
+  // Add new button style class
+  if (style) {
+    root.classList.add(`button-${style}`);
   }
 }
 

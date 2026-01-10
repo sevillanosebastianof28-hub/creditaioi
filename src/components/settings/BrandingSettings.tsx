@@ -5,10 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useBrandSettings, BrandSettings } from '@/hooks/useBrandSettings';
 import { ColorPicker } from './ColorPicker';
 import { LogoUploader } from './LogoUploader';
 import { BrandPreviewPanel } from './BrandPreviewPanel';
+import { LoginPageSettings } from './LoginPageSettings';
+import { EmailBrandingSettings } from './EmailBrandingSettings';
+import { AdvancedBrandingSettings } from './AdvancedBrandingSettings';
+import { DomainSettings } from './DomainSettings';
 import { 
   Palette, 
   Building2, 
@@ -21,6 +26,9 @@ import {
   RefreshCw,
   Sparkles,
   Check,
+  LogIn,
+  Code,
+  LayoutDashboard,
 } from 'lucide-react';
 
 export function BrandingSettings() {
@@ -28,6 +36,7 @@ export function BrandingSettings() {
   const [formData, setFormData] = useState<Partial<BrandSettings>>({});
   const [previewMode, setPreviewMode] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [activeTab, setActiveTab] = useState('identity');
 
   useEffect(() => {
     if (!isLoading) {
@@ -35,7 +44,7 @@ export function BrandingSettings() {
     }
   }, [brandSettings, isLoading]);
 
-  const handleChange = (field: keyof BrandSettings, value: string) => {
+  const handleChange = (field: keyof BrandSettings, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setHasChanges(true);
   };
@@ -44,8 +53,8 @@ export function BrandingSettings() {
     const success = await saveBrandSettings(formData);
     if (success) {
       setHasChanges(false);
-      // Apply colors globally
       applyColorsGlobally();
+      applyCustomCSS();
     }
   };
 
@@ -62,8 +71,25 @@ export function BrandingSettings() {
     }
   };
 
+  const applyCustomCSS = () => {
+    // Remove existing custom CSS
+    const existingStyle = document.getElementById('brand-custom-css');
+    if (existingStyle) {
+      existingStyle.remove();
+    }
+    
+    // Add new custom CSS if provided
+    if (formData.custom_css) {
+      const style = document.createElement('style');
+      style.id = 'brand-custom-css';
+      style.textContent = formData.custom_css;
+      document.head.appendChild(style);
+    }
+  };
+
   const handlePreview = () => {
     applyColorsGlobally();
+    applyCustomCSS();
     setPreviewMode(true);
   };
 
@@ -75,6 +101,12 @@ export function BrandingSettings() {
     setFormData(brandSettings);
     setPreviewMode(false);
     setHasChanges(false);
+    
+    // Reset custom CSS
+    const existingStyle = document.getElementById('brand-custom-css');
+    if (existingStyle) {
+      existingStyle.remove();
+    }
   };
 
   if (isLoading) {
@@ -99,7 +131,7 @@ export function BrandingSettings() {
               White Label Settings
             </h2>
             <p className="text-muted-foreground mt-1">
-              Customize your platform's appearance for your clients
+              Customize your platform's appearance to match your brand and resell to your clients
             </p>
           </div>
           {hasChanges && (
@@ -110,174 +142,217 @@ export function BrandingSettings() {
           )}
         </div>
 
-        {/* Brand Identity */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-primary" />
-              Brand Identity
-            </CardTitle>
-            <CardDescription>
-              Upload your logo and set your company name to personalize the platform for your clients.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="company_name">Company Name</Label>
-              <Input
-                id="company_name"
-                value={formData.company_name || ''}
-                onChange={(e) => handleChange('company_name', e.target.value)}
-                placeholder="Your Company Name"
-                className="max-w-md"
-              />
-              <p className="text-xs text-muted-foreground">
-                This appears in the header, browser title, and throughout the platform
-              </p>
-            </div>
+        {/* Tabbed Settings */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="identity" className="text-xs sm:text-sm">
+              <Building2 className="w-4 h-4 mr-1 hidden sm:inline" />
+              Identity
+            </TabsTrigger>
+            <TabsTrigger value="colors" className="text-xs sm:text-sm">
+              <Palette className="w-4 h-4 mr-1 hidden sm:inline" />
+              Colors
+            </TabsTrigger>
+            <TabsTrigger value="login" className="text-xs sm:text-sm">
+              <LogIn className="w-4 h-4 mr-1 hidden sm:inline" />
+              Login
+            </TabsTrigger>
+            <TabsTrigger value="email" className="text-xs sm:text-sm">
+              <Mail className="w-4 h-4 mr-1 hidden sm:inline" />
+              Email
+            </TabsTrigger>
+            <TabsTrigger value="advanced" className="text-xs sm:text-sm">
+              <Code className="w-4 h-4 mr-1 hidden sm:inline" />
+              Advanced
+            </TabsTrigger>
+          </TabsList>
 
-            <Separator />
+          {/* Identity Tab */}
+          <TabsContent value="identity" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-primary" />
+                  Brand Identity
+                </CardTitle>
+                <CardDescription>
+                  Upload your logo and set your company name to personalize the platform for your clients.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="company_name">Company Name</Label>
+                  <Input
+                    id="company_name"
+                    value={formData.company_name || ''}
+                    onChange={(e) => handleChange('company_name', e.target.value)}
+                    placeholder="Your Company Name"
+                    className="max-w-md"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This appears in the header, browser title, and throughout the platform
+                  </p>
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <LogoUploader
-                label="Company Logo"
-                value={formData.logo_url}
-                onChange={(url) => handleChange('logo_url', url)}
-                description="Recommended: 200x50px transparent PNG or SVG"
-                type="logo"
-              />
-              <LogoUploader
-                label="Favicon"
-                value={formData.favicon_url}
-                onChange={(url) => handleChange('favicon_url', url)}
-                description="Browser tab icon: 32x32px PNG or ICO"
-                type="favicon"
-              />
-            </div>
-          </CardContent>
-        </Card>
+                <Separator />
 
-        {/* Brand Colors */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Palette className="w-5 h-5 text-primary" />
-              Brand Colors
-            </CardTitle>
-            <CardDescription>
-              Define your brand's color palette. These colors will be applied across the entire platform.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <ColorPicker
-                label="Primary Color"
-                value={formData.primary_color || '142 76% 36%'}
-                onChange={(value) => handleChange('primary_color', value)}
-                description="Buttons, links, and key actions"
-              />
-              <ColorPicker
-                label="Secondary Color"
-                value={formData.secondary_color || '215 28% 17%'}
-                onChange={(value) => handleChange('secondary_color', value)}
-                description="Sidebar and navigation"
-              />
-              <ColorPicker
-                label="Accent Color"
-                value={formData.accent_color || '142 71% 45%'}
-                onChange={(value) => handleChange('accent_color', value)}
-                description="Highlights and emphasis"
-              />
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <LogoUploader
+                    label="Company Logo"
+                    value={formData.logo_url}
+                    onChange={(url) => handleChange('logo_url', url)}
+                    description="Recommended: 200x50px transparent PNG or SVG"
+                    type="logo"
+                  />
+                  <LogoUploader
+                    label="Favicon"
+                    value={formData.favicon_url}
+                    onChange={(url) => handleChange('favicon_url', url)}
+                    description="Browser tab icon: 32x32px PNG or ICO"
+                    type="favicon"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-            <div className="flex gap-2 pt-2">
-              <Button variant="outline" size="sm" onClick={handlePreview}>
-                <Eye className="w-4 h-4 mr-2" />
-                Apply Preview
-              </Button>
-              {previewMode && (
-                <Button variant="outline" size="sm" onClick={handleReset}>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Reset Colors
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+            {/* Contact & Support */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="w-5 h-5 text-primary" />
+                  Contact & Support
+                </CardTitle>
+                <CardDescription>
+                  Set your support contact details that clients will see throughout the platform.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="support_email" className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-muted-foreground" />
+                      Support Email
+                    </Label>
+                    <Input
+                      id="support_email"
+                      type="email"
+                      value={formData.support_email || ''}
+                      onChange={(e) => handleChange('support_email', e.target.value)}
+                      placeholder="support@yourcompany.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="support_phone" className="flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-muted-foreground" />
+                      Support Phone
+                    </Label>
+                    <Input
+                      id="support_phone"
+                      value={formData.support_phone || ''}
+                      onChange={(e) => handleChange('support_phone', e.target.value)}
+                      placeholder="(555) 123-4567"
+                    />
+                  </div>
+                </div>
 
-        {/* Contact & Support */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="w-5 h-5 text-primary" />
-              Contact & Support
-            </CardTitle>
-            <CardDescription>
-              Set your support contact details that clients will see throughout the platform.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="support_email" className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-muted-foreground" />
-                  Support Email
-                </Label>
-                <Input
-                  id="support_email"
-                  type="email"
-                  value={formData.support_email || ''}
-                  onChange={(e) => handleChange('support_email', e.target.value)}
-                  placeholder="support@yourcompany.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="support_phone" className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-muted-foreground" />
-                  Support Phone
-                </Label>
-                <Input
-                  id="support_phone"
-                  value={formData.support_phone || ''}
-                  onChange={(e) => handleChange('support_phone', e.target.value)}
-                  placeholder="(555) 123-4567"
-                />
-              </div>
-            </div>
+                <Separator />
 
-            <div className="space-y-2">
-              <Label htmlFor="custom_domain" className="flex items-center gap-2">
-                <Globe className="w-4 h-4 text-muted-foreground" />
-                Custom Domain
-              </Label>
-              <Input
-                id="custom_domain"
-                value={formData.custom_domain || ''}
-                onChange={(e) => handleChange('custom_domain', e.target.value)}
-                placeholder="app.yourcompany.com"
-              />
-              <p className="text-xs text-muted-foreground">
-                Contact support to complete custom domain setup
-              </p>
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="footer_text" className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-muted-foreground" />
+                    Custom Footer Text
+                  </Label>
+                  <Textarea
+                    id="footer_text"
+                    value={formData.footer_text || ''}
+                    onChange={(e) => handleChange('footer_text', e.target.value)}
+                    placeholder={`© ${new Date().getFullYear()} Your Company. All rights reserved.`}
+                    rows={2}
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-            <Separator />
+            <DomainSettings 
+              formData={formData} 
+              onChange={handleChange}
+            />
+          </TabsContent>
 
-            <div className="space-y-2">
-              <Label htmlFor="footer_text" className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-muted-foreground" />
-                Custom Footer Text
-              </Label>
-              <Textarea
-                id="footer_text"
-                value={formData.footer_text || ''}
-                onChange={(e) => handleChange('footer_text', e.target.value)}
-                placeholder={`© ${new Date().getFullYear()} Your Company. All rights reserved.`}
-                rows={2}
-              />
-            </div>
-          </CardContent>
-        </Card>
+          {/* Colors Tab */}
+          <TabsContent value="colors" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="w-5 h-5 text-primary" />
+                  Brand Colors
+                </CardTitle>
+                <CardDescription>
+                  Define your brand's color palette. These colors will be applied across the entire platform.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <ColorPicker
+                    label="Primary Color"
+                    value={formData.primary_color || '142 76% 36%'}
+                    onChange={(value) => handleChange('primary_color', value)}
+                    description="Buttons, links, and key actions"
+                  />
+                  <ColorPicker
+                    label="Secondary Color"
+                    value={formData.secondary_color || '215 28% 17%'}
+                    onChange={(value) => handleChange('secondary_color', value)}
+                    description="Sidebar and navigation"
+                  />
+                  <ColorPicker
+                    label="Accent Color"
+                    value={formData.accent_color || '142 71% 45%'}
+                    onChange={(value) => handleChange('accent_color', value)}
+                    description="Highlights and emphasis"
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button variant="outline" size="sm" onClick={handlePreview}>
+                    <Eye className="w-4 h-4 mr-2" />
+                    Apply Preview
+                  </Button>
+                  {previewMode && (
+                    <Button variant="outline" size="sm" onClick={handleReset}>
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Reset Colors
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Login Tab */}
+          <TabsContent value="login" className="space-y-6">
+            <LoginPageSettings 
+              formData={formData} 
+              onChange={handleChange}
+            />
+          </TabsContent>
+
+          {/* Email Tab */}
+          <TabsContent value="email" className="space-y-6">
+            <EmailBrandingSettings 
+              formData={formData} 
+              onChange={handleChange}
+            />
+          </TabsContent>
+
+          {/* Advanced Tab */}
+          <TabsContent value="advanced" className="space-y-6">
+            <AdvancedBrandingSettings 
+              formData={formData} 
+              onChange={handleChange}
+            />
+          </TabsContent>
+        </Tabs>
 
         {/* Save Button */}
         <div className="flex justify-end gap-3 sticky bottom-4 bg-background/80 backdrop-blur-sm p-4 rounded-lg border border-border">
