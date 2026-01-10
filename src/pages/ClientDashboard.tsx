@@ -128,6 +128,25 @@ export default function ClientDashboard() {
     return getNumericScore(value);
   };
 
+  // Extract numeric values safely from summary fields (handles {Equifax, Experian, Transunion} objects)
+  const extractSummaryValue = (value: any): number | string => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') return value;
+    if (value && typeof value === 'object') {
+      // If it's an object with bureau keys, average the values
+      const bureauKeys = ['Equifax', 'Experian', 'Transunion', 'equifax', 'experian', 'transunion'];
+      const values = Object.entries(value)
+        .filter(([key]) => bureauKeys.includes(key))
+        .map(([, v]) => Number(v) || 0)
+        .filter(v => v > 0);
+      if (values.length > 0) {
+        return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+      }
+      return 0;
+    }
+    return Number(value) || 0;
+  };
+
   const clientScores = [
     { bureau: 'Experian', score: getScoreValue(creditData.scores, 'experian'), previousScore: getScoreValue(creditData.previousScores, 'experian') },
     { bureau: 'Equifax', score: getScoreValue(creditData.scores, 'equifax'), previousScore: getScoreValue(creditData.previousScores, 'equifax') },
@@ -352,10 +371,10 @@ export default function ClientDashboard() {
             <CardContent>
               <div className="space-y-3">
                 {[
-                  { label: 'Total Accounts', value: creditData.summary.totalAccounts, icon: Target },
-                  { label: 'On-Time Payments', value: `${creditData.summary.onTimePayments}%`, icon: CheckCircle2, color: 'text-success' },
-                  { label: 'Credit Utilization', value: `${creditData.summary.creditUtilization}%`, icon: Zap },
-                  { label: 'Average Account Age', value: creditData.summary.avgAccountAge, icon: Calendar },
+                  { label: 'Total Accounts', value: extractSummaryValue(creditData.summary.totalAccounts), icon: Target },
+                  { label: 'On-Time Payments', value: `${extractSummaryValue(creditData.summary.onTimePayments)}%`, icon: CheckCircle2, color: 'text-success' },
+                  { label: 'Credit Utilization', value: `${extractSummaryValue(creditData.summary.creditUtilization)}%`, icon: Zap },
+                  { label: 'Average Account Age', value: typeof creditData.summary.avgAccountAge === 'string' ? creditData.summary.avgAccountAge : String(extractSummaryValue(creditData.summary.avgAccountAge)), icon: Calendar },
                 ].map((item, index) => (
                   <motion.div 
                     key={item.label}
