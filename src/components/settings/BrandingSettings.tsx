@@ -14,6 +14,11 @@ import { LoginPageSettings } from './LoginPageSettings';
 import { EmailBrandingSettings } from './EmailBrandingSettings';
 import { AdvancedBrandingSettings } from './AdvancedBrandingSettings';
 import { DomainSettings } from './DomainSettings';
+import { IntegrationSettings } from './IntegrationSettings';
+import { FeatureToggleSettings } from './FeatureToggleSettings';
+import { ClientPortalSettings } from './ClientPortalSettings';
+import { NotificationSettings } from './NotificationSettings';
+import { SubscriptionSettings } from './SubscriptionSettings';
 import { 
   Palette, 
   Building2, 
@@ -28,7 +33,10 @@ import {
   Check,
   LogIn,
   Code,
-  LayoutDashboard,
+  Zap,
+  Users,
+  Bell,
+  Crown,
 } from 'lucide-react';
 
 export function BrandingSettings() {
@@ -144,26 +152,46 @@ export function BrandingSettings() {
 
         {/* Tabbed Settings */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="identity" className="text-xs sm:text-sm">
+          <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10">
+            <TabsTrigger value="identity" className="text-xs">
               <Building2 className="w-4 h-4 mr-1 hidden sm:inline" />
               Identity
             </TabsTrigger>
-            <TabsTrigger value="colors" className="text-xs sm:text-sm">
+            <TabsTrigger value="colors" className="text-xs">
               <Palette className="w-4 h-4 mr-1 hidden sm:inline" />
               Colors
             </TabsTrigger>
-            <TabsTrigger value="login" className="text-xs sm:text-sm">
+            <TabsTrigger value="login" className="text-xs">
               <LogIn className="w-4 h-4 mr-1 hidden sm:inline" />
               Login
             </TabsTrigger>
-            <TabsTrigger value="email" className="text-xs sm:text-sm">
+            <TabsTrigger value="email" className="text-xs">
               <Mail className="w-4 h-4 mr-1 hidden sm:inline" />
               Email
             </TabsTrigger>
-            <TabsTrigger value="advanced" className="text-xs sm:text-sm">
+            <TabsTrigger value="advanced" className="text-xs">
               <Code className="w-4 h-4 mr-1 hidden sm:inline" />
               Advanced
+            </TabsTrigger>
+            <TabsTrigger value="integrations" className="text-xs">
+              <Zap className="w-4 h-4 mr-1 hidden sm:inline" />
+              Integrations
+            </TabsTrigger>
+            <TabsTrigger value="features" className="text-xs">
+              <Sparkles className="w-4 h-4 mr-1 hidden sm:inline" />
+              Features
+            </TabsTrigger>
+            <TabsTrigger value="portal" className="text-xs">
+              <Users className="w-4 h-4 mr-1 hidden sm:inline" />
+              Portal
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="text-xs">
+              <Bell className="w-4 h-4 mr-1 hidden sm:inline" />
+              Alerts
+            </TabsTrigger>
+            <TabsTrigger value="subscription" className="text-xs">
+              <Crown className="w-4 h-4 mr-1 hidden sm:inline" />
+              Limits
             </TabsTrigger>
           </TabsList>
 
@@ -348,6 +376,46 @@ export function BrandingSettings() {
           {/* Advanced Tab */}
           <TabsContent value="advanced" className="space-y-6">
             <AdvancedBrandingSettings 
+              formData={formData} 
+              onChange={handleChange}
+            />
+          </TabsContent>
+
+          {/* Integrations Tab */}
+          <TabsContent value="integrations" className="space-y-6">
+            <IntegrationSettings 
+              formData={formData} 
+              onChange={handleChange}
+            />
+          </TabsContent>
+
+          {/* Features Tab */}
+          <TabsContent value="features" className="space-y-6">
+            <FeatureToggleSettings 
+              formData={formData} 
+              onChange={handleChange}
+            />
+          </TabsContent>
+
+          {/* Portal Tab */}
+          <TabsContent value="portal" className="space-y-6">
+            <ClientPortalSettings 
+              formData={formData} 
+              onChange={handleChange}
+            />
+          </TabsContent>
+
+          {/* Notifications Tab */}
+          <TabsContent value="notifications" className="space-y-6">
+            <NotificationSettings 
+              formData={formData} 
+              onChange={handleChange}
+            />
+          </TabsContent>
+
+          {/* Subscription Tab */}
+          <TabsContent value="subscription" className="space-y-6">
+            <SubscriptionSettings 
               formData={formData} 
               onChange={handleChange}
             />
