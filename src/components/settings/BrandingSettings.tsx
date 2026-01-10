@@ -19,6 +19,7 @@ import { FeatureToggleSettings } from './FeatureToggleSettings';
 import { ClientPortalSettings } from './ClientPortalSettings';
 import { NotificationSettings } from './NotificationSettings';
 import { SubscriptionSettings } from './SubscriptionSettings';
+import { SubdomainSettings } from './SubdomainSettings';
 import { 
   Palette, 
   Building2, 
@@ -44,7 +45,7 @@ export function BrandingSettings() {
   const [formData, setFormData] = useState<Partial<BrandSettings>>({});
   const [previewMode, setPreviewMode] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-  const [activeTab, setActiveTab] = useState('identity');
+  const [activeTab, setActiveTab] = useState('publish');
 
   useEffect(() => {
     if (!isLoading) {
@@ -52,7 +53,7 @@ export function BrandingSettings() {
     }
   }, [brandSettings, isLoading]);
 
-  const handleChange = (field: keyof BrandSettings, value: string | boolean) => {
+  const handleChange = (field: keyof BrandSettings, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setHasChanges(true);
   };
@@ -152,7 +153,11 @@ export function BrandingSettings() {
 
         {/* Tabbed Settings */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10">
+          <TabsList className="flex flex-wrap gap-1 h-auto p-1">
+            <TabsTrigger value="publish" className="text-xs">
+              <Globe className="w-4 h-4 mr-1 hidden sm:inline" />
+              Publish
+            </TabsTrigger>
             <TabsTrigger value="identity" className="text-xs">
               <Building2 className="w-4 h-4 mr-1 hidden sm:inline" />
               Identity
@@ -168,10 +173,6 @@ export function BrandingSettings() {
             <TabsTrigger value="email" className="text-xs">
               <Mail className="w-4 h-4 mr-1 hidden sm:inline" />
               Email
-            </TabsTrigger>
-            <TabsTrigger value="advanced" className="text-xs">
-              <Code className="w-4 h-4 mr-1 hidden sm:inline" />
-              Advanced
             </TabsTrigger>
             <TabsTrigger value="integrations" className="text-xs">
               <Zap className="w-4 h-4 mr-1 hidden sm:inline" />
@@ -193,7 +194,20 @@ export function BrandingSettings() {
               <Crown className="w-4 h-4 mr-1 hidden sm:inline" />
               Limits
             </TabsTrigger>
+            <TabsTrigger value="advanced" className="text-xs">
+              <Code className="w-4 h-4 mr-1 hidden sm:inline" />
+              Advanced
+            </TabsTrigger>
           </TabsList>
+
+          {/* Publish Tab - First for visibility */}
+          <TabsContent value="publish" className="space-y-6">
+            <SubdomainSettings 
+              formData={formData} 
+              onChange={handleChange}
+              onPublish={handleSave}
+            />
+          </TabsContent>
 
           {/* Identity Tab */}
           <TabsContent value="identity" className="space-y-6">

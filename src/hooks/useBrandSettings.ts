@@ -112,6 +112,10 @@ export interface BrandSettings {
   client_portal_config?: ClientPortalConfig;
   notification_settings?: NotificationSettingsConfig;
   subscription_features?: SubscriptionFeatures;
+  // Subdomain / multi-tenant
+  subdomain?: string;
+  is_published?: boolean;
+  published_at?: string;
 }
 
 const defaultBrandSettings: BrandSettings = {
@@ -179,6 +183,10 @@ export function useBrandSettings() {
           client_portal_config: dbData.client_portal_config || undefined,
           notification_settings: dbData.notification_settings || undefined,
           subscription_features: dbData.subscription_features || undefined,
+          // Subdomain / multi-tenant
+          subdomain: dbData.subdomain || undefined,
+          is_published: dbData.is_published || false,
+          published_at: dbData.published_at || undefined,
         });
       }
     } catch (error) {
@@ -226,6 +234,10 @@ export function useBrandSettings() {
         client_portal_config: updatedSettings.client_portal_config,
         notification_settings: updatedSettings.notification_settings,
         subscription_features: updatedSettings.subscription_features,
+        // Subdomain / multi-tenant
+        subdomain: updatedSettings.subdomain,
+        is_published: updatedSettings.is_published,
+        published_at: updatedSettings.published_at,
       };
 
       if (brandSettings.id) {
