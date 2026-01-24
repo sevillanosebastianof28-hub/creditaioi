@@ -8,21 +8,20 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDisputeLetter, letterTemplates, LetterType } from '@/hooks/useDisputeLetter';
+import { useLetterTracking } from '@/hooks/useLetterTracking';
 import { DisputableItem } from '@/hooks/useCreditAnalysis';
 import { mockClients, mockTradelines } from '@/data/mockData';
 import { cn } from '@/lib/utils';
+import LetterDocumentEditor from '@/components/disputes/LetterDocumentEditor';
 import {
   FileText,
   Sparkles,
-  Download,
-  Copy,
   ArrowRight,
   Loader2,
   Shield,
   Search,
   Users,
   ChevronLeft,
-  Printer,
   AlertCircle,
 } from 'lucide-react';
 import {
@@ -77,6 +76,8 @@ const DisputeLetters = () => {
     downloadLetter,
     copyLetter 
   } = useDisputeLetter();
+
+  const { saveLetter } = useLetterTracking();
 
   // Filter clients based on search
   const filteredClients = useMemo(() => {
@@ -476,10 +477,9 @@ const DisputeLetters = () => {
 
       {/* Generated Letter Dialog */}
       <Dialog open={showLetterDialog} onOpenChange={setShowLetterDialog}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
+        <DialogContent className="max-w-5xl h-[90vh] p-0 overflow-hidden flex flex-col">
+          <DialogHeader className="sr-only">
+            <DialogTitle>
               Generated Dispute Letter
             </DialogTitle>
             <DialogDescription>
@@ -492,32 +492,22 @@ const DisputeLetters = () => {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-auto">
-            {generatedLetter && (
-              <div className="bg-muted/50 rounded-lg p-4 font-mono text-sm whitespace-pre-wrap">
-                {generatedLetter.letter}
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3 pt-4 border-t">
-            <Button variant="outline" onClick={() => copyLetter(generatedLetter?.letter || '')}>
-              <Copy className="w-4 h-4 mr-2" />
-              Copy
-            </Button>
-            <Button variant="outline" onClick={handleDownload}>
-              <Download className="w-4 h-4 mr-2" />
-              Download
-            </Button>
-            <Button variant="outline" onClick={handlePrint}>
-              <Printer className="w-4 h-4 mr-2" />
-              Print
-            </Button>
-            <div className="flex-1" />
-            <Button variant="ghost" onClick={() => setShowLetterDialog(false)}>
-              Close
-            </Button>
-          </div>
+          {generatedLetter && (
+            <LetterDocumentEditor
+              content={generatedLetter.letter}
+              creditor={generatedLetter.creditor}
+              letterType={letterTemplates.find(t => t.id === generatedLetter.letterType)?.name}
+              bureaus={generatedLetter.bureaus}
+              onDownload={(content) => downloadLetter(content, `${generatedLetter.creditor.replace(/\s+/g, '_')}_dispute_letter.txt`)}
+              onSave={(content) => {
+                saveLetter(
+                  generatedLetter.letterType,
+                  content,
+                  selectedItem?.id
+                );
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </DashboardLayout>
