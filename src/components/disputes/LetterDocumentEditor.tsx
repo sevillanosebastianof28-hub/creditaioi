@@ -13,10 +13,11 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
-  Type,
   Save,
   FileText,
   CheckCircle2,
+  Sparkles,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -32,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LetterDocumentEditorProps {
   content: string;
@@ -43,6 +45,7 @@ interface LetterDocumentEditorProps {
   onDownload?: (content: string) => void;
   onPrint?: (content: string) => void;
   readOnly?: boolean;
+  showOptimize?: boolean;
 }
 
 const LetterDocumentEditor = ({
@@ -55,13 +58,53 @@ const LetterDocumentEditor = ({
   onDownload,
   onPrint,
   readOnly = false,
+  showOptimize = true,
 }: LetterDocumentEditorProps) => {
   const [editedContent, setEditedContent] = useState(content);
   const [hasChanges, setHasChanges] = useState(false);
   const [fontSize, setFontSize] = useState('12');
   const [fontFamily, setFontFamily] = useState('serif');
+  const [isOptimizing, setIsOptimizing] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  const handleOptimize = async () => {
+    if (!editedContent.trim()) {
+      toast({ title: 'Error', description: 'No content to optimize', variant: 'destructive' });
+      return;
+    }
+
+    setIsOptimizing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('optimize-dispute-letter', {
+        body: { letterContent: editedContent, letterType, creditor }
+      });
+
+      if (error) throw error;
+
+      if (data?.optimizedLetter) {
+        if (editorRef.current) {
+          editorRef.current.innerText = data.optimizedLetter;
+        }
+        setEditedContent(data.optimizedLetter);
+        setHasChanges(true);
+        onChange?.(data.optimizedLetter);
+        toast({
+          title: 'Letter Optimized',
+          description: 'AI has enhanced your letter for maximum impact.',
+        });
+      }
+    } catch (err) {
+      console.error('Optimization error:', err);
+      toast({
+        title: 'Optimization Failed',
+        description: 'Unable to optimize letter. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
 
   useEffect(() => {
     setEditedContent(content);
@@ -253,6 +296,31 @@ const LetterDocumentEditor = ({
 
           <ToolbarButton icon={Undo2} onClick={() => execCommand('undo')} tooltip="Undo (Ctrl+Z)" />
           <ToolbarButton icon={Redo2} onClick={() => execCommand('redo')} tooltip="Redo (Ctrl+Y)" />
+
+          {showOptimize && (
+            <>
+              <div className="w-px h-6 bg-border mx-1" />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 bg-gradient-primary text-primary-foreground hover:opacity-90"
+                    onClick={handleOptimize}
+                    disabled={isOptimizing}
+                  >
+                    {isOptimizing ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" />
+                    )}
+                    Optimize
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>AI will enhance this letter for maximum legal impact</TooltipContent>
+              </Tooltip>
+            </>
+          )}
         </div>
       )}
 

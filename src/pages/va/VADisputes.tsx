@@ -5,8 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { FileText, Search, Eye, Edit, Send, CheckCircle2, Clock, AlertCircle, Brain, User } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { FileText, Search, Eye, Edit, Send, CheckCircle2, Clock, AlertCircle, Brain, User, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import LetterDocumentEditor from '@/components/disputes/LetterDocumentEditor';
 
 const mockLetters = [
   {
@@ -76,12 +79,71 @@ const statusConfig = {
 export default function VADisputes() {
   const { toast } = useToast();
   const [search, setSearch] = useState('');
+  const [selectedLetter, setSelectedLetter] = useState<typeof mockLetters[0] | null>(null);
+  const [letterContent, setLetterContent] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const handleViewLetter = async (letter: typeof mockLetters[0]) => {
+    setSelectedLetter(letter);
+    setDialogOpen(true);
+    setIsGenerating(true);
+    setLetterContent('');
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-dispute-letter', {
+        body: {
+          letterType: 'factual_dispute',
+          disputableItem: {
+            creditor: letter.creditor,
+            accountType: letter.type,
+            balance: 0,
+            issueType: letter.type,
+            disputeReason: letter.type,
+            applicableLaw: 'FCRA',
+            bureaus: [letter.bureau]
+          }
+        }
+      });
+
+      if (error) throw error;
+      setLetterContent(data.letter || 'Unable to generate letter');
+    } catch (err: any) {
+      console.error('Letter generation error:', err);
+      setLetterContent('Failed to generate letter. Please try again.');
+      toast({
+        title: 'Error',
+        description: 'Failed to generate dispute letter',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const handleApprove = (letterId: string) => {
     toast({
       title: 'Letter Approved',
       description: 'The dispute letter has been approved and queued for sending.',
     });
+  };
+
+  const handleSaveLetter = (content: string) => {
+    setLetterContent(content);
+    toast({
+      title: 'Letter Saved',
+      description: 'Your changes have been saved.',
+    });
+  };
+
+  const handleDownload = (content: string) => {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `dispute-letter-${selectedLetter?.creditor?.replace(/\s+/g, '-')}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const filteredLetters = mockLetters.filter(letter =>
@@ -125,13 +187,13 @@ export default function VADisputes() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => handleViewLetter(letter)}>
                 <Eye className="w-4 h-4 mr-1" />
                 View
               </Button>
               {letter.status === 'pending_review' && (
                 <>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" onClick={() => handleViewLetter(letter)}>
                     <Edit className="w-4 h-4 mr-1" />
                     Edit
                   </Button>
@@ -231,6 +293,43 @@ export default function VADisputes() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Letter Editor Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-0">
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              Dispute Letter - {selectedLetter?.creditor}
+              {selectedLetter?.aiGenerated && (
+                <Badge className="bg-gradient-primary text-primary-foreground text-xs ml-2">
+                  <Brain className="w-3 h-3 mr-1" />
+                  AI Generated
+                </Badge>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden p-4">
+            {isGenerating ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+                <p className="text-muted-foreground">Generating dispute letter...</p>
+              </div>
+            ) : (
+              <LetterDocumentEditor
+                content={letterContent}
+                creditor={selectedLetter?.creditor}
+                letterType={selectedLetter?.type}
+                bureaus={selectedLetter?.bureau ? [selectedLetter.bureau] : []}
+                onSave={handleSaveLetter}
+                onDownload={handleDownload}
+                onChange={(content) => setLetterContent(content)}
+                showOptimize={true}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </RoleBasedLayout>
   );
 }

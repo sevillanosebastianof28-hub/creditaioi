@@ -9,8 +9,9 @@ import { useCreditData, NegativeItem } from '@/hooks/useCreditData';
 import { useLetterTracking } from '@/hooks/useLetterTracking';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Clock, CheckCircle2, AlertCircle, Eye, Link2, RefreshCw, Loader2, Download, Printer, Save } from 'lucide-react';
+import { FileText, Clock, CheckCircle2, AlertCircle, Eye, Link2, RefreshCw, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import LetterDocumentEditor from '@/components/disputes/LetterDocumentEditor';
 
 const statusConfig = {
   pending: { label: 'Pending', color: 'bg-muted text-muted-foreground border-border', icon: Clock },
@@ -86,34 +87,19 @@ export default function ClientDisputes() {
     }
   };
 
-  const handleSaveLetter = async () => {
-    if (!selectedDispute || !letterContent) return;
+  const handleSaveLetter = async (content: string) => {
+    if (!selectedDispute) return;
     
-    await saveLetter('factual_dispute', letterContent, selectedDispute.id);
+    await saveLetter('factual_dispute', content, selectedDispute.id);
+    setLetterContent(content);
     toast({ 
       title: "Letter Saved", 
       description: "Your dispute letter has been saved successfully." 
     });
   };
 
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head><title>Dispute Letter - ${selectedDispute?.creditor}</title></head>
-          <body style="font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto;">
-            <pre style="white-space: pre-wrap; font-family: inherit;">${letterContent}</pre>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
-    }
-  };
-
-  const handleDownload = () => {
-    const blob = new Blob([letterContent], { type: 'text/plain' });
+  const handleDownload = (content: string) => {
+    const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -350,41 +336,32 @@ export default function ClientDisputes() {
 
       {/* Letter View Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-0">
             <DialogTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-primary" />
               Dispute Letter - {selectedDispute?.creditor}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-hidden p-4">
             {isGenerating ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
                 <p className="text-muted-foreground">Generating dispute letter...</p>
               </div>
             ) : (
-              <div className="bg-muted/30 rounded-lg p-6">
-                <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">{letterContent}</pre>
-              </div>
+              <LetterDocumentEditor
+                content={letterContent}
+                creditor={selectedDispute?.creditor}
+                letterType="Factual Dispute"
+                bureaus={selectedDispute?.bureau ? [selectedDispute.bureau] : []}
+                onSave={handleSaveLetter}
+                onDownload={handleDownload}
+                onChange={(content) => setLetterContent(content)}
+                showOptimize={true}
+              />
             )}
           </div>
-          {!isGenerating && letterContent && (
-            <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button variant="outline" onClick={handleSaveLetter}>
-                <Save className="w-4 h-4 mr-2" />
-                Save Letter
-              </Button>
-              <Button variant="outline" onClick={handleDownload}>
-                <Download className="w-4 h-4 mr-2" />
-                Download
-              </Button>
-              <Button onClick={handlePrint}>
-                <Printer className="w-4 h-4 mr-2" />
-                Print
-              </Button>
-            </div>
-          )}
         </DialogContent>
       </Dialog>
     </RoleBasedLayout>
