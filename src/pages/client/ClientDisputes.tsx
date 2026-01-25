@@ -336,14 +336,14 @@ export default function ClientDisputes() {
 
       {/* Letter View Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0">
-          <DialogHeader className="px-6 pt-6 pb-0">
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-primary" />
               Dispute Letter - {selectedDispute?.creditor}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden p-4">
+          <div className="flex-1 min-h-0 overflow-auto px-4 pb-4">
             {isGenerating ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
