@@ -77,14 +77,60 @@ const AIEngine = () => {
     }
   };
 
+  const parseFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleAnalyze = async () => {
+    // Handle PDF and image files through OCR parser
     if (selectedFile && selectedFile.type !== 'text/plain') {
-      // For non-text files, we need to extract text first
-      // For now, we'll show a message that PDFs/images need text extraction
-      toast({
-        title: "PDF/Image Analysis",
-        description: "For best results with PDFs and images, please paste the extracted text. Full file parsing coming soon!",
-      });
+      setIsUploading(true);
+      try {
+        const base64 = await parseFileToBase64(selectedFile);
+        
+        toast({
+          title: "Processing File",
+          description: "Extracting text from your document with AI OCR...",
+        });
+
+        const { data, error } = await supabase.functions.invoke('ocr-document-parser', {
+          body: {
+            action: 'parse_credit_report',
+            imageBase64: base64
+          }
+        });
+
+        if (error) throw error;
+
+        if (data?.result?.rawText) {
+          // Use the extracted text for analysis
+          await analyzeReport(data.result.rawText);
+        } else if (data?.result?.negativeItems && data.result.negativeItems.length > 0) {
+          // If OCR returned structured data directly, format it for analysis
+          const formattedText = formatOCRResultToText(data.result);
+          await analyzeReport(formattedText);
+        } else {
+          toast({
+            title: "No Content Extracted",
+            description: "Could not extract readable content from the file. Please try pasting the text directly.",
+            variant: "destructive",
+          });
+        }
+      } catch (error: any) {
+        console.error('File parsing error:', error);
+        toast({
+          title: "File Processing Failed",
+          description: error.message || "Failed to process the file. Please try pasting the text instead.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsUploading(false);
+      }
       return;
     }
 
@@ -98,6 +144,55 @@ const AIEngine = () => {
     }
 
     await analyzeReport(reportText);
+  };
+
+  const formatOCRResultToText = (result: any): string => {
+    let text = "CREDIT REPORT ANALYSIS\n\n";
+    
+    if (result.personalInfo) {
+      text += `PERSONAL INFO:\n${JSON.stringify(result.personalInfo, null, 2)}\n\n`;
+    }
+    
+    if (result.scores && result.scores.length > 0) {
+      text += "CREDIT SCORES:\n";
+      result.scores.forEach((score: any) => {
+        text += `- ${score.bureau}: ${score.score}\n`;
+      });
+      text += "\n";
+    }
+    
+    if (result.negativeItems && result.negativeItems.length > 0) {
+      text += "NEGATIVE ITEMS:\n";
+      result.negativeItems.forEach((item: any, index: number) => {
+        text += `\n${index + 1}. ${item.creditor || item.accountName || 'Unknown Account'}\n`;
+        text += `   Type: ${item.accountType || item.type || 'Unknown'}\n`;
+        text += `   Status: ${item.status || 'Unknown'}\n`;
+        text += `   Balance: $${item.balance || 0}\n`;
+        if (item.dateOpened) text += `   Date Opened: ${item.dateOpened}\n`;
+        if (item.bureaus) text += `   Bureaus: ${item.bureaus.join(', ')}\n`;
+      });
+      text += "\n";
+    }
+    
+    if (result.tradelines && result.tradelines.length > 0) {
+      text += "TRADELINES:\n";
+      result.tradelines.forEach((item: any, index: number) => {
+        text += `\n${index + 1}. ${item.creditor || item.accountName || 'Unknown'}\n`;
+        text += `   Balance: $${item.balance || 0}\n`;
+        text += `   Status: ${item.status || 'Unknown'}\n`;
+      });
+      text += "\n";
+    }
+    
+    if (result.collections && result.collections.length > 0) {
+      text += "COLLECTIONS:\n";
+      result.collections.forEach((item: any, index: number) => {
+        text += `\n${index + 1}. ${item.creditor || item.collector || 'Unknown'}\n`;
+        text += `   Original Amount: $${item.originalAmount || item.balance || 0}\n`;
+      });
+    }
+    
+    return text;
   };
 
   const handleNewAnalysis = () => {
@@ -279,12 +374,12 @@ Creditor: Capital One"
                   <Button
                     className="w-full bg-gradient-primary hover:opacity-90"
                     onClick={handleAnalyze}
-                    disabled={isAnalyzing || (!reportText.trim() && !selectedFile)}
+                    disabled={isAnalyzing || isUploading || (!reportText.trim() && !selectedFile)}
                   >
-                    {isAnalyzing ? (
+                    {isAnalyzing || isUploading ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Analyzing with AI...
+                        {isUploading ? 'Processing File...' : 'Analyzing with AI...'}
                       </>
                     ) : (
                       <>
