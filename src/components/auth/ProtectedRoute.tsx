@@ -12,7 +12,8 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   const { user, role, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  // Show loading while auth state or role is being determined
+  if (loading || (user && role === null)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">

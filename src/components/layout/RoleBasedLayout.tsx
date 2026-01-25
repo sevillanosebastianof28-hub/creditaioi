@@ -4,13 +4,26 @@ import { Sidebar } from './Sidebar';
 import { ClientSidebar } from './ClientSidebar';
 import { VASidebar } from './VASidebar';
 import { Header } from './Header';
+import { Loader2 } from 'lucide-react';
 
 interface RoleBasedLayoutProps {
   children: ReactNode;
 }
 
 export function RoleBasedLayout({ children }: RoleBasedLayoutProps) {
-  const { role } = useAuth();
+  const { role, loading, user } = useAuth();
+
+  // Show loading state while role is being determined
+  if (loading || (user && role === null)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const getSidebar = () => {
     switch (role) {
