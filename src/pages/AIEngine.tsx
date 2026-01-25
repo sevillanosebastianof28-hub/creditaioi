@@ -146,17 +146,66 @@ const AIEngine = () => {
     await analyzeReport(reportText);
   };
 
+  // Helper to safely extract a numeric/string value from potentially complex objects
+  const extractValue = (val: any): string => {
+    if (val === null || val === undefined) return 'N/A';
+    if (typeof val === 'number') return val.toString();
+    if (typeof val === 'string') return val;
+    if (typeof val === 'object') {
+      // Handle date-stamped objects like {date: "2024-01-01", score: 650}
+      if (val.score !== undefined) return extractValue(val.score);
+      if (val.value !== undefined) return extractValue(val.value);
+      if (val.amount !== undefined) return extractValue(val.amount);
+      // Handle bureau-specific objects like {Equifax: 650, Experian: 640}
+      const keys = Object.keys(val);
+      if (keys.length > 0) {
+        const values = keys.map(k => `${k}: ${extractValue(val[k])}`).join(', ');
+        return values;
+      }
+    }
+    return 'N/A';
+  };
+
+  const extractNumericValue = (val: any): number => {
+    if (val === null || val === undefined) return 0;
+    if (typeof val === 'number') return val;
+    if (typeof val === 'string') {
+      const parsed = parseFloat(val.replace(/[^0-9.-]/g, ''));
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    if (typeof val === 'object') {
+      if (val.score !== undefined) return extractNumericValue(val.score);
+      if (val.value !== undefined) return extractNumericValue(val.value);
+      if (val.amount !== undefined) return extractNumericValue(val.amount);
+      // Average bureau values
+      const keys = Object.keys(val);
+      if (keys.length > 0) {
+        const sum = keys.reduce((acc, k) => acc + extractNumericValue(val[k]), 0);
+        return Math.round(sum / keys.length);
+      }
+    }
+    return 0;
+  };
+
   const formatOCRResultToText = (result: any): string => {
     let text = "CREDIT REPORT ANALYSIS\n\n";
     
     if (result.personalInfo) {
-      text += `PERSONAL INFO:\n${JSON.stringify(result.personalInfo, null, 2)}\n\n`;
+      const pi = result.personalInfo;
+      text += "PERSONAL INFO:\n";
+      if (pi.name) text += `  Name: ${extractValue(pi.name)}\n`;
+      if (pi.address) text += `  Address: ${extractValue(pi.address)}\n`;
+      if (pi.ssn4 || pi.ssn) text += `  SSN (last 4): ${extractValue(pi.ssn4 || pi.ssn)}\n`;
+      if (pi.dob) text += `  DOB: ${extractValue(pi.dob)}\n`;
+      text += "\n";
     }
     
     if (result.scores && result.scores.length > 0) {
       text += "CREDIT SCORES:\n";
       result.scores.forEach((score: any) => {
-        text += `- ${score.bureau}: ${score.score}\n`;
+        const bureau = extractValue(score.bureau);
+        const scoreVal = extractNumericValue(score.score);
+        text += `  - ${bureau}: ${scoreVal}\n`;
       });
       text += "\n";
     }
@@ -164,12 +213,19 @@ const AIEngine = () => {
     if (result.negativeItems && result.negativeItems.length > 0) {
       text += "NEGATIVE ITEMS:\n";
       result.negativeItems.forEach((item: any, index: number) => {
-        text += `\n${index + 1}. ${item.creditor || item.accountName || 'Unknown Account'}\n`;
-        text += `   Type: ${item.accountType || item.type || 'Unknown'}\n`;
-        text += `   Status: ${item.status || 'Unknown'}\n`;
-        text += `   Balance: $${item.balance || 0}\n`;
-        if (item.dateOpened) text += `   Date Opened: ${item.dateOpened}\n`;
-        if (item.bureaus) text += `   Bureaus: ${item.bureaus.join(', ')}\n`;
+        const creditor = extractValue(item.creditor || item.accountName || item.creditorName);
+        text += `\n  ${index + 1}. Creditor: ${creditor}\n`;
+        text += `     Account Type: ${extractValue(item.accountType || item.type)}\n`;
+        text += `     Status: ${extractValue(item.status)}\n`;
+        text += `     Balance: $${extractNumericValue(item.balance)}\n`;
+        text += `     Original Balance: $${extractNumericValue(item.originalBalance || item.highBalance)}\n`;
+        if (item.dateOpened) text += `     Date Opened: ${extractValue(item.dateOpened)}\n`;
+        if (item.dateOfFirstDelinquency || item.dofd) text += `     DOFD: ${extractValue(item.dateOfFirstDelinquency || item.dofd)}\n`;
+        if (item.bureaus) {
+          const bureaus = Array.isArray(item.bureaus) ? item.bureaus.join(', ') : extractValue(item.bureaus);
+          text += `     Bureaus: ${bureaus}\n`;
+        }
+        if (item.paymentHistory) text += `     Payment History: ${extractValue(item.paymentHistory)}\n`;
       });
       text += "\n";
     }
@@ -177,9 +233,14 @@ const AIEngine = () => {
     if (result.tradelines && result.tradelines.length > 0) {
       text += "TRADELINES:\n";
       result.tradelines.forEach((item: any, index: number) => {
-        text += `\n${index + 1}. ${item.creditor || item.accountName || 'Unknown'}\n`;
-        text += `   Balance: $${item.balance || 0}\n`;
-        text += `   Status: ${item.status || 'Unknown'}\n`;
+        const creditor = extractValue(item.creditor || item.accountName || item.creditorName);
+        text += `\n  ${index + 1}. Creditor: ${creditor}\n`;
+        text += `     Account Type: ${extractValue(item.accountType || item.type)}\n`;
+        text += `     Balance: $${extractNumericValue(item.balance)}\n`;
+        text += `     Credit Limit: $${extractNumericValue(item.creditLimit || item.limit)}\n`;
+        text += `     Status: ${extractValue(item.status)}\n`;
+        if (item.dateOpened) text += `     Date Opened: ${extractValue(item.dateOpened)}\n`;
+        if (item.paymentHistory) text += `     Payment History: ${extractValue(item.paymentHistory)}\n`;
       });
       text += "\n";
     }
@@ -187,9 +248,26 @@ const AIEngine = () => {
     if (result.collections && result.collections.length > 0) {
       text += "COLLECTIONS:\n";
       result.collections.forEach((item: any, index: number) => {
-        text += `\n${index + 1}. ${item.creditor || item.collector || 'Unknown'}\n`;
-        text += `   Original Amount: $${item.originalAmount || item.balance || 0}\n`;
+        const creditor = extractValue(item.creditor || item.collector || item.collectionAgency);
+        const originalCreditor = extractValue(item.originalCreditor);
+        text += `\n  ${index + 1}. Collection Agency: ${creditor}\n`;
+        if (originalCreditor !== 'N/A') text += `     Original Creditor: ${originalCreditor}\n`;
+        text += `     Balance: $${extractNumericValue(item.balance)}\n`;
+        text += `     Original Amount: $${extractNumericValue(item.originalAmount || item.originalBalance)}\n`;
+        if (item.dateOpened || item.datePlaced) text += `     Date Placed: ${extractValue(item.dateOpened || item.datePlaced)}\n`;
+        if (item.dateOfFirstDelinquency || item.dofd) text += `     DOFD: ${extractValue(item.dateOfFirstDelinquency || item.dofd)}\n`;
       });
+      text += "\n";
+    }
+
+    if (result.inquiries && result.inquiries.length > 0) {
+      text += "INQUIRIES:\n";
+      result.inquiries.forEach((item: any, index: number) => {
+        text += `\n  ${index + 1}. Creditor: ${extractValue(item.creditor || item.inquiryBy)}\n`;
+        text += `     Date: ${extractValue(item.date || item.inquiryDate)}\n`;
+        text += `     Type: ${extractValue(item.type || 'Hard Inquiry')}\n`;
+      });
+      text += "\n";
     }
     
     return text;
