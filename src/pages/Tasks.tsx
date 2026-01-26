@@ -24,7 +24,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
-import { demoTasks } from '@/data/mockData';
 import {
   Clock,
   CheckCircle,
@@ -49,19 +48,17 @@ const priorityColors: Record<string, string> = {
 const TaskCard = ({ 
   task, 
   onUpdate, 
-  onDelete,
-  isDemo = false
+  onDelete
 }: { 
-  task: Task | typeof demoTasks[0]; 
+  task: Task; 
   onUpdate: (id: string, updates: Partial<Task>) => void;
   onDelete: (id: string) => void;
-  isDemo?: boolean;
 }) => {
   const handleStartTask = () => onUpdate(task.id, { status: 'in_progress' });
   const handleCompleteTask = () => onUpdate(task.id, { status: 'completed' });
 
-  const aiGenerated = 'ai_generated' in task ? task.ai_generated : false;
-  const clientName = 'client_name' in task ? task.client_name : undefined;
+  const aiGenerated = task.ai_generated ?? false;
+  const clientName = (task as any).client_name as string | undefined;
 
   return (
     <Card className="p-4 hover:border-primary/30 transition-colors">
@@ -97,22 +94,20 @@ const TaskCard = ({
         </div>
         <div className="flex gap-2">
           {task.status === 'pending' && (
-            <Button size="sm" variant="outline" onClick={handleStartTask} disabled={isDemo}>
+            <Button size="sm" variant="outline" onClick={handleStartTask}>
               <Play className="w-3 h-3 mr-1" />
               Start
             </Button>
           )}
           {task.status === 'in_progress' && (
-            <Button size="sm" className="bg-gradient-primary" onClick={handleCompleteTask} disabled={isDemo}>
+            <Button size="sm" className="bg-gradient-primary" onClick={handleCompleteTask}>
               <CheckCircle className="w-3 h-3 mr-1" />
               Complete
             </Button>
           )}
-          {!isDemo && (
-            <Button size="sm" variant="ghost" onClick={() => onDelete(task.id)}>
-              <Trash2 className="w-3 h-3" />
-            </Button>
-          )}
+          <Button size="sm" variant="ghost" onClick={() => onDelete(task.id)}>
+            <Trash2 className="w-3 h-3" />
+          </Button>
         </div>
       </div>
     </Card>
@@ -140,12 +135,12 @@ const Tasks = () => {
     deleteTask 
   } = useTasks();
 
-  // Use demo data if no real tasks exist
-  const isUsingDemo = dbTasks.length === 0;
-  const tasks = isUsingDemo ? demoTasks : dbTasks;
-  const pendingTasks = isUsingDemo ? demoTasks.filter(t => t.status === 'pending') : dbPendingTasks;
-  const inProgressTasks = isUsingDemo ? demoTasks.filter(t => t.status === 'in_progress') : dbInProgressTasks;
-  const completedTasks = isUsingDemo ? demoTasks.filter(t => t.status === 'completed') : dbCompletedTasks;
+  const { tasks, pendingTasks, inProgressTasks, completedTasks } = {
+    tasks: dbTasks,
+    pendingTasks: dbPendingTasks,
+    inProgressTasks: dbInProgressTasks,
+    completedTasks: dbCompletedTasks
+  };
 
   const filteredPending = priorityFilter === 'all' 
     ? pendingTasks 
@@ -191,15 +186,6 @@ const Tasks = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Demo Data Banner */}
-        {isUsingDemo && (
-          <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <p className="text-sm text-primary">
-              Viewing demo data for demonstration purposes. Create tasks to see your data.
-            </p>
-          </div>
-        )}
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -389,13 +375,12 @@ const Tasks = () => {
             </TabsList>
 
             <TabsContent value="pending" className="space-y-3">
-              {filteredPending.map((task: any) => (
+              {filteredPending.map((task) => (
                 <TaskCard 
                   key={task.id} 
                   task={task} 
                   onUpdate={updateTask}
                   onDelete={deleteTask}
-                  isDemo={isUsingDemo}
                 />
               ))}
               {filteredPending.length === 0 && (
@@ -409,13 +394,12 @@ const Tasks = () => {
             </TabsContent>
 
             <TabsContent value="in_progress" className="space-y-3">
-              {filteredInProgress.map((task: any) => (
+              {filteredInProgress.map((task) => (
                 <TaskCard 
                   key={task.id} 
                   task={task} 
                   onUpdate={updateTask}
                   onDelete={deleteTask}
-                  isDemo={isUsingDemo}
                 />
               ))}
               {filteredInProgress.length === 0 && (
@@ -429,13 +413,12 @@ const Tasks = () => {
             </TabsContent>
 
             <TabsContent value="completed" className="space-y-3">
-              {filteredCompleted.map((task: any) => (
+              {filteredCompleted.map((task) => (
                 <TaskCard 
                   key={task.id} 
                   task={task} 
                   onUpdate={updateTask}
                   onDelete={deleteTask}
-                  isDemo={isUsingDemo}
                 />
               ))}
               {filteredCompleted.length === 0 && (

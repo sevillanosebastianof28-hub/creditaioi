@@ -1,78 +1,106 @@
 import { useState } from 'react';
 import { RoleBasedLayout } from '@/components/layout/RoleBasedLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Search, Eye, MessageSquare, FileText, TrendingUp, Clock, Sparkles } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Search, Eye, MessageSquare, FileText, Clock, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-const mockClients = [
-  {
-    id: '1',
-    name: 'Marcus Johnson',
-    email: 'marcus.johnson@email.com',
-    score: { current: 612, change: +32 },
-    status: 'active',
-    disputes: { active: 3, completed: 7 },
-    lastActivity: '2024-01-22',
-    round: 3,
-    aiRecommendation: 'High priority - 3 items ready for Round 3 disputes',
-  },
-  {
-    id: '2',
-    name: 'Jennifer Williams',
-    email: 'jennifer.williams@email.com',
-    score: { current: 545, change: +33 },
-    status: 'active',
-    disputes: { active: 5, completed: 3 },
-    lastActivity: '2024-01-21',
-    round: 2,
-    aiRecommendation: 'Medical collection just deleted - celebrate milestone!',
-  },
-  {
-    id: '3',
-    name: 'David Martinez',
-    email: 'david.martinez@email.com',
-    score: { current: 678, change: +33 },
-    status: 'active',
-    disputes: { active: 2, completed: 6 },
-    lastActivity: '2024-01-23',
-    round: 4,
-    aiRecommendation: 'Ready for auto loan refinance in 30 days',
-  },
-  {
-    id: '4',
-    name: 'Lisa Anderson',
-    email: 'lisa.anderson@email.com',
-    score: { current: 589, change: +24 },
-    status: 'active',
-    disputes: { active: 4, completed: 4 },
-    lastActivity: '2024-01-20',
-    round: 2,
-    aiRecommendation: 'Waiting on bureau response - follow up recommended',
-  },
-  {
-    id: '5',
-    name: 'James Wilson',
-    email: 'james.wilson@email.com',
-    score: { current: 625, change: +18 },
-    status: 'pending_docs',
-    disputes: { active: 2, completed: 5 },
-    lastActivity: '2024-01-19',
-    round: 3,
-    aiRecommendation: 'Missing updated credit report - request new pull',
-  },
-];
+import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function VAClients() {
   const [search, setSearch] = useState('');
+  const { user } = useAuth();
 
-  const filteredClients = mockClients.filter(client =>
+  // Fetch assigned clients for this VA
+  const { data: clients = [], isLoading } = useQuery({
+    queryKey: ['va-clients', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+
+      // Get VA assignments for this VA
+      const { data: assignments } = await supabase
+        .from('va_assignments')
+        .select('client_user_id')
+        .eq('va_user_id', user.id);
+
+      if (!assignments?.length) return [];
+
+      const clientIds = assignments.map(a => a.client_user_id);
+
+      // Get client profiles
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('user_id', clientIds);
+
+      // Get score history
+      const { data: scores } = await supabase
+        .from('score_history')
+        .select('*')
+        .in('user_id', clientIds)
+        .order('recorded_at', { ascending: false });
+
+      // Get dispute counts
+      const { data: disputes } = await supabase
+        .from('dispute_items')
+        .select('client_id, outcome')
+        .in('client_id', clientIds);
+
+      // Get rounds
+      const { data: rounds } = await supabase
+        .from('dispute_rounds')
+        .select('client_id, round_number')
+        .in('client_id', clientIds)
+        .order('round_number', { ascending: false });
+
+      return (profiles || []).map(client => {
+        const latestScore = scores?.find(s => s.user_id === client.user_id);
+        const clientDisputes = disputes?.filter(d => d.client_id === client.user_id) || [];
+        const activeDisputes = clientDisputes.filter(d => ['pending', 'in_progress'].includes(d.outcome)).length;
+        const completedDisputes = clientDisputes.filter(d => ['deleted', 'verified', 'updated'].includes(d.outcome)).length;
+        const latestRound = rounds?.find(r => r.client_id === client.user_id);
+        const avgScore = latestScore ? Math.round(((latestScore.experian || 0) + (latestScore.equifax || 0) + (latestScore.transunion || 0)) / 3) : null;
+
+        return {
+          id: client.user_id,
+          name: `${client.first_name || ''} ${client.last_name || ''}`.trim() || 'Unknown',
+          email: client.email || '',
+          score: { current: avgScore || 0, change: 0 },
+          status: activeDisputes > 0 ? 'active' : 'pending_docs',
+          disputes: { active: activeDisputes, completed: completedDisputes },
+          lastActivity: client.updated_at,
+          round: latestRound?.round_number || 1,
+        };
+      });
+    },
+    enabled: !!user
+  });
+
+  const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(search.toLowerCase()) ||
     client.email.toLowerCase().includes(search.toLowerCase())
   );
+
+  if (isLoading) {
+    return (
+      <RoleBasedLayout>
+        <div className="space-y-6">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-12 w-full" />
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => (
+              <Skeleton key={i} className="h-32 w-full" />
+            ))}
+          </div>
+        </div>
+      </RoleBasedLayout>
+    );
+  }
 
   return (
     <RoleBasedLayout>
@@ -83,7 +111,7 @@ export default function VAClients() {
             <p className="text-muted-foreground mt-1">Manage your assigned clients</p>
           </div>
           <Badge variant="outline" className="text-lg px-4 py-2">
-            {mockClients.length} Assigned
+            {clients.length} Assigned
           </Badge>
         </div>
 
@@ -97,6 +125,17 @@ export default function VAClients() {
             className="pl-10"
           />
         </div>
+
+        {/* No clients state */}
+        {clients.length === 0 && (
+          <Card className="p-12 text-center">
+            <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <h3 className="text-xl font-semibold mb-2">No Clients Assigned</h3>
+            <p className="text-muted-foreground">
+              You don't have any clients assigned yet. Contact your agency owner for assignments.
+            </p>
+          </Card>
+        )}
 
         {/* Clients List */}
         <div className="grid gap-4">
@@ -119,22 +158,14 @@ export default function VAClients() {
                         </Badge>
                         <Badge variant="secondary">Round {client.round}</Badge>
                       </div>
-                      {client.aiRecommendation && (
-                        <div className="flex items-center gap-1.5 mt-2 p-2 rounded-lg bg-primary/5 border border-primary/20">
-                          <Sparkles className="w-3 h-3 text-primary flex-shrink-0" />
-                          <p className="text-xs text-primary">{client.aiRecommendation}</p>
-                        </div>
-                      )}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-6">
                     {/* Score */}
                     <div className="text-center">
-                      <p className="text-2xl font-bold">{client.score.current}</p>
-                      <p className={`text-xs ${client.score.change >= 0 ? 'text-success' : 'text-destructive'}`}>
-                        {client.score.change >= 0 ? '+' : ''}{client.score.change} pts
-                      </p>
+                      <p className="text-2xl font-bold">{client.score.current || '—'}</p>
+                      <p className="text-xs text-muted-foreground">Score</p>
                     </div>
 
                     {/* Disputes */}
