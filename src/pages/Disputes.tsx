@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -15,6 +17,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -24,6 +27,8 @@ import { useDisputeWorkflow, DisputeItem, DisputeRound } from '@/hooks/useDisput
 import { useLetterTracking } from '@/hooks/useLetterTracking';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from '@tanstack/react-query';
 import {
   FileText,
   Send,
@@ -37,16 +42,20 @@ import {
   Eye,
   Loader2,
   Save,
+  User,
 } from 'lucide-react';
 
 const Disputes = () => {
   const { toast } = useToast();
+  const { user, role } = useAuth();
   const [bureauFilter, setBureauFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedItem, setSelectedItem] = useState<DisputeItem | null>(null);
   const [letterContent, setLetterContent] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [newRoundDialogOpen, setNewRoundDialogOpen] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState('');
 
   const { 
     isLoading, 
@@ -58,6 +67,36 @@ const Disputes = () => {
   } = useDisputeWorkflow();
 
   const { saveLetter, updateLetterStatus } = useLetterTracking();
+
+  // Fetch clients for agency owners
+  const { data: clients = [] } = useQuery({
+    queryKey: ['clients-for-disputes', user?.id],
+    queryFn: async () => {
+      if (!user || role !== 'agency_owner') return [];
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('agency_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile?.agency_id) return [];
+
+      const { data: agencyProfiles } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('agency_id', profile.agency_id);
+
+      const { data: clientRoles } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'client');
+
+      const clientUserIds = new Set(clientRoles?.map(r => r.user_id));
+      return (agencyProfiles || []).filter(p => clientUserIds.has(p.user_id));
+    },
+    enabled: !!user && role === 'agency_owner'
+  });
 
   useEffect(() => {
     fetchRounds();
@@ -152,7 +191,22 @@ const Disputes = () => {
   };
 
   const handleNewRound = async () => {
-    await createRound();
+    if (role === 'agency_owner') {
+      setNewRoundDialogOpen(true);
+    } else {
+      // Client creating their own round
+      await createRound();
+    }
+  };
+
+  const handleCreateRoundForClient = async () => {
+    if (!selectedClientId) {
+      toast({ title: "Error", description: "Please select a client", variant: "destructive" });
+      return;
+    }
+    await createRound(selectedClientId);
+    setNewRoundDialogOpen(false);
+    setSelectedClientId('');
   };
 
   if (isLoading) {
@@ -390,6 +444,55 @@ const Disputes = () => {
                 </Button>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* New Round Dialog for Agency Owners */}
+        <Dialog open={newRoundDialogOpen} onOpenChange={setNewRoundDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Dispute Round</DialogTitle>
+              <DialogDescription>
+                Select a client to create a new dispute round for.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Select Client</Label>
+                <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a client..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client: any) => (
+                      <SelectItem key={client.user_id} value={client.user_id}>
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          {client.first_name} {client.last_name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {clients.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No clients found. Add clients first before creating dispute rounds.
+                </p>
+              )}
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setNewRoundDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleCreateRoundForClient} 
+                  disabled={!selectedClientId} 
+                  className="bg-gradient-primary"
+                >
+                  Create Round
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
