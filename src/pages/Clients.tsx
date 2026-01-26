@@ -40,6 +40,7 @@ import {
   UserPlus,
   Users,
   Loader2,
+  Sparkles,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -53,6 +54,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useVAAssignments } from '@/hooks/useVAAssignments';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { demoClients, demoVAStaff } from '@/data/mockData';
 
 const Clients = () => {
   const [search, setSearch] = useState('');
@@ -65,7 +67,7 @@ const Clients = () => {
   const { assignments, vaStaff, assignVAToClient, removeAssignment, isLoading: loadingAssignments } = useVAAssignments();
 
   // Fetch clients from profiles table
-  const { data: clients = [], isLoading } = useQuery({
+  const { data: dbClients = [], isLoading } = useQuery({
     queryKey: ['clients', user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -129,6 +131,11 @@ const Clients = () => {
     enabled: !!user && role === 'agency_owner'
   });
 
+  // Use demo data if no real clients exist
+  const isUsingDemo = dbClients.length === 0;
+  const clients = isUsingDemo ? demoClients : dbClients;
+  const displayVAStaff = vaStaff.length > 0 ? vaStaff : demoVAStaff;
+
   const filteredClients = clients.filter((client: any) => {
     const matchesSearch =
       `${client.first_name || ''} ${client.last_name || ''}`.toLowerCase().includes(search.toLowerCase()) ||
@@ -167,6 +174,16 @@ const Clients = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Demo Data Banner */}
+        {isUsingDemo && (
+          <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <p className="text-sm text-primary">
+              Viewing demo data for demonstration purposes. Add real clients to see your data.
+            </p>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -353,7 +370,7 @@ const Clients = () => {
                   <SelectValue placeholder="Select a VA" />
                 </SelectTrigger>
                 <SelectContent>
-                  {vaStaff.map((va) => (
+                  {displayVAStaff.map((va) => (
                     <SelectItem key={va.user_id} value={va.user_id}>
                       {va.first_name} {va.last_name} ({va.assignedClients} clients)
                     </SelectItem>

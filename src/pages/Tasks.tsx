@@ -24,6 +24,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
+import { demoTasks } from '@/data/mockData';
 import {
   Clock,
   CheckCircle,
@@ -34,6 +35,8 @@ import {
   Plus,
   Play,
   Trash2,
+  Sparkles,
+  User,
 } from 'lucide-react';
 
 const priorityColors: Record<string, string> = {
@@ -46,33 +49,47 @@ const priorityColors: Record<string, string> = {
 const TaskCard = ({ 
   task, 
   onUpdate, 
-  onDelete 
+  onDelete,
+  isDemo = false
 }: { 
-  task: Task; 
+  task: Task | typeof demoTasks[0]; 
   onUpdate: (id: string, updates: Partial<Task>) => void;
   onDelete: (id: string) => void;
+  isDemo?: boolean;
 }) => {
   const handleStartTask = () => onUpdate(task.id, { status: 'in_progress' });
   const handleCompleteTask = () => onUpdate(task.id, { status: 'completed' });
+
+  const aiGenerated = 'ai_generated' in task ? task.ai_generated : false;
+  const clientName = 'client_name' in task ? task.client_name : undefined;
 
   return (
     <Card className="p-4 hover:border-primary/30 transition-colors">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <h4 className="font-medium">{task.title}</h4>
             <Badge variant="outline" className={cn('text-xs', priorityColors[task.priority])}>
               {task.priority}
             </Badge>
-            {task.ai_generated && (
-              <Badge variant="secondary" className="text-xs">AI</Badge>
+            {aiGenerated && (
+              <Badge variant="secondary" className="text-xs bg-gradient-primary text-primary-foreground">
+                <Sparkles className="w-3 h-3 mr-1" />
+                AI
+              </Badge>
             )}
           </div>
           {task.description && (
             <p className="text-sm text-muted-foreground mb-2">{task.description}</p>
           )}
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
             <span>Type: {task.task_type}</span>
+            {clientName && (
+              <span className="flex items-center gap-1">
+                <User className="w-3 h-3" />
+                {clientName}
+              </span>
+            )}
             {task.due_date && (
               <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
             )}
@@ -80,20 +97,22 @@ const TaskCard = ({
         </div>
         <div className="flex gap-2">
           {task.status === 'pending' && (
-            <Button size="sm" variant="outline" onClick={handleStartTask}>
+            <Button size="sm" variant="outline" onClick={handleStartTask} disabled={isDemo}>
               <Play className="w-3 h-3 mr-1" />
               Start
             </Button>
           )}
           {task.status === 'in_progress' && (
-            <Button size="sm" className="bg-gradient-primary" onClick={handleCompleteTask}>
+            <Button size="sm" className="bg-gradient-primary" onClick={handleCompleteTask} disabled={isDemo}>
               <CheckCircle className="w-3 h-3 mr-1" />
               Complete
             </Button>
           )}
-          <Button size="sm" variant="ghost" onClick={() => onDelete(task.id)}>
-            <Trash2 className="w-3 h-3" />
-          </Button>
+          {!isDemo && (
+            <Button size="sm" variant="ghost" onClick={() => onDelete(task.id)}>
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          )}
         </div>
       </div>
     </Card>
@@ -112,14 +131,21 @@ const Tasks = () => {
 
   const { 
     isLoading, 
-    tasks, 
-    pendingTasks, 
-    inProgressTasks, 
-    completedTasks,
+    tasks: dbTasks, 
+    pendingTasks: dbPendingTasks, 
+    inProgressTasks: dbInProgressTasks, 
+    completedTasks: dbCompletedTasks,
     createTask,
     updateTask,
     deleteTask 
   } = useTasks();
+
+  // Use demo data if no real tasks exist
+  const isUsingDemo = dbTasks.length === 0;
+  const tasks = isUsingDemo ? demoTasks : dbTasks;
+  const pendingTasks = isUsingDemo ? demoTasks.filter(t => t.status === 'pending') : dbPendingTasks;
+  const inProgressTasks = isUsingDemo ? demoTasks.filter(t => t.status === 'in_progress') : dbInProgressTasks;
+  const completedTasks = isUsingDemo ? demoTasks.filter(t => t.status === 'completed') : dbCompletedTasks;
 
   const filteredPending = priorityFilter === 'all' 
     ? pendingTasks 
@@ -165,6 +191,16 @@ const Tasks = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Demo Data Banner */}
+        {isUsingDemo && (
+          <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <p className="text-sm text-primary">
+              Viewing demo data for demonstration purposes. Create tasks to see your data.
+            </p>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -353,12 +389,13 @@ const Tasks = () => {
             </TabsList>
 
             <TabsContent value="pending" className="space-y-3">
-              {filteredPending.map((task) => (
+              {filteredPending.map((task: any) => (
                 <TaskCard 
                   key={task.id} 
                   task={task} 
                   onUpdate={updateTask}
                   onDelete={deleteTask}
+                  isDemo={isUsingDemo}
                 />
               ))}
               {filteredPending.length === 0 && (
@@ -372,12 +409,13 @@ const Tasks = () => {
             </TabsContent>
 
             <TabsContent value="in_progress" className="space-y-3">
-              {filteredInProgress.map((task) => (
+              {filteredInProgress.map((task: any) => (
                 <TaskCard 
                   key={task.id} 
                   task={task} 
                   onUpdate={updateTask}
                   onDelete={deleteTask}
+                  isDemo={isUsingDemo}
                 />
               ))}
               {filteredInProgress.length === 0 && (
@@ -391,12 +429,13 @@ const Tasks = () => {
             </TabsContent>
 
             <TabsContent value="completed" className="space-y-3">
-              {filteredCompleted.map((task) => (
+              {filteredCompleted.map((task: any) => (
                 <TaskCard 
                   key={task.id} 
                   task={task} 
                   onUpdate={updateTask}
                   onDelete={deleteTask}
+                  isDemo={isUsingDemo}
                 />
               ))}
               {filteredCompleted.length === 0 && (
