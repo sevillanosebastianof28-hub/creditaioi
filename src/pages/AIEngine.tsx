@@ -87,15 +87,15 @@ const AIEngine = () => {
   };
 
   const handleAnalyze = async () => {
-    // Handle PDF and image files through OCR parser
+    // Handle PDF and image files through OCR parser - uses faster model
     if (selectedFile && selectedFile.type !== 'text/plain') {
       setIsUploading(true);
       try {
         const base64 = await parseFileToBase64(selectedFile);
         
         toast({
-          title: "Processing File",
-          description: "Extracting text from your document with AI OCR...",
+          title: "Analyzing Document",
+          description: "AI is extracting and analyzing your credit report...",
         });
 
         const { data, error } = await supabase.functions.invoke('ocr-document-parser', {
@@ -107,11 +107,16 @@ const AIEngine = () => {
 
         if (error) throw error;
 
-        if (data?.result?.rawText) {
+        // Check if OCR returned structured data or raw text
+        if (data?.result?.negativeItems && data.result.negativeItems.length > 0) {
+          // Format structured OCR data for analysis
+          const formattedText = formatOCRResultToText(data.result);
+          await analyzeReport(formattedText);
+        } else if (data?.result?.rawText) {
           // Use the extracted text for analysis
           await analyzeReport(data.result.rawText);
-        } else if (data?.result?.negativeItems && data.result.negativeItems.length > 0) {
-          // If OCR returned structured data directly, format it for analysis
+        } else if (data?.result?.tradelines || data?.result?.collections) {
+          // Has structured data but no negative items - still format and analyze
           const formattedText = formatOCRResultToText(data.result);
           await analyzeReport(formattedText);
         } else {
