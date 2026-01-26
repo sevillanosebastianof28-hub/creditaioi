@@ -5,49 +5,64 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Search, Eye, MessageSquare, FileText, TrendingUp, Clock } from 'lucide-react';
+import { Search, Eye, MessageSquare, FileText, TrendingUp, Clock, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const mockClients = [
   {
     id: '1',
-    name: 'John Doe',
-    email: 'john@email.com',
-    score: { current: 645, change: +15 },
+    name: 'Marcus Johnson',
+    email: 'marcus.johnson@email.com',
+    score: { current: 612, change: +32 },
     status: 'active',
-    disputes: { active: 3, completed: 5 },
-    lastActivity: '2024-05-20',
-    round: 2,
+    disputes: { active: 3, completed: 7 },
+    lastActivity: '2024-01-22',
+    round: 3,
+    aiRecommendation: 'High priority - 3 items ready for Round 3 disputes',
   },
   {
     id: '2',
-    name: 'Jane Smith',
-    email: 'jane@email.com',
-    score: { current: 580, change: +22 },
+    name: 'Jennifer Williams',
+    email: 'jennifer.williams@email.com',
+    score: { current: 545, change: +33 },
     status: 'active',
-    disputes: { active: 5, completed: 2 },
-    lastActivity: '2024-05-19',
-    round: 1,
+    disputes: { active: 5, completed: 3 },
+    lastActivity: '2024-01-21',
+    round: 2,
+    aiRecommendation: 'Medical collection just deleted - celebrate milestone!',
   },
   {
     id: '3',
-    name: 'Mike Johnson',
-    email: 'mike@email.com',
-    score: { current: 710, change: +8 },
-    status: 'pending_docs',
-    disputes: { active: 1, completed: 12 },
-    lastActivity: '2024-05-18',
+    name: 'David Martinez',
+    email: 'david.martinez@email.com',
+    score: { current: 678, change: +33 },
+    status: 'active',
+    disputes: { active: 2, completed: 6 },
+    lastActivity: '2024-01-23',
     round: 4,
+    aiRecommendation: 'Ready for auto loan refinance in 30 days',
   },
   {
     id: '4',
-    name: 'Sarah Williams',
-    email: 'sarah@email.com',
-    score: { current: 620, change: -5 },
+    name: 'Lisa Anderson',
+    email: 'lisa.anderson@email.com',
+    score: { current: 589, change: +24 },
     status: 'active',
-    disputes: { active: 4, completed: 3 },
-    lastActivity: '2024-05-20',
+    disputes: { active: 4, completed: 4 },
+    lastActivity: '2024-01-20',
     round: 2,
+    aiRecommendation: 'Waiting on bureau response - follow up recommended',
+  },
+  {
+    id: '5',
+    name: 'James Wilson',
+    email: 'james.wilson@email.com',
+    score: { current: 625, change: +18 },
+    status: 'pending_docs',
+    disputes: { active: 2, completed: 5 },
+    lastActivity: '2024-01-19',
+    round: 3,
+    aiRecommendation: 'Missing updated credit report - request new pull',
   },
 ];
 
@@ -98,12 +113,18 @@ export default function VAClients() {
                     <div>
                       <h3 className="font-semibold">{client.name}</h3>
                       <p className="text-sm text-muted-foreground">{client.email}</p>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <Badge variant={client.status === 'active' ? 'default' : 'outline'}>
                           {client.status === 'active' ? 'Active' : 'Pending Docs'}
                         </Badge>
                         <Badge variant="secondary">Round {client.round}</Badge>
                       </div>
+                      {client.aiRecommendation && (
+                        <div className="flex items-center gap-1.5 mt-2 p-2 rounded-lg bg-primary/5 border border-primary/20">
+                          <Sparkles className="w-3 h-3 text-primary flex-shrink-0" />
+                          <p className="text-xs text-primary">{client.aiRecommendation}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
 

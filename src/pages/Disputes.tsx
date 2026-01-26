@@ -24,6 +24,7 @@ import { useDisputeWorkflow, DisputeItem, DisputeRound } from '@/hooks/useDisput
 import { useLetterTracking } from '@/hooks/useLetterTracking';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { demoDisputeItems } from '@/data/mockData';
 import {
   FileText,
   Send,
@@ -66,9 +67,13 @@ const Disputes = () => {
   }, [fetchRounds]);
 
   // Flatten all items from all rounds
-  const allItems = rounds.flatMap(round => 
+  const dbItems = rounds.flatMap(round => 
     round.items.map(item => ({ ...item, round_number: round.round_number, round_status: round.status }))
   );
+
+  // Use demo data if no real items exist
+  const isUsingDemo = dbItems.length === 0;
+  const allItems = isUsingDemo ? demoDisputeItems as any[] : dbItems;
 
   const filteredItems = allItems.filter((item) => {
     const matchesBureau = bureauFilter === 'all' || item.bureau === bureauFilter;
@@ -178,6 +183,16 @@ const Disputes = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Demo Data Banner */}
+        {isUsingDemo && (
+          <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <p className="text-sm text-primary">
+              Viewing demo data for demonstration purposes. Connect clients to see real disputes.
+            </p>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
