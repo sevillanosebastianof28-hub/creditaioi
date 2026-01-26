@@ -50,17 +50,22 @@ import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useVAAssignments } from '@/hooks/useVAAssignments';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { Label } from '@/components/ui/label';
 const Clients = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [addClientDialogOpen, setAddClientDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [selectedVA, setSelectedVA] = useState<string>('');
+  const [newClient, setNewClient] = useState({ first_name: '', last_name: '', email: '', phone: '' });
+  const [isCreating, setIsCreating] = useState(false);
   const navigate = useNavigate();
   const { user, role } = useAuth();
   const { assignments, vaStaff, assignVAToClient, removeAssignment, isLoading: loadingAssignments } = useVAAssignments();
+  const queryClient = useQueryClient();
 
   // Fetch clients from profiles table
   const { data: clients = [], isLoading } = useQuery({
@@ -162,6 +167,66 @@ const Clients = () => {
     toast.success('Assignment removed');
   };
 
+  const handleAddClient = async () => {
+    if (!newClient.email.trim() || !newClient.first_name.trim()) {
+      toast.error('Email and first name are required');
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      // Get agency_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('agency_id')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (!profile?.agency_id) {
+        toast.error('No agency found');
+        return;
+      }
+
+      // Create auth user via edge function or direct profile insert for demo
+      // For now, we'll create a profile entry directly (in production, you'd invite via email)
+      const tempUserId = crypto.randomUUID();
+      
+      // Insert profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          user_id: tempUserId,
+          agency_id: profile.agency_id,
+          first_name: newClient.first_name,
+          last_name: newClient.last_name,
+          email: newClient.email,
+          phone: newClient.phone
+        });
+
+      if (profileError) throw profileError;
+
+      // Insert client role
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: tempUserId,
+          role: 'client'
+        });
+
+      if (roleError) throw roleError;
+
+      toast.success('Client added successfully');
+      setAddClientDialogOpen(false);
+      setNewClient({ first_name: '', last_name: '', email: '', phone: '' });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+    } catch (error: any) {
+      console.error('Error adding client:', error);
+      toast.error(error.message || 'Failed to add client');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -174,7 +239,7 @@ const Clients = () => {
               Manage your credit repair clients and their progress.
             </p>
           </div>
-          <Button className="bg-gradient-primary hover:opacity-90">
+          <Button className="bg-gradient-primary hover:opacity-90" onClick={() => setAddClientDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Add Client
           </Button>
@@ -365,6 +430,72 @@ const Clients = () => {
                 </Button>
                 <Button onClick={handleAssignVA} disabled={!selectedVA} className="bg-gradient-primary">
                   Assign VA
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Client Dialog */}
+        <Dialog open={addClientDialogOpen} onOpenChange={setAddClientDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Client</DialogTitle>
+              <DialogDescription>
+                Enter the client's information to add them to your agency.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="first_name">First Name *</Label>
+                  <Input
+                    id="first_name"
+                    value={newClient.first_name}
+                    onChange={(e) => setNewClient(prev => ({ ...prev, first_name: e.target.value }))}
+                    placeholder="John"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="last_name">Last Name</Label>
+                  <Input
+                    id="last_name"
+                    value={newClient.last_name}
+                    onChange={(e) => setNewClient(prev => ({ ...prev, last_name: e.target.value }))}
+                    placeholder="Doe"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={newClient.email}
+                  onChange={(e) => setNewClient(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="john.doe@example.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={newClient.phone}
+                  onChange={(e) => setNewClient(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="(555) 123-4567"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setAddClientDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleAddClient} 
+                  disabled={isCreating || !newClient.email.trim() || !newClient.first_name.trim()} 
+                  className="bg-gradient-primary"
+                >
+                  {isCreating ? 'Adding...' : 'Add Client'}
                 </Button>
               </div>
             </div>

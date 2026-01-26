@@ -38,11 +38,15 @@ export function useDisputeWorkflow() {
     if (!user) return;
     setIsLoading(true);
     try {
-      const { data: roundsData, error: roundsError } = await supabase
+      // Agency owners see all rounds, clients see only their own
+      let roundsQuery = supabase
         .from('dispute_rounds')
         .select('*')
-        .eq('client_id', user.id)
         .order('round_number', { ascending: false });
+
+      // RLS will handle filtering - agency owners can see all via has_role policy
+
+      const { data: roundsData, error: roundsError } = await roundsQuery;
 
       if (roundsError) throw roundsError;
 
@@ -70,15 +74,25 @@ export function useDisputeWorkflow() {
     }
   }, [user]);
 
-  const createRound = useCallback(async () => {
+  const createRound = useCallback(async (clientId?: string) => {
     if (!user) return null;
     try {
-      const nextNumber = rounds.length > 0 ? Math.max(...rounds.map(r => r.round_number)) + 1 : 1;
+      const targetClientId = clientId || user.id;
+      
+      // Get existing rounds for this client
+      const { data: existingRounds } = await supabase
+        .from('dispute_rounds')
+        .select('round_number')
+        .eq('client_id', targetClientId)
+        .order('round_number', { ascending: false })
+        .limit(1);
+
+      const nextNumber = existingRounds && existingRounds.length > 0 ? existingRounds[0].round_number + 1 : 1;
       
       const { data, error } = await supabase
         .from('dispute_rounds')
         .insert({
-          client_id: user.id,
+          client_id: targetClientId,
           round_number: nextNumber,
           status: 'pending',
           started_at: new Date().toISOString()
@@ -99,7 +113,7 @@ export function useDisputeWorkflow() {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return null;
     }
-  }, [user, rounds, toast]);
+  }, [user, toast]);
 
   const addItemToRound = useCallback(async (
     roundId: string,
