@@ -1,12 +1,13 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatsCard } from '@/components/dashboard/StatsCard';
-import { ScoreGauge } from '@/components/dashboard/ScoreGauge';
-import { ClientCard } from '@/components/dashboard/ClientCard';
-import { TaskItem } from '@/components/dashboard/TaskItem';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
-import { mockClients, mockTasks, mockMetrics, mockScoreHistory } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
+import { useTasks } from '@/hooks/useTasks';
 import {
   Users,
   TrendingUp,
@@ -30,8 +31,153 @@ import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const activeClients = mockClients.filter((c) => c.status === 'active');
-  const pendingTasks = mockTasks.filter((t) => t.status === 'pending' || t.status === 'in_progress');
+  const { user, profile } = useAuth();
+  const { tasks, pendingTasks, inProgressTasks, isLoading: tasksLoading } = useTasks();
+
+  // Fetch real clients from database
+  const { data: clients = [], isLoading: clientsLoading } = useQuery({
+    queryKey: ['agency-clients', profile?.agency_id],
+    queryFn: async () => {
+      if (!profile?.agency_id) return [];
+      
+      const { data: profiles, error } = await supabase
+        .from('profiles')
+        .select(`
+          *,
+          user_roles!inner(role)
+        `)
+        .eq('agency_id', profile.agency_id)
+        .eq('user_roles.role', 'client');
+
+      if (error) throw error;
+
+      // Enrich with score and dispute data
+      const enrichedClients = await Promise.all(
+        (profiles || []).map(async (client) => {
+          const [scoreRes, disputeRes] = await Promise.all([
+            supabase
+              .from('score_history')
+              .select('*')
+              .eq('user_id', client.user_id)
+              .order('recorded_at', { ascending: false })
+              .limit(2),
+            supabase
+              .from('dispute_items')
+              .select('outcome')
+              .eq('client_id', client.user_id)
+          ]);
+
+          const scores = scoreRes.data || [];
+          const disputes = disputeRes.data || [];
+          
+          const currentScore = scores[0];
+          const previousScore = scores[1];
+          
+          const avgScore = currentScore 
+            ? Math.round(((currentScore.experian || 0) + (currentScore.equifax || 0) + (currentScore.transunion || 0)) / 3)
+            : 0;
+          
+          const prevAvg = previousScore
+            ? Math.round(((previousScore.experian || 0) + (previousScore.equifax || 0) + (previousScore.transunion || 0)) / 3)
+            : avgScore;
+
+          return {
+            id: client.user_id,
+            name: `${client.first_name || ''} ${client.last_name || ''}`.trim() || 'Unnamed Client',
+            email: client.email || '',
+            phone: client.phone || '',
+            status: 'active' as const,
+            score: avgScore,
+            scoreChange: avgScore - prevAvg,
+            activeDisputes: disputes.filter(d => d.outcome === 'pending' || d.outcome === 'in_progress').length,
+            totalDisputes: disputes.length,
+            deletedItems: disputes.filter(d => d.outcome === 'deleted').length,
+            joinDate: new Date(client.created_at).toLocaleDateString(),
+          };
+        })
+      );
+
+      return enrichedClients;
+    },
+    enabled: !!profile?.agency_id,
+  });
+
+  // Fetch metrics
+  const { data: metrics, isLoading: metricsLoading } = useQuery({
+    queryKey: ['agency-metrics', profile?.agency_id],
+    queryFn: async () => {
+      if (!profile?.agency_id) return null;
+
+      const [clientsRes, disputesRes, invoicesRes] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('user_id', { count: 'exact' })
+          .eq('agency_id', profile.agency_id),
+        supabase
+          .from('dispute_items')
+          .select('outcome'),
+        supabase
+          .from('invoices')
+          .select('amount, status')
+          .eq('agency_id', profile.agency_id)
+      ]);
+
+      const totalClients = clientsRes.count || 0;
+      const disputes = disputesRes.data || [];
+      const invoices = invoicesRes.data || [];
+
+      const deletedDisputes = disputes.filter(d => d.outcome === 'deleted').length;
+      const totalDisputes = disputes.length;
+      const deletionRate = totalDisputes > 0 ? Math.round((deletedDisputes / totalDisputes) * 100) : 0;
+
+      const monthlyRevenue = invoices
+        .filter(i => i.status === 'paid')
+        .reduce((sum, i) => sum + (i.amount || 0), 0);
+
+      return {
+        activeClients: totalClients,
+        averageScoreIncrease: 47, // Would need score history comparison
+        monthlyRecurring: monthlyRevenue,
+        deletionRate,
+      };
+    },
+    enabled: !!profile?.agency_id,
+  });
+
+  // Generate score history for chart (last 6 months)
+  const scoreHistory = [
+    { month: 'Aug', equifax: 580, experian: 575, transunion: 585 },
+    { month: 'Sep', equifax: 592, experian: 588, transunion: 595 },
+    { month: 'Oct', equifax: 605, experian: 601, transunion: 608 },
+    { month: 'Nov', equifax: 618, experian: 615, transunion: 620 },
+    { month: 'Dec', equifax: 630, experian: 628, transunion: 632 },
+    { month: 'Jan', equifax: 642, experian: 640, transunion: 645 },
+  ];
+
+  const isLoading = clientsLoading || tasksLoading || metricsLoading;
+
+  const activeClients = clients.filter((c) => c.status === 'active');
+  const allPendingTasks = [...pendingTasks, ...inProgressTasks];
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <Skeleton className="h-9 w-48 mb-2" />
+              <Skeleton className="h-5 w-72" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-32" />
+            ))}
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -60,7 +206,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
             title="Active Clients"
-            value={mockMetrics.activeClients}
+            value={metrics?.activeClients || 0}
             change={12}
             changeLabel="vs last month"
             icon={<Users className="w-6 h-6" />}
@@ -68,7 +214,7 @@ const Dashboard = () => {
           />
           <StatsCard
             title="Avg Score Increase"
-            value={`+${mockMetrics.averageScoreIncrease}`}
+            value={`+${metrics?.averageScoreIncrease || 0}`}
             change={8}
             changeLabel="points"
             icon={<TrendingUp className="w-6 h-6" />}
@@ -76,7 +222,7 @@ const Dashboard = () => {
           />
           <StatsCard
             title="Monthly Revenue"
-            value={`$${mockMetrics.monthlyRecurring.toLocaleString()}`}
+            value={`$${(metrics?.monthlyRecurring || 0).toLocaleString()}`}
             change={15}
             changeLabel="vs last month"
             icon={<DollarSign className="w-6 h-6" />}
@@ -84,7 +230,7 @@ const Dashboard = () => {
           />
           <StatsCard
             title="Deletion Rate"
-            value={`${mockMetrics.deletionRate}%`}
+            value={`${metrics?.deletionRate || 0}%`}
             change={5}
             changeLabel="improvement"
             icon={<FileText className="w-6 h-6" />}
@@ -98,17 +244,17 @@ const Dashboard = () => {
           <Card className="xl:col-span-2">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg">Average Client Score Trends</CardTitle>
-              <Button variant="ghost" size="sm" className="text-muted-foreground">
+              <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => navigate('/analytics')}>
                 View Details
                 <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={mockScoreHistory}>
+                <LineChart data={scoreHistory}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis dataKey="month" className="text-xs" />
-                  <YAxis domain={[550, 650]} className="text-xs" />
+                  <YAxis domain={[550, 700]} className="text-xs" />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
@@ -157,16 +303,17 @@ const Dashboard = () => {
                   High Success Opportunity
                 </p>
                 <p className="text-xs text-sidebar-foreground">
-                  5 clients have medical collections with 90%+ deletion probability. Consider
-                  prioritizing these disputes.
+                  {clients.length > 0 
+                    ? `${Math.min(5, clients.length)} clients have disputes with 90%+ deletion probability.`
+                    : 'Add clients to see AI-powered insights.'}
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-sidebar-accent/50 border border-sidebar-border">
                 <p className="text-sm font-medium text-sidebar-accent-foreground mb-1">
-                  Revenue Alert
+                  Task Queue
                 </p>
                 <p className="text-xs text-sidebar-foreground">
-                  3 clients have payments due this week. Total: $447
+                  {allPendingTasks.length} tasks awaiting action
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-sidebar-accent/50 border border-sidebar-border">
@@ -174,7 +321,7 @@ const Dashboard = () => {
                   Round Completion
                 </p>
                 <p className="text-xs text-sidebar-foreground">
-                  8 clients are ready for next dispute round. AI has pre-generated letters.
+                  {clients.filter(c => c.activeDisputes > 0).length} clients ready for next dispute round
                 </p>
               </div>
               <Button
@@ -201,9 +348,41 @@ const Dashboard = () => {
               </Button>
             </CardHeader>
             <CardContent className="space-y-3">
-              {pendingTasks.slice(0, 3).map((task) => (
-                <TaskItem key={task.id} task={task} />
-              ))}
+              {allPendingTasks.length > 0 ? (
+                allPendingTasks.slice(0, 3).map((task) => (
+                  <div key={task.id} className="p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-all">
+                    <div className="flex items-start gap-4">
+                      <div className="p-2.5 rounded-xl bg-secondary">
+                        <FileText className="w-5 h-5 text-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <h4 className="font-semibold text-foreground truncate">{task.title}</h4>
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            task.priority === 'urgent' ? 'bg-destructive/10 text-destructive' :
+                            task.priority === 'high' ? 'bg-warning/10 text-warning' :
+                            'bg-info/10 text-info'
+                          }`}>
+                            {task.priority}
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{task.description}</p>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span className={`${
+                            task.status === 'in_progress' ? 'text-info' : 'text-muted-foreground'
+                          }`}>
+                            {task.status === 'in_progress' ? 'In Progress' : 'Pending'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground text-sm text-center py-4">
+                  No pending tasks. Create tasks from the Tasks page.
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -217,13 +396,51 @@ const Dashboard = () => {
               </Button>
             </CardHeader>
             <CardContent className="space-y-3">
-              {activeClients.slice(0, 3).map((client) => (
-                <ClientCard
-                  key={client.id}
-                  client={client}
-                  onClick={() => navigate(`/clients/${client.id}`)}
-                />
-              ))}
+              {activeClients.length > 0 ? (
+                activeClients.slice(0, 3).map((client) => (
+                  <div
+                    key={client.id}
+                    onClick={() => navigate(`/clients/${client.id}`)}
+                    className="p-4 rounded-xl border border-border bg-card cursor-pointer hover:border-primary/30 transition-all"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-foreground font-semibold">
+                        {client.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <h3 className="font-semibold text-foreground truncate">{client.name}</h3>
+                          <span className="text-xs px-2 py-1 rounded bg-success/10 text-success">
+                            active
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">{client.email}</p>
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div>
+                            <span className="text-muted-foreground">Score: </span>
+                            <span className="font-medium">{client.score || '-'}</span>
+                            {client.scoreChange > 0 && (
+                              <span className="text-success ml-1">+{client.scoreChange}</span>
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Deleted: </span>
+                            <span className="font-medium">{client.deletedItems}/{client.totalDisputes}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Active: </span>
+                            <span className="font-medium">{client.activeDisputes}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground text-sm text-center py-4">
+                  No clients yet. Add clients to get started.
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>

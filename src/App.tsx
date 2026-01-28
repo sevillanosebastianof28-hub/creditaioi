@@ -29,6 +29,7 @@ import AIAutomation from "./pages/AIAutomation";
 import RoundManager from "./pages/RoundManager";
 import OutcomeTracker from "./pages/OutcomeTracker";
 import WhiteLabel from "./pages/WhiteLabel";
+import ResetPassword from "./pages/ResetPassword";
 
 // Role-specific pages
 import ClientDashboard from "./pages/ClientDashboard";
@@ -98,6 +99,9 @@ function AppRouter() {
 
       {/* Public AI Automation Page */}
       <Route path="/ai-automation" element={<AIAutomation />} />
+      
+      {/* Password Reset */}
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Agency Owner Routes (Full Access) */}
       <Route path="/dashboard" element={
