@@ -4,74 +4,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
 import {
   Users,
   ClipboardList,
   Clock,
   CheckCircle2,
-  AlertTriangle,
   FileText,
   Brain,
   ArrowRight,
   Calendar,
   Sparkles,
   Zap,
-  Target,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-
-// Mock data for VA dashboard
-const vaStats = {
-  assignedClients: 12,
-  pendingTasks: 8,
-  completedToday: 5,
-  lettersToReview: 3,
-};
-
-const priorityTasks = [
-  {
-    id: '1',
-    client: 'Sarah Johnson',
-    task: 'Review AI-generated dispute letter for Equifax',
-    priority: 'high',
-    dueDate: 'Today',
-    aiSuggestion: true,
-  },
-  {
-    id: '2',
-    client: 'Marcus Williams',
-    task: 'Upload bureau response documents',
-    priority: 'medium',
-    dueDate: 'Tomorrow',
-    aiSuggestion: false,
-  },
-  {
-    id: '3',
-    client: 'Jennifer Chen',
-    task: 'Prepare Round 3 letters - data breach strategy',
-    priority: 'high',
-    dueDate: 'Today',
-    aiSuggestion: true,
-  },
-  {
-    id: '4',
-    client: 'Robert Davis',
-    task: 'Verify identity documents',
-    priority: 'low',
-    dueDate: 'Dec 5',
-    aiSuggestion: false,
-  },
-];
-
-const assignedClients = [
-  { id: '1', name: 'Sarah Johnson', score: 642, round: 2, status: 'active' },
-  { id: '2', name: 'Marcus Williams', score: 598, round: 1, status: 'active' },
-  { id: '3', name: 'Jennifer Chen', score: 675, round: 3, status: 'active' },
-  { id: '4', name: 'Robert Davis', score: 520, round: 1, status: 'pending' },
-];
+import { useTasks } from '@/hooks/useTasks';
+import { useVAAssignments } from '@/hooks/useVAAssignments';
 
 const aiTrainingTips = [
   {
@@ -89,10 +39,58 @@ const aiTrainingTips = [
 ];
 
 export default function VADashboard() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
+  const { tasks, pendingTasks, inProgressTasks, completedTasks, isLoading: tasksLoading } = useTasks();
+  const { assignments, isLoading: assignmentsLoading } = useVAAssignments();
+
+  const isLoading = tasksLoading || assignmentsLoading;
+
+  // Filter assignments for this VA
+  const myAssignments = assignments.filter(a => a.va_user_id === user?.id);
+  const myClients = myAssignments.map(a => ({
+    id: a.client_user_id,
+    name: a.client_profile 
+      ? `${a.client_profile.first_name || ''} ${a.client_profile.last_name || ''}`.trim() || 'Unknown'
+      : 'Unknown Client',
+    email: a.client_profile?.email,
+    status: 'active' as const,
+  }));
+
+  // Calculate stats from real data
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const completedToday = completedTasks.filter(t => 
+    new Date(t.completed_at || t.updated_at) >= todayStart
+  ).length;
+
+  const vaStats = {
+    assignedClients: myClients.length,
+    pendingTasks: pendingTasks.length + inProgressTasks.length,
+    completedToday,
+    lettersToReview: tasks.filter(t => 
+      t.task_type === 'review_dispute' || t.task_type === 'generate_letters'
+    ).length,
+  };
+
+  // Priority tasks for display
+  const priorityTasksList = [...pendingTasks, ...inProgressTasks]
+    .slice(0, 4)
+    .map(task => ({
+      id: task.id,
+      client: myClients.find(c => c.id === task.client_id)?.name || 'General',
+      task: task.title,
+      description: task.description,
+      priority: task.priority,
+      dueDate: task.due_date 
+        ? new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        : 'No due date',
+      aiSuggestion: task.ai_generated,
+      status: task.status,
+    }));
 
   const priorityColors = {
     high: 'bg-destructive/10 text-destructive border-destructive/20',
+    urgent: 'bg-destructive/10 text-destructive border-destructive/20',
     medium: 'bg-warning/10 text-warning border-warning/20',
     low: 'bg-muted text-muted-foreground border-border',
   };
@@ -106,6 +104,24 @@ export default function VADashboard() {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
   };
+
+  if (isLoading) {
+    return (
+      <RoleBasedLayout>
+        <div className="space-y-6">
+          <div>
+            <Skeleton className="h-9 w-48 mb-2" />
+            <Skeleton className="h-5 w-72" />
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-28" />
+            ))}
+          </div>
+        </div>
+      </RoleBasedLayout>
+    );
+  }
 
   return (
     <RoleBasedLayout>
@@ -218,45 +234,55 @@ export default function VADashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {priorityTasks.map((task, index) => (
-                    <motion.div
-                      key={task.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 + index * 0.1 }}
-                      className="flex items-start gap-4 p-4 rounded-xl border border-border/50 hover:border-primary/30 hover:bg-muted/30 transition-all group"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-medium text-sm">{task.client}</p>
-                          {task.aiSuggestion && (
-                            <Badge variant="outline" className="bg-gradient-to-r from-primary/10 to-emerald-500/10 text-primary border-primary/20 text-xs">
-                              <Sparkles className="w-3 h-3 mr-1" />
-                              AI Task
+                {priorityTasksList.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>No pending tasks</p>
+                    <p className="text-sm">Great job! You're all caught up.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {priorityTasksList.map((task, index) => (
+                      <motion.div
+                        key={task.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.4 + index * 0.1 }}
+                        className="flex items-start gap-4 p-4 rounded-xl border border-border/50 hover:border-primary/30 hover:bg-muted/30 transition-all group"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-sm">{task.client}</p>
+                            {task.aiSuggestion && (
+                              <Badge variant="outline" className="bg-gradient-to-r from-primary/10 to-emerald-500/10 text-primary border-primary/20 text-xs">
+                                <Sparkles className="w-3 h-3 mr-1" />
+                                AI Task
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">{task.task}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge
+                              variant="outline"
+                              className={cn('text-xs capitalize', priorityColors[task.priority as keyof typeof priorityColors])}
+                            >
+                              {task.priority}
                             </Badge>
-                          )}
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {task.dueDate}
+                            </span>
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground">{task.task}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge
-                            variant="outline"
-                            className={cn('text-xs capitalize', priorityColors[task.priority as keyof typeof priorityColors])}
-                          >
-                            {task.priority}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {task.dueDate}
-                          </span>
-                        </div>
-                      </div>
-                      <Button size="sm" variant="outline" className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary hover:text-primary-foreground">
-                        Start
-                      </Button>
-                    </motion.div>
-                  ))}
-                </div>
+                        <Link to="/va-dashboard/tasks">
+                          <Button size="sm" variant="outline" className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary hover:text-primary-foreground">
+                            Start
+                          </Button>
+                        </Link>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -317,38 +343,43 @@ export default function VADashboard() {
               <CardDescription>Clients assigned to you</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {assignedClients.map((client, index) => (
-                  <motion.div
-                    key={client.id}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.5 + index * 0.1 }}
-                  >
-                    <Link
-                      to={`/va-dashboard/clients/${client.id}`}
-                      className="flex items-center gap-3 p-3 rounded-xl border border-border/50 hover:border-primary/30 hover:bg-muted/30 transition-all group"
+              {myClients.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>No clients assigned</p>
+                  <p className="text-sm">Contact your agency owner for assignments.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {myClients.slice(0, 5).map((client, index) => (
+                    <motion.div
+                      key={client.id}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.5 + index * 0.1 }}
                     >
-                      <Avatar className="w-10 h-10 ring-2 ring-background group-hover:ring-primary/20 transition-all">
-                        <AvatarFallback className="bg-gradient-to-br from-primary/20 to-emerald-500/20 text-foreground font-semibold text-sm">
-                          {client.name.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{client.name}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-xs text-muted-foreground">Score: {client.score}</span>
-                          <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">Round {client.round}</Badge>
+                      <Link
+                        to={`/va-dashboard/clients/${client.id}`}
+                        className="flex items-center gap-3 p-3 rounded-xl border border-border/50 hover:border-primary/30 hover:bg-muted/30 transition-all group"
+                      >
+                        <Avatar className="w-10 h-10 ring-2 ring-background group-hover:ring-primary/20 transition-all">
+                          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-emerald-500/20 text-foreground font-semibold text-sm">
+                            {client.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{client.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{client.email || 'No email'}</p>
                         </div>
-                      </div>
-                      <div className={cn(
-                        'w-2.5 h-2.5 rounded-full ring-2 ring-background',
-                        client.status === 'active' ? 'bg-success' : 'bg-warning'
-                      )} />
-                    </Link>
-                  </motion.div>
-                ))}
-              </div>
+                        <div className={cn(
+                          'w-2.5 h-2.5 rounded-full ring-2 ring-background',
+                          client.status === 'active' ? 'bg-success' : 'bg-warning'
+                        )} />
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
               <Link to="/va-dashboard/clients">
                 <Button variant="outline" className="w-full mt-4 group hover:border-primary/50">
                   View All Clients
