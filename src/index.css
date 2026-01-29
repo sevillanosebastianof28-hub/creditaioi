@@ -178,6 +178,56 @@
     @apply opacity-100;
   }
 
+  /* Modern card variants */
+  .card-modern {
+    @apply bg-card rounded-xl border border-border/50 transition-all duration-300;
+    @apply hover:shadow-xl hover:shadow-primary/5 hover:border-primary/30 hover:-translate-y-0.5;
+  }
+
+  .card-glass {
+    @apply bg-card/60 backdrop-blur-xl rounded-xl border border-border/30;
+    @apply hover:shadow-xl hover:shadow-primary/5;
+  }
+
+  .card-gradient {
+    @apply bg-gradient-to-br from-card via-card to-muted/30 rounded-xl border border-border/50;
+    @apply hover:shadow-xl hover:shadow-primary/5;
+  }
+
+  .card-glow {
+    @apply bg-card rounded-xl border border-primary/20 shadow-lg shadow-primary/5;
+    @apply hover:shadow-xl hover:shadow-primary/10 hover:border-primary/40;
+  }
+
+  /* Interactive elements */
+  .interactive-item {
+    @apply p-4 rounded-xl border border-border/50 transition-all duration-200;
+    @apply hover:border-primary/30 hover:bg-muted/30 cursor-pointer;
+  }
+
+  .interactive-item-active {
+    @apply bg-primary/10 border-primary/30;
+  }
+
+  /* Stats display */
+  .stat-value {
+    @apply text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent;
+  }
+
+  .stat-label {
+    @apply text-sm font-medium text-muted-foreground;
+  }
+
+  /* Section headers */
+  .section-header {
+    @apply flex items-center gap-3;
+  }
+
+  .section-icon {
+    @apply p-2.5 rounded-xl bg-primary/10;
+  }
+
+  /* Animations */
   .animate-in {
     animation: fadeIn 0.5s ease-out forwards;
   }
@@ -201,6 +251,19 @@
   .score-ring::before {
     content: '';
     @apply absolute inset-0 rounded-full border-4 border-muted;
+  }
+
+  /* Mobile responsive utilities */
+  .mobile-stack {
+    @apply flex flex-col md:flex-row md:items-center;
+  }
+
+  .mobile-hide {
+    @apply hidden md:block;
+  }
+
+  .mobile-show {
+    @apply block md:hidden;
   }
 }
 

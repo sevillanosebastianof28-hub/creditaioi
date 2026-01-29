@@ -1,7 +1,7 @@
-import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useBrand } from '@/contexts/BrandContext';
+import { useSidebarContext } from '@/contexts/SidebarContext';
 import {
   LayoutDashboard,
   FileText,
@@ -10,7 +10,6 @@ import {
   Upload,
   CreditCard,
   Bell,
-  Settings,
   ChevronLeft,
   ChevronRight,
   Sparkles,
@@ -33,14 +32,14 @@ const clientMenuItems = [
 ];
 
 export function ClientSidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+  const { collapsed, toggleCollapsed } = useSidebarContext();
   const location = useLocation();
   const { brand } = useBrand();
 
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300',
+        'fixed left-0 top-0 z-40 h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out',
         collapsed ? 'w-[70px]' : 'w-[260px]'
       )}
     >
@@ -70,10 +69,10 @@ export function ClientSidebar() {
           )
         )}
         <button
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={toggleCollapsed}
           className={cn(
             'p-1.5 rounded-lg hover:bg-sidebar-accent transition-colors',
-            collapsed && 'absolute -right-3 top-5 bg-sidebar border border-sidebar-border'
+            collapsed && 'absolute -right-3 top-5 bg-sidebar border border-sidebar-border shadow-md'
           )}
         >
           {collapsed ? (
@@ -95,7 +94,10 @@ export function ClientSidebar() {
       )}
 
       {/* Navigation */}
-      <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-64px-56px)]">
+      <nav className={cn(
+        "p-3 space-y-1 overflow-y-auto",
+        collapsed ? "h-[calc(100vh-64px)]" : "h-[calc(100vh-64px-56px)]"
+      )}>
         {clientMenuItems.map((item) => {
           const isActive = location.pathname === item.path || 
             (item.path !== '/client-dashboard' && location.pathname.startsWith(item.path));
@@ -103,22 +105,29 @@ export function ClientSidebar() {
             <Link
               key={item.path}
               to={item.path}
+              title={collapsed ? item.label : undefined}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
-                'hover:bg-sidebar-accent group',
+                'hover:bg-sidebar-accent group relative',
                 isActive
-                  ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                  ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-md'
                   : 'text-sidebar-foreground hover:text-sidebar-accent-foreground'
               )}
             >
               <item.icon
                 className={cn(
-                  'w-5 h-5 flex-shrink-0',
-                  isActive ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground group-hover:text-sidebar-primary'
+                  'w-5 h-5 flex-shrink-0 transition-transform duration-200',
+                  isActive ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground group-hover:text-sidebar-primary group-hover:scale-110'
                 )}
               />
               {!collapsed && (
                 <span className="text-sm font-medium truncate">{item.label}</span>
+              )}
+              {/* Tooltip for collapsed state */}
+              {collapsed && (
+                <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-sm rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+                  {item.label}
+                </div>
               )}
             </Link>
           );
