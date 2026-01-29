@@ -918,6 +918,60 @@ const Landing = () => {
               </div>
             ))}
           </div>
+
+          {/* Powered By Section */}
+          <motion.div 
+            className="pt-6 sm:pt-8 border-t border-border mb-6"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+          >
+            <div className="flex flex-col items-center gap-4">
+              <p className="text-xs sm:text-sm text-muted-foreground font-medium">Powered by</p>
+              <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+                <motion.div 
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50 border border-border"
+                  whileHover={{ scale: 1.05, borderColor: 'hsl(var(--primary) / 0.5)' }}
+                >
+                  <Brain className="w-4 h-4 text-primary" />
+                  <div className="text-left">
+                    <p className="text-xs font-semibold text-foreground">Qwen</p>
+                    <p className="text-[10px] text-muted-foreground">LLM</p>
+                  </div>
+                </motion.div>
+                <motion.div 
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50 border border-border"
+                  whileHover={{ scale: 1.05, borderColor: 'hsl(var(--primary) / 0.5)' }}
+                >
+                  <Target className="w-4 h-4 text-primary" />
+                  <div className="text-left">
+                    <p className="text-xs font-semibold text-foreground">DistilBERT</p>
+                    <p className="text-[10px] text-muted-foreground">Classifier</p>
+                  </div>
+                </motion.div>
+                <motion.div 
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50 border border-border"
+                  whileHover={{ scale: 1.05, borderColor: 'hsl(var(--primary) / 0.5)' }}
+                >
+                  <Layers className="w-4 h-4 text-primary" />
+                  <div className="text-left">
+                    <p className="text-xs font-semibold text-foreground">MiniLM</p>
+                    <p className="text-[10px] text-muted-foreground">Embedding Model</p>
+                  </div>
+                </motion.div>
+                <motion.div 
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50 border border-border"
+                  whileHover={{ scale: 1.05, borderColor: 'hsl(var(--primary) / 0.5)' }}
+                >
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <div className="text-left">
+                    <p className="text-xs font-semibold text-foreground">Claude</p>
+                    <p className="text-[10px] text-muted-foreground">AI Models</p>
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
           
           <motion.div 
             className="pt-6 sm:pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4"
