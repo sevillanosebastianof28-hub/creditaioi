@@ -35,6 +35,14 @@ import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/landin
 import { TextReveal, GlowText } from '@/components/landing/TextReveal';
 import { MagneticButton } from '@/components/landing/MagneticButton';
 import { AIModelBadge } from '@/components/landing/AIModelBadge';
+import { 
+  QwenLogo, 
+  DistilBERTLogo, 
+  MiniLMLogo, 
+  ClaudeLogo,
+  AIModelBadgeWithLogo,
+  AIModelCardWithLogo 
+} from '@/components/landing/AIModelLogos';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -437,19 +445,19 @@ const Landing = () => {
                   </p>
                 </div>
                 
-                {/* AI Model Badges Grid */}
-                <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 px-4 max-w-3xl">
+                {/* AI Model Badges Grid with Real Logos */}
+                <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 px-4 max-w-4xl">
                   {[
-                    { name: 'Qwen', label: 'Language Model', icon: Brain, gradient: 'from-violet-500/10 via-purple-500/5 to-violet-500/10' },
-                    { name: 'DistilBERT', label: 'Classifier', icon: Target, gradient: 'from-blue-500/10 via-cyan-500/5 to-blue-500/10' },
-                    { name: 'MiniLM', label: 'Embeddings', icon: Layers, gradient: 'from-amber-500/10 via-orange-500/5 to-amber-500/10' },
-                    { name: 'Claude', label: 'AI Models', icon: Sparkles, gradient: 'from-emerald-500/10 via-green-500/5 to-emerald-500/10' },
+                    { name: 'Qwen', label: 'Language Model', Logo: QwenLogo, gradient: 'from-violet-500/10 via-purple-500/5 to-violet-500/10' },
+                    { name: 'DistilBERT', label: 'Classifier', Logo: DistilBERTLogo, gradient: 'from-amber-500/10 via-yellow-500/5 to-amber-500/10' },
+                    { name: 'MiniLM', label: 'Embeddings', Logo: MiniLMLogo, gradient: 'from-blue-500/10 via-cyan-500/5 to-blue-500/10' },
+                    { name: 'Claude', label: 'AI Models', Logo: ClaudeLogo, gradient: 'from-orange-500/10 via-amber-500/5 to-orange-500/10' },
                   ].map((model, i) => (
-                    <AIModelBadge
+                    <AIModelBadgeWithLogo
                       key={model.name}
                       name={model.name}
                       label={model.label}
-                      icon={model.icon}
+                      Logo={model.Logo}
                       index={i}
                       gradient={model.gradient}
                     />
@@ -981,32 +989,19 @@ const Landing = () => {
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl">
                 {[
-                  { name: 'Qwen', label: 'Language Model', icon: Brain, desc: 'Natural language processing' },
-                  { name: 'DistilBERT', label: 'Classifier', icon: Target, desc: 'Dispute eligibility' },
-                  { name: 'MiniLM', label: 'Embeddings', icon: Layers, desc: 'Semantic search' },
-                  { name: 'Claude', label: 'AI Models', icon: Sparkles, desc: 'Advanced reasoning' },
+                  { name: 'Qwen', label: 'Language Model', Logo: QwenLogo, desc: 'Natural language processing' },
+                  { name: 'DistilBERT', label: 'Classifier', Logo: DistilBERTLogo, desc: 'Dispute eligibility' },
+                  { name: 'MiniLM', label: 'Embeddings', Logo: MiniLMLogo, desc: 'Semantic search' },
+                  { name: 'Claude', label: 'AI Models', Logo: ClaudeLogo, desc: 'Advanced reasoning' },
                 ].map((model, i) => (
-                  <motion.div 
+                  <AIModelCardWithLogo
                     key={model.name}
-                    className="group relative p-4 rounded-xl bg-gradient-to-br from-card via-card to-secondary/30 border border-border hover:border-primary/30 transition-all duration-300"
-                    whileHover={{ y: -4, scale: 1.02 }}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                  >
-                    <div className="absolute inset-0 rounded-xl bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <div className="relative flex flex-col items-center text-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-300">
-                        <model.icon className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-foreground">{model.name}</p>
-                        <p className="text-[10px] uppercase tracking-wider text-primary font-medium">{model.label}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{model.desc}</p>
-                      </div>
-                    </div>
-                  </motion.div>
+                    name={model.name}
+                    label={model.label}
+                    Logo={model.Logo}
+                    description={model.desc}
+                    index={i}
+                  />
                 ))}
               </div>
             </div>
