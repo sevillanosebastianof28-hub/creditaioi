@@ -77,6 +77,87 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_interaction_logs: {
+        Row: {
+          account_type: string | null
+          agent_notes: string | null
+          agent_override: boolean | null
+          bureau: string | null
+          classifier_confidence: number | null
+          classifier_reasoning: Json | null
+          compliance_flags: string[] | null
+          context_retrieved: Json | null
+          created_at: string
+          dispute_type: string | null
+          eligibility_decision: string | null
+          id: string
+          interaction_type: string
+          is_training_ready: boolean | null
+          processing_time_ms: number | null
+          refusal_reason: string | null
+          response_generated: string | null
+          response_structure: Json | null
+          session_id: string
+          training_label: string | null
+          user_feedback: string | null
+          user_id: string
+          user_input: string
+          was_refused: boolean | null
+        }
+        Insert: {
+          account_type?: string | null
+          agent_notes?: string | null
+          agent_override?: boolean | null
+          bureau?: string | null
+          classifier_confidence?: number | null
+          classifier_reasoning?: Json | null
+          compliance_flags?: string[] | null
+          context_retrieved?: Json | null
+          created_at?: string
+          dispute_type?: string | null
+          eligibility_decision?: string | null
+          id?: string
+          interaction_type: string
+          is_training_ready?: boolean | null
+          processing_time_ms?: number | null
+          refusal_reason?: string | null
+          response_generated?: string | null
+          response_structure?: Json | null
+          session_id?: string
+          training_label?: string | null
+          user_feedback?: string | null
+          user_id: string
+          user_input: string
+          was_refused?: boolean | null
+        }
+        Update: {
+          account_type?: string | null
+          agent_notes?: string | null
+          agent_override?: boolean | null
+          bureau?: string | null
+          classifier_confidence?: number | null
+          classifier_reasoning?: Json | null
+          compliance_flags?: string[] | null
+          context_retrieved?: Json | null
+          created_at?: string
+          dispute_type?: string | null
+          eligibility_decision?: string | null
+          id?: string
+          interaction_type?: string
+          is_training_ready?: boolean | null
+          processing_time_ms?: number | null
+          refusal_reason?: string | null
+          response_generated?: string | null
+          response_structure?: Json | null
+          session_id?: string
+          training_label?: string | null
+          user_feedback?: string | null
+          user_id?: string
+          user_input?: string
+          was_refused?: boolean | null
+        }
+        Relationships: []
+      }
       ai_predictions: {
         Row: {
           created_at: string
