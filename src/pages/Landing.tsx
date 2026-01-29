@@ -414,6 +414,48 @@ const Landing = () => {
               </div>
             </TextReveal>
 
+            {/* Powered By AI Models - Hero Highlight */}
+            <TextReveal delay={0.5}>
+              <motion.div 
+                className="flex flex-col items-center mb-12"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+              >
+                <p className="text-xs text-muted-foreground mb-3 uppercase tracking-widest font-medium">Powered by Advanced AI</p>
+                <motion.div 
+                  className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.7, staggerChildren: 0.1 }}
+                >
+                  {[
+                    { name: 'Qwen', label: 'LLM', icon: Brain },
+                    { name: 'DistilBERT', label: 'Classifier', icon: Target },
+                    { name: 'MiniLM', label: 'Embeddings', icon: Layers },
+                    { name: 'Claude', label: 'AI Models', icon: Sparkles },
+                  ].map((model, i) => (
+                    <motion.div
+                      key={model.name}
+                      className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm"
+                      whileHover={{ 
+                        scale: 1.05, 
+                        borderColor: 'hsl(var(--primary) / 0.6)',
+                        boxShadow: '0 0 20px hsl(var(--primary) / 0.3)'
+                      }}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.7 + i * 0.1 }}
+                    >
+                      <model.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+                      <span className="text-xs sm:text-sm font-semibold text-foreground">{model.name}</span>
+                      <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">({model.label})</span>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              </motion.div>
+            </TextReveal>
+
             {/* Stats */}
             <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto" staggerDelay={0.1}>
               {stats.map((stat, index) => (
