@@ -1,0 +1,89 @@
+import { useMemo } from 'react';
+import { cn } from '@/lib/utils';
+import { Check, X } from 'lucide-react';
+
+interface PasswordStrengthIndicatorProps {
+  password: string;
+}
+
+interface PasswordRequirement {
+  label: string;
+  met: boolean;
+}
+
+export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicatorProps) {
+  const requirements: PasswordRequirement[] = useMemo(() => [
+    { label: 'At least 8 characters', met: password.length >= 8 },
+    { label: 'Contains uppercase letter', met: /[A-Z]/.test(password) },
+    { label: 'Contains lowercase letter', met: /[a-z]/.test(password) },
+    { label: 'Contains a number', met: /[0-9]/.test(password) },
+    { label: 'Contains special character', met: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
+  ], [password]);
+
+  const strength = useMemo(() => {
+    const metCount = requirements.filter(r => r.met).length;
+    if (metCount === 0) return { level: 0, label: '', color: 'bg-muted' };
+    if (metCount <= 2) return { level: 1, label: 'Weak', color: 'bg-destructive' };
+    if (metCount <= 3) return { level: 2, label: 'Fair', color: 'bg-warning' };
+    if (metCount <= 4) return { level: 3, label: 'Good', color: 'bg-info' };
+    return { level: 4, label: 'Strong', color: 'bg-success' };
+  }, [requirements]);
+
+  if (!password) return null;
+
+  return (
+    <div className="space-y-3 mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
+      {/* Strength Bar */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Password strength</span>
+          <span className={cn(
+            "text-xs font-medium",
+            strength.level === 1 && "text-destructive",
+            strength.level === 2 && "text-warning",
+            strength.level === 3 && "text-info",
+            strength.level === 4 && "text-success"
+          )}>
+            {strength.label}
+          </span>
+        </div>
+        <div className="flex gap-1">
+          {[1, 2, 3, 4].map((level) => (
+            <div
+              key={level}
+              className={cn(
+                "h-1.5 flex-1 rounded-full transition-all duration-300",
+                level <= strength.level ? strength.color : "bg-muted"
+              )}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Requirements Checklist */}
+      <div className="grid grid-cols-1 gap-1.5">
+        {requirements.map((req, i) => (
+          <div
+            key={i}
+            className={cn(
+              "flex items-center gap-2 text-xs transition-colors duration-200",
+              req.met ? "text-success" : "text-muted-foreground"
+            )}
+          >
+            <div className={cn(
+              "w-4 h-4 rounded-full flex items-center justify-center transition-all duration-200",
+              req.met ? "bg-success/20" : "bg-muted"
+            )}>
+              {req.met ? (
+                <Check className="w-3 h-3" />
+              ) : (
+                <X className="w-3 h-3" />
+              )}
+            </div>
+            <span>{req.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

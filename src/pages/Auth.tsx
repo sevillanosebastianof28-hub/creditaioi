@@ -19,9 +19,11 @@ import {
   Eye,
   EyeOff,
   Check,
-  ArrowLeft
+  ArrowLeft,
+  Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PasswordStrengthIndicator } from '@/components/auth/PasswordStrengthIndicator';
 
 const roleOptions: { value: AppRole; label: string; description: string; icon: React.ElementType }[] = [
   {
@@ -461,27 +463,32 @@ export default function Auth() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="signup-password" className="text-foreground">Password</Label>
+                      <Label htmlFor="signup-password" className="text-foreground flex items-center gap-2">
+                        Password
+                        <Shield className="w-3 h-3 text-muted-foreground" />
+                      </Label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
                           id="signup-password"
                           type={showPassword ? 'text' : 'password'}
-                          placeholder="••••••••"
+                          placeholder="Create a strong password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           className="pl-10 pr-10 bg-background border-border"
                           required
-                          minLength={6}
+                          minLength={8}
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                         >
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
+                      {/* Password Strength Indicator */}
+                      <PasswordStrengthIndicator password={password} />
                     </div>
                     <Button 
                       type="submit" 
