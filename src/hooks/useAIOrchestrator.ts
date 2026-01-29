@@ -1,0 +1,241 @@
+import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
+interface ClassificationResult {
+  eligibility: 'eligible' | 'conditionally_eligible' | 'not_eligible' | 'insufficient_information';
+  confidence: number;
+  reasoning: {
+    factors: string[];
+    requiredEvidence: string[];
+    complianceFlags: string[];
+  };
+}
+
+interface OrchestratorResponse {
+  success: boolean;
+  classification?: ClassificationResult;
+  response?: {
+    summary: string;
+    analysis: string;
+    eligibilityStatus: string;
+    recommendedAction: string;
+    nextSteps: string[];
+  };
+  complianceFlags: string[];
+  wasRefused: boolean;
+  refusalReason?: string;
+  processingTimeMs: number;
+  error?: string;
+}
+
+interface OrchestratorContext {
+  disputeType?: 'collections' | 'late_payments' | 'charge_offs' | 'inquiries' | 'closed_accounts';
+  accountType?: 'revolving' | 'installment' | 'collection' | 'mortgage' | 'auto';
+  bureau?: 'experian' | 'equifax' | 'transunion';
+  clientData?: {
+    name?: string;
+    scores?: {
+      experian?: number;
+      equifax?: number;
+      transunion?: number;
+    };
+  };
+  scoreHistory?: Array<{
+    date: string;
+    experian?: number;
+    equifax?: number;
+    transunion?: number;
+  }>;
+  disputeItems?: Array<{
+    id: string;
+    creditor: string;
+    type: string;
+    status: string;
+  }>;
+}
+
+type ActionType = 'classify_dispute' | 'explain_credit' | 'generate_letter' | 'analyze_report' | 'full_orchestration';
+
+export function useAIOrchestrator() {
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [lastResponse, setLastResponse] = useState<OrchestratorResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const orchestrate = useCallback(async (
+    action: ActionType,
+    input: string,
+    context?: OrchestratorContext
+  ): Promise<OrchestratorResponse | null> => {
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("Authentication required");
+      }
+
+      const { data, error: fnError } = await supabase.functions.invoke('ai-orchestrator', {
+        body: {
+          action,
+          input,
+          context,
+          userId: user.id
+        }
+      });
+
+      if (fnError) {
+        throw fnError;
+      }
+
+      const response = data as OrchestratorResponse;
+      setLastResponse(response);
+
+      // Handle refused requests
+      if (response.wasRefused) {
+        toast({
+          title: "Request Outside Scope",
+          description: response.refusalReason || "This request cannot be processed.",
+          variant: "destructive"
+        });
+        return response;
+      }
+
+      // Handle compliance flags
+      if (response.complianceFlags && response.complianceFlags.length > 0) {
+        console.warn("Compliance flags detected:", response.complianceFlags);
+      }
+
+      // Success feedback
+      if (response.success && response.response) {
+        toast({
+          title: "Analysis Complete",
+          description: response.response.summary.slice(0, 100) + (response.response.summary.length > 100 ? '...' : ''),
+        });
+      }
+
+      return response;
+    } catch (err: any) {
+      console.error("AI Orchestrator error:", err);
+      const errorMessage = err.message || "Failed to process AI request";
+      setError(errorMessage);
+      
+      // Handle rate limits
+      if (err.status === 429) {
+        toast({
+          title: "Rate Limited",
+          description: "Please wait a moment before trying again.",
+          variant: "destructive"
+        });
+      } else if (err.status === 402) {
+        toast({
+          title: "AI Credits Exhausted",
+          description: "Please contact support to add more credits.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "AI Processing Error",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      }
+      
+      return null;
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [toast]);
+
+  // Convenience methods for specific actions
+  const classifyDispute = useCallback(async (
+    description: string,
+    context?: OrchestratorContext
+  ) => {
+    return orchestrate('classify_dispute', description, context);
+  }, [orchestrate]);
+
+  const explainCredit = useCallback(async (
+    question: string,
+    context?: OrchestratorContext
+  ) => {
+    return orchestrate('explain_credit', question, context);
+  }, [orchestrate]);
+
+  const generateLetter = useCallback(async (
+    disputeDetails: string,
+    context?: OrchestratorContext
+  ) => {
+    return orchestrate('generate_letter', disputeDetails, context);
+  }, [orchestrate]);
+
+  const analyzeReport = useCallback(async (
+    reportSummary: string,
+    context?: OrchestratorContext
+  ) => {
+    return orchestrate('analyze_report', reportSummary, context);
+  }, [orchestrate]);
+
+  const fullOrchestration = useCallback(async (
+    request: string,
+    context?: OrchestratorContext
+  ) => {
+    return orchestrate('full_orchestration', request, context);
+  }, [orchestrate]);
+
+  // Provide user feedback for fine-tuning
+  const provideFeedback = useCallback(async (
+    interactionId: string,
+    feedback: 'helpful' | 'not_helpful' | 'incorrect' | 'unclear',
+    notes?: string
+  ) => {
+    try {
+      const { error } = await supabase
+        .from('ai_interaction_logs')
+        .update({
+          user_feedback: feedback,
+          agent_notes: notes
+        })
+        .eq('id', interactionId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Feedback Recorded",
+        description: "Thank you for helping improve our AI.",
+      });
+    } catch (err) {
+      console.error("Failed to record feedback:", err);
+    }
+  }, [toast]);
+
+  return {
+    // State
+    isProcessing,
+    lastResponse,
+    error,
+    
+    // Actions
+    orchestrate,
+    classifyDispute,
+    explainCredit,
+    generateLetter,
+    analyzeReport,
+    fullOrchestration,
+    provideFeedback,
+    
+    // Utilities
+    clearResponse: () => setLastResponse(null),
+    clearError: () => setError(null)
+  };
+}
+
+// Export types for consumers
+export type { 
+  OrchestratorResponse, 
+  OrchestratorContext, 
+  ClassificationResult,
+  ActionType 
+};
