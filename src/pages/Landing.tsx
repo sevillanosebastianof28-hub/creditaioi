@@ -34,6 +34,7 @@ import { GlowingCard } from '@/components/landing/GlowingCard';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/landing/ScrollReveal';
 import { TextReveal, GlowText } from '@/components/landing/TextReveal';
 import { MagneticButton } from '@/components/landing/MagneticButton';
+import { AIModelBadge } from '@/components/landing/AIModelBadge';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -417,44 +418,46 @@ const Landing = () => {
             {/* Powered By AI Models - Hero Highlight */}
             <TextReveal delay={0.5}>
               <motion.div 
-                className="flex flex-col items-center mb-12"
+                className="flex flex-col items-center mb-14"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
               >
-                <p className="text-xs text-muted-foreground mb-3 uppercase tracking-widest font-medium">Powered by Advanced AI</p>
-                <motion.div 
-                  className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-4"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.7, staggerChildren: 0.1 }}
-                >
+                {/* Section header with animated underline */}
+                <div className="relative mb-6">
+                  <motion.div
+                    className="absolute -inset-x-4 -inset-y-2 bg-gradient-to-r from-transparent via-primary/10 to-transparent rounded-full blur-xl"
+                    animate={{ opacity: [0.3, 0.6, 0.3] }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                  />
+                  <p className="relative text-xs sm:text-sm text-primary font-semibold uppercase tracking-[0.2em] flex items-center gap-2">
+                    <span className="w-8 h-px bg-gradient-to-r from-transparent to-primary" />
+                    Powered by Advanced AI
+                    <span className="w-8 h-px bg-gradient-to-l from-transparent to-primary" />
+                  </p>
+                </div>
+                
+                {/* AI Model Badges Grid */}
+                <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 px-4 max-w-3xl">
                   {[
-                    { name: 'Qwen', label: 'LLM', icon: Brain },
-                    { name: 'DistilBERT', label: 'Classifier', icon: Target },
-                    { name: 'MiniLM', label: 'Embeddings', icon: Layers },
-                    { name: 'Claude', label: 'AI Models', icon: Sparkles },
+                    { name: 'Qwen', label: 'Language Model', icon: Brain, gradient: 'from-violet-500/10 via-purple-500/5 to-violet-500/10' },
+                    { name: 'DistilBERT', label: 'Classifier', icon: Target, gradient: 'from-blue-500/10 via-cyan-500/5 to-blue-500/10' },
+                    { name: 'MiniLM', label: 'Embeddings', icon: Layers, gradient: 'from-amber-500/10 via-orange-500/5 to-amber-500/10' },
+                    { name: 'Claude', label: 'AI Models', icon: Sparkles, gradient: 'from-emerald-500/10 via-green-500/5 to-emerald-500/10' },
                   ].map((model, i) => (
-                    <motion.div
+                    <AIModelBadge
                       key={model.name}
-                      className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm"
-                      whileHover={{ 
-                        scale: 1.05, 
-                        borderColor: 'hsl(var(--primary) / 0.6)',
-                        boxShadow: '0 0 20px hsl(var(--primary) / 0.3)'
-                      }}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.7 + i * 0.1 }}
-                    >
-                      <model.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
-                      <span className="text-xs sm:text-sm font-semibold text-foreground">{model.name}</span>
-                      <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">({model.label})</span>
-                    </motion.div>
+                      name={model.name}
+                      label={model.label}
+                      icon={model.icon}
+                      index={i}
+                      gradient={model.gradient}
+                    />
                   ))}
-                </motion.div>
+                </div>
               </motion.div>
             </TextReveal>
+
 
             {/* Stats */}
             <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto" staggerDelay={0.1}>
@@ -961,56 +964,50 @@ const Landing = () => {
             ))}
           </div>
 
-          {/* Powered By Section */}
+          {/* Powered By Section - Enhanced */}
           <motion.div 
-            className="pt-6 sm:pt-8 border-t border-border mb-6"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
+            className="pt-8 sm:pt-10 border-t border-border mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
           >
-            <div className="flex flex-col items-center gap-4">
-              <p className="text-xs sm:text-sm text-muted-foreground font-medium">Powered by</p>
-              <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
-                <motion.div 
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50 border border-border"
-                  whileHover={{ scale: 1.05, borderColor: 'hsl(var(--primary) / 0.5)' }}
-                >
-                  <Brain className="w-4 h-4 text-primary" />
-                  <div className="text-left">
-                    <p className="text-xs font-semibold text-foreground">Qwen</p>
-                    <p className="text-[10px] text-muted-foreground">LLM</p>
-                  </div>
-                </motion.div>
-                <motion.div 
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50 border border-border"
-                  whileHover={{ scale: 1.05, borderColor: 'hsl(var(--primary) / 0.5)' }}
-                >
-                  <Target className="w-4 h-4 text-primary" />
-                  <div className="text-left">
-                    <p className="text-xs font-semibold text-foreground">DistilBERT</p>
-                    <p className="text-[10px] text-muted-foreground">Classifier</p>
-                  </div>
-                </motion.div>
-                <motion.div 
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50 border border-border"
-                  whileHover={{ scale: 1.05, borderColor: 'hsl(var(--primary) / 0.5)' }}
-                >
-                  <Layers className="w-4 h-4 text-primary" />
-                  <div className="text-left">
-                    <p className="text-xs font-semibold text-foreground">MiniLM</p>
-                    <p className="text-[10px] text-muted-foreground">Embedding Model</p>
-                  </div>
-                </motion.div>
-                <motion.div 
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50 border border-border"
-                  whileHover={{ scale: 1.05, borderColor: 'hsl(var(--primary) / 0.5)' }}
-                >
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  <div className="text-left">
-                    <p className="text-xs font-semibold text-foreground">Claude</p>
-                    <p className="text-[10px] text-muted-foreground">AI Models</p>
-                  </div>
-                </motion.div>
+            <div className="flex flex-col items-center gap-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+                <p className="text-sm text-primary font-semibold uppercase tracking-widest">AI Technology Stack</p>
+                <div className="w-12 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl">
+                {[
+                  { name: 'Qwen', label: 'Language Model', icon: Brain, desc: 'Natural language processing' },
+                  { name: 'DistilBERT', label: 'Classifier', icon: Target, desc: 'Dispute eligibility' },
+                  { name: 'MiniLM', label: 'Embeddings', icon: Layers, desc: 'Semantic search' },
+                  { name: 'Claude', label: 'AI Models', icon: Sparkles, desc: 'Advanced reasoning' },
+                ].map((model, i) => (
+                  <motion.div 
+                    key={model.name}
+                    className="group relative p-4 rounded-xl bg-gradient-to-br from-card via-card to-secondary/30 border border-border hover:border-primary/30 transition-all duration-300"
+                    whileHover={{ y: -4, scale: 1.02 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                  >
+                    <div className="absolute inset-0 rounded-xl bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="relative flex flex-col items-center text-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-300">
+                        <model.icon className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-foreground">{model.name}</p>
+                        <p className="text-[10px] uppercase tracking-wider text-primary font-medium">{model.label}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{model.desc}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
             </div>
           </motion.div>
