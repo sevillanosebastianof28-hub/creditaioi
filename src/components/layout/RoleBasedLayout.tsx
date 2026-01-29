@@ -1,10 +1,12 @@
 import { ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSidebarContext } from '@/contexts/SidebarContext';
 import { Sidebar } from './Sidebar';
 import { ClientSidebar } from './ClientSidebar';
 import { VASidebar } from './VASidebar';
 import { Header } from './Header';
 import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface RoleBasedLayoutProps {
   children: ReactNode;
@@ -12,6 +14,7 @@ interface RoleBasedLayoutProps {
 
 export function RoleBasedLayout({ children }: RoleBasedLayoutProps) {
   const { role, loading, user } = useAuth();
+  const { collapsed } = useSidebarContext();
 
   // Show loading state while role is being determined
   if (loading || (user && role === null)) {
@@ -40,9 +43,23 @@ export function RoleBasedLayout({ children }: RoleBasedLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       {getSidebar()}
-      <div className="pl-[260px] transition-all duration-300">
+      <div 
+        className={cn(
+          'transition-all duration-300 ease-in-out',
+          collapsed ? 'pl-[70px]' : 'pl-[260px]',
+          'md:pl-[260px]',
+          collapsed && 'md:pl-[70px]'
+        )}
+        style={{
+          paddingLeft: collapsed ? '70px' : '260px'
+        }}
+      >
         <Header />
-        <main className="p-6">{children}</main>
+        <main className="p-4 md:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );
