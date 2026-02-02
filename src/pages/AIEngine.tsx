@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { useCreditAnalysis, DisputableItem } from '@/hooks/useCreditAnalysis';
-import { useDisputeLetter, LetterType } from '@/hooks/useDisputeLetter';
+import { useDisputeLetter, LetterType, letterTemplates } from '@/hooks/useDisputeLetter';
 import LetterDocumentEditor from '@/components/disputes/LetterDocumentEditor';
 import {
   Dialog,
@@ -38,6 +38,7 @@ const AIEngine = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isLetterOpen, setIsLetterOpen] = useState(false);
   const [activeItem, setActiveItem] = useState<DisputableItem | null>(null);
+  const [selectedLetterType, setSelectedLetterType] = useState<LetterType | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { isAnalyzing, analysisResult, analyzeReport, clearAnalysis, statusMessage } = useCreditAnalysis();
   const {
@@ -316,7 +317,7 @@ const AIEngine = () => {
   const handleGenerateLetter = async (item: DisputableItem) => {
     setActiveItem(item);
     setIsLetterOpen(true);
-    const letterType = mapLetterType(item);
+    const letterType = selectedLetterType || mapLetterType(item);
     await generateLetter(letterType, item);
   };
 
@@ -723,21 +724,20 @@ Creditor: Capital One"
                 <CardTitle className="text-lg">Letter Templates</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {[
-                  'FCRA 605b Deletion',
-                  'Debt Validation Request',
-                  'HIPAA Medical Dispute',
-                  'Goodwill Adjustment',
-                  'Data Breach Letter',
-                  'Identity Theft Affidavit',
-                ].map((template) => (
+                {letterTemplates.map((template) => (
                   <div
-                    key={template}
-                    className="flex items-center justify-between p-3 rounded-lg hover:bg-secondary/50 cursor-pointer transition-colors"
+                    key={template.id}
+                    className={cn(
+                      "flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors",
+                      selectedLetterType === template.id
+                        ? "bg-primary/10 border border-primary/30"
+                        : "hover:bg-secondary/50"
+                    )}
+                    onClick={() => setSelectedLetterType(template.id)}
                   >
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm">{template}</span>
+                      <span className="text-sm">{template.name}</span>
                     </div>
                     <ArrowRight className="w-4 h-4 text-muted-foreground" />
                   </div>
@@ -765,7 +765,9 @@ Creditor: Capital One"
           {generatedLetter?.letter || draftLetter ? (
             <div className="flex-1 min-h-0 overflow-hidden flex flex-col gap-4">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>Type: {generatedLetter?.letterType || mapLetterType(activeItem || analysisResult?.items?.[0] as DisputableItem)}</span>
+                <span>
+                  Type: {letterTemplates.find(t => t.id === (generatedLetter?.letterType || selectedLetterType || mapLetterType(activeItem || analysisResult?.items?.[0] as DisputableItem)))?.name}
+                </span>
                 <span>•</span>
                 <span>Creditor: {generatedLetter?.creditor || activeItem?.creditor || 'Unknown'}</span>
                 <span>•</span>

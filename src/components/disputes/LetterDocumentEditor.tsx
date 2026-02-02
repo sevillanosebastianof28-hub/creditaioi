@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { readAiStream } from '@/lib/aiStream';
 
 interface LetterDocumentEditorProps {
@@ -350,20 +351,12 @@ const LetterDocumentEditor = ({
       )}
 
       {/* Document Editor Area */}
-      <div className="flex-1 overflow-auto bg-muted/30 p-4 md:p-8">
+      <ScrollArea className="flex-1 bg-muted/30 p-4 md:p-8">
         {/* Paper Document */}
         <div 
           className="mx-auto bg-white shadow-lg rounded-sm max-w-[8.5in] min-h-[11in]"
           style={{
             boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24), 0 0 40px rgba(0,0,0,0.05)',
-            ...(showPageBreaks
-              ? {
-                  backgroundImage:
-                    'linear-gradient(#ffffff 0, #ffffff calc(11in - 1px), #e5e7eb calc(11in - 1px), #e5e7eb 11in)',
-                  backgroundSize: '100% 11in',
-                  backgroundRepeat: 'repeat-y',
-                }
-              : {}),
           }}
         >
           <div
@@ -384,11 +377,22 @@ const LetterDocumentEditor = ({
               lineHeight: 1.6,
               whiteSpace: 'pre-wrap',
               wordWrap: 'break-word',
+              ...(showPageBreaks
+                ? {
+                    backgroundImage:
+                      'linear-gradient(#ffffff 0, #ffffff calc(11in - 1px), #e5e7eb calc(11in - 1px), #e5e7eb 11in)',
+                    backgroundSize: '100% 11in',
+                    backgroundRepeat: 'repeat-y',
+                    backgroundPosition: '0 0',
+                    backgroundOrigin: 'content-box',
+                    backgroundClip: 'content-box',
+                  }
+                : {}),
             }}
             dangerouslySetInnerHTML={{ __html: content.replace(/\n/g, '<br>') }}
           />
         </div>
-      </div>
+      </ScrollArea>
 
       {/* Action Bar */}
       <div className="flex items-center gap-2 px-4 py-3 border-t border-border bg-muted/30">
