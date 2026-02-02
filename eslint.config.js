@@ -30,4 +30,10 @@ export default tseslint.config(
       "no-prototype-builtins": "off",
     },
   },
+  {
+    files: ["supabase/functions/**/*.ts"],
+    rules: {
+      "@typescript-eslint/ban-ts-comment": "off",
+    },
+  },
 );
