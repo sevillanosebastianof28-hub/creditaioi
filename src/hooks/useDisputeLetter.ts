@@ -96,6 +96,7 @@ export interface GeneratedLetter {
 export function useDisputeLetter() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedLetter, setGeneratedLetter] = useState<GeneratedLetter | null>(null);
+  const [draftLetter, setDraftLetter] = useState('');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -106,6 +107,7 @@ export function useDisputeLetter() {
   ) => {
     setIsGenerating(true);
     setGeneratedLetter(null);
+    setDraftLetter('');
 
     try {
       setStatusMessage('Drafting letter...');
@@ -131,6 +133,12 @@ export function useDisputeLetter() {
       const data = await readAiStream<GeneratedLetter>(response, (event) => {
         if (event.type === 'status') {
           setStatusMessage(event.message || null);
+        }
+        if (event.type === 'delta') {
+          const delta = (event as { delta?: string }).delta;
+          if (delta) {
+            setDraftLetter((prev) => prev + delta);
+          }
         }
       });
 
@@ -158,6 +166,7 @@ export function useDisputeLetter() {
 
   const clearLetter = () => {
     setGeneratedLetter(null);
+    setDraftLetter('');
   };
 
   const downloadLetter = (letter: string, filename: string) => {
@@ -191,6 +200,7 @@ export function useDisputeLetter() {
   return {
     isGenerating,
     generatedLetter,
+    draftLetter,
     statusMessage,
     generateLetter,
     clearLetter,

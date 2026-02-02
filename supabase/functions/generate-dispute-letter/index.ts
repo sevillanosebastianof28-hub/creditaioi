@@ -227,6 +227,14 @@ Generate a complete, ready-to-send dispute letter.`;
     };
 
     if (stream) {
+      await sendEvent('status', { type: 'status', message: 'Streaming draft...' });
+
+      const chunkSize = 800;
+      for (let i = 0; i < letterContent.length; i += chunkSize) {
+        const chunk = letterContent.slice(i, i + chunkSize);
+        await sendEvent('delta', { type: 'delta', delta: chunk });
+      }
+
       await sendEvent('result', { type: 'result', result });
       await writer?.close();
       return new Response(streamBody?.readable, {

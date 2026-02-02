@@ -43,6 +43,7 @@ const AIEngine = () => {
   const {
     isGenerating,
     generatedLetter,
+    draftLetter,
     statusMessage: letterStatusMessage,
     generateLetter,
     clearLetter,
@@ -761,35 +762,37 @@ Creditor: Capital One"
           <DialogHeader>
             <DialogTitle>Generated Dispute Letter</DialogTitle>
           </DialogHeader>
-          {generatedLetter?.letter ? (
+          {generatedLetter?.letter || draftLetter ? (
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>Type: {generatedLetter.letterType}</span>
+                <span>Type: {generatedLetter?.letterType || mapLetterType(activeItem || analysisResult?.items?.[0] as DisputableItem)}</span>
                 <span>•</span>
-                <span>Creditor: {generatedLetter.creditor}</span>
+                <span>Creditor: {generatedLetter?.creditor || activeItem?.creditor || 'Unknown'}</span>
                 <span>•</span>
-                <span>Bureaus: {generatedLetter.bureaus.join(', ')}</span>
+                <span>Bureaus: {(generatedLetter?.bureaus || activeItem?.bureaus || []).join(', ')}</span>
               </div>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => copyLetter(generatedLetter.letter)}
+                  onClick={() => copyLetter((generatedLetter?.letter || draftLetter))}
+                  disabled={!generatedLetter?.letter && !draftLetter}
                 >
                   Copy
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => downloadLetter(generatedLetter.letter, `dispute-letter-${generatedLetter.letterType}.txt`)}
+                  onClick={() => downloadLetter((generatedLetter?.letter || draftLetter), `dispute-letter-${generatedLetter?.letterType || 'draft'}.txt`)}
+                  disabled={!generatedLetter?.letter && !draftLetter}
                 >
                   Download
                 </Button>
               </div>
               <LetterDocumentEditor
-                content={generatedLetter.letter}
-                creditor={generatedLetter.creditor}
-                bureaus={generatedLetter.bureaus}
+                content={generatedLetter?.letter || draftLetter}
+                creditor={generatedLetter?.creditor || activeItem?.creditor}
+                bureaus={generatedLetter?.bureaus || activeItem?.bureaus || []}
                 readOnly
                 showOptimize={false}
               />
