@@ -228,8 +228,8 @@ Generate a complete, ready-to-send dispute letter.`;
         body: JSON.stringify({
           system: systemPrompt,
           user: userPrompt,
-          max_new_tokens: fastMode ? 250 : 400,
-          temperature: 0.3
+          max_new_tokens: fastMode ? 200 : 350,
+          temperature: 0.2
         }),
         signal: controller.signal
       });
