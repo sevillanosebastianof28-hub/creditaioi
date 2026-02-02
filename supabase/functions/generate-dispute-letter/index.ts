@@ -173,7 +173,7 @@ Generate a complete, ready-to-send dispute letter.`;
     let response: Response | null = null;
     let aiError: string | null = null;
     const controller = new AbortController();
-    const timeoutMs = Number(Deno.env.get("LETTER_GEN_TIMEOUT_MS") || 20000);
+    const timeoutMs = Number(Deno.env.get("LETTER_GEN_TIMEOUT_MS") || 8000);
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
@@ -184,7 +184,7 @@ Generate a complete, ready-to-send dispute letter.`;
           body: JSON.stringify({
             system: systemPrompt,
             user: userPrompt,
-            max_new_tokens: 900,
+            max_new_tokens: 600,
             temperature: 0.3
           }),
           signal: controller.signal
@@ -202,6 +202,7 @@ Generate a complete, ready-to-send dispute letter.`;
               { role: "system", content: systemPrompt },
               { role: "user", content: userPrompt }
             ],
+            max_tokens: 600,
             temperature: 0.3,
           }),
           signal: controller.signal
