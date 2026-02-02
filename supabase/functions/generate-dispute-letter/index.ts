@@ -170,33 +170,87 @@ Generate a complete, ready-to-send dispute letter.`;
       await sendEvent('status', { type: 'status', message: 'Drafting dispute letter...' });
     }
 
-    let response: Response;
-    if (LOCAL_AI_BASE_URL) {
-      response = await fetch(`${LOCAL_AI_BASE_URL}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system: systemPrompt,
-          user: userPrompt,
-          max_new_tokens: 900,
-          temperature: 0.3
-        })
-      });
-    } else {
-      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
-          ],
-          temperature: 0.3,
-        }),
+    let response: Response | null = null;
+    let aiError: string | null = null;
+    const controller = new AbortController();
+    const timeoutMs = Number(Deno.env.get("LETTER_GEN_TIMEOUT_MS") || 20000);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      if (LOCAL_AI_BASE_URL) {
+        response = await fetch(`${LOCAL_AI_BASE_URL}/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system: systemPrompt,
+            user: userPrompt,
+            max_new_tokens: 900,
+            temperature: 0.3
+          }),
+          signal: controller.signal
+        });
+      } else {
+        response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt }
+            ],
+            temperature: 0.3,
+          }),
+          signal: controller.signal
+        });
+      }
+    } catch (error) {
+      aiError = error instanceof Error ? error.message : "Unknown AI error";
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if (!response) {
+      const fallback = buildFallbackLetter(disputableItem, templateInstructions);
+
+      if (stream) {
+        await sendEvent('status', { type: 'status', message: 'AI response delayed. Using verified template...' });
+        const chunkSize = 800;
+        for (let i = 0; i < fallback.length; i += chunkSize) {
+          await sendEvent('delta', { type: 'delta', delta: fallback.slice(i, i + chunkSize) });
+        }
+        await sendEvent('result', {
+          type: 'result',
+          result: {
+            letter: fallback,
+            letterType,
+            creditor: disputableItem.creditor,
+            bureaus: disputableItem.bureaus || ['equifax', 'experian', 'transunion']
+          }
+        });
+        await writer?.close();
+        return new Response(streamBody?.readable, {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive"
+          },
+        });
+      }
+
+      return new Response(JSON.stringify({
+        letter: fallback,
+        letterType,
+        creditor: disputableItem.creditor,
+        bureaus: disputableItem.bureaus || ['equifax', 'experian', 'transunion'],
+        fallbackUsed: true,
+        error: aiError || "AI response delayed"
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
