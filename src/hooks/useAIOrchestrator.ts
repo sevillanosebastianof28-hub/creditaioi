@@ -139,7 +139,6 @@ export function useAIOrchestrator() {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
       const response = await fetch(`${supabaseUrl}/functions/v1/ai-orchestrator`, {
-      submitFeedback,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
