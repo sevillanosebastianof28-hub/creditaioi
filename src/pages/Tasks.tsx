@@ -58,7 +58,7 @@ const TaskCard = ({
   const handleCompleteTask = () => onUpdate(task.id, { status: 'completed' });
 
   const aiGenerated = task.ai_generated ?? false;
-  const clientName = (task as any).client_name as string | undefined;
+  const clientName = task.client_name;
 
   return (
     <Card className="p-4 hover:border-primary/30 transition-colors">

@@ -107,7 +107,7 @@ export function useInvoices() {
 
   const updateInvoiceStatus = useCallback(async (invoiceId: string, status: string) => {
     try {
-      const updateData: any = { status };
+      const updateData: { status: string; paid_at?: string } = { status };
       if (status === 'paid') {
         updateData.paid_at = new Date().toISOString();
       }
@@ -125,8 +125,25 @@ export function useInvoices() {
   }, [fetchInvoices]);
 
   useEffect(() => {
+    if (!user) return;
+
     fetchInvoices();
-  }, [fetchInvoices]);
+
+    const channel = supabase
+      .channel('invoices-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'invoices' },
+        () => {
+          fetchInvoices();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchInvoices]);
 
   // Calculate stats
   const stats = {

@@ -19,11 +19,11 @@ import {
   Bot,
   FileText,
 } from 'lucide-react';
-import { BrandSettings } from '@/hooks/useBrandSettings';
+import { BrandSettings, EnabledFeatures } from '@/hooks/useBrandSettings';
 
 interface FeatureToggleSettingsProps {
   formData: Partial<BrandSettings>;
-  onChange: (field: keyof BrandSettings, value: any) => void;
+  onChange: (field: keyof BrandSettings, value: BrandSettings[keyof BrandSettings]) => void;
 }
 
 interface Feature {
@@ -156,18 +156,18 @@ const categoryLabels: Record<string, { label: string; description: string; icon:
 };
 
 export function FeatureToggleSettings({ formData, onChange }: FeatureToggleSettingsProps) {
-  const currentFeatures = formData.enabled_features || {};
+  const currentFeatures: EnabledFeatures = formData.enabled_features || {};
 
-  const updateFeature = (featureId: string, enabled: boolean) => {
-    const updatedFeatures = {
+  const updateFeature = (featureId: keyof EnabledFeatures, enabled: boolean) => {
+    const updatedFeatures: EnabledFeatures = {
       ...currentFeatures,
       [featureId]: enabled,
     };
     onChange('enabled_features', updatedFeatures);
   };
 
-  const isFeatureEnabled = (featureId: string): boolean => {
-    return (currentFeatures as any)[featureId] !== false;
+  const isFeatureEnabled = (featureId: keyof EnabledFeatures): boolean => {
+    return currentFeatures[featureId] !== false;
   };
 
   const groupedFeatures = features.reduce((acc, feature) => {
@@ -178,8 +178,8 @@ export function FeatureToggleSettings({ formData, onChange }: FeatureToggleSetti
     return acc;
   }, {} as Record<string, Feature[]>);
 
-  const enabledCount = features.filter(f => isFeatureEnabled(f.id)).length;
-  const aiEnabledCount = features.filter(f => f.category === 'ai' && isFeatureEnabled(f.id)).length;
+  const enabledCount = features.filter(f => isFeatureEnabled(f.id as keyof EnabledFeatures)).length;
+  const aiEnabledCount = features.filter(f => f.category === 'ai' && isFeatureEnabled(f.id as keyof EnabledFeatures)).length;
 
   return (
     <div className="space-y-6">
@@ -221,7 +221,7 @@ export function FeatureToggleSettings({ formData, onChange }: FeatureToggleSetti
               
               <div className="grid gap-4 sm:grid-cols-2">
                 {categoryFeatures.map((feature) => {
-                  const enabled = isFeatureEnabled(feature.id);
+                  const enabled = isFeatureEnabled(feature.id as keyof EnabledFeatures);
                   
                   return (
                     <div
@@ -254,7 +254,7 @@ export function FeatureToggleSettings({ formData, onChange }: FeatureToggleSetti
                         <Switch
                           id={feature.id}
                           checked={enabled}
-                          onCheckedChange={(checked) => updateFeature(feature.id, checked)}
+                          onCheckedChange={(checked) => updateFeature(feature.id as keyof EnabledFeatures, checked)}
                         />
                       </div>
                     </div>

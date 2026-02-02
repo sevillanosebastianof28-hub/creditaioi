@@ -17,11 +17,11 @@ import {
   Upload,
   AlertTriangle,
 } from 'lucide-react';
-import { BrandSettings } from '@/hooks/useBrandSettings';
+import { BrandSettings, ClientPortalConfig } from '@/hooks/useBrandSettings';
 
 interface ClientPortalSettingsProps {
   formData: Partial<BrandSettings>;
-  onChange: (field: keyof BrandSettings, value: any) => void;
+  onChange: (field: keyof BrandSettings, value: BrandSettings[keyof BrandSettings]) => void;
 }
 
 interface PortalOption {
@@ -114,18 +114,18 @@ const categoryLabels: Record<string, { label: string; description: string; icon:
 };
 
 export function ClientPortalSettings({ formData, onChange }: ClientPortalSettingsProps) {
-  const currentConfig = formData.client_portal_config || {};
+  const currentConfig: ClientPortalConfig = formData.client_portal_config || {};
 
-  const updateConfig = (optionId: string, enabled: boolean) => {
-    const updatedConfig = {
+  const updateConfig = (optionId: keyof ClientPortalConfig, enabled: boolean) => {
+    const updatedConfig: ClientPortalConfig = {
       ...currentConfig,
       [optionId]: enabled,
     };
     onChange('client_portal_config', updatedConfig);
   };
 
-  const isEnabled = (optionId: string): boolean => {
-    return (currentConfig as any)[optionId] !== false;
+  const isEnabled = (optionId: keyof ClientPortalConfig): boolean => {
+    return currentConfig[optionId] !== false;
   };
 
   const groupedOptions = portalOptions.reduce((acc, option) => {
@@ -173,7 +173,7 @@ export function ClientPortalSettings({ formData, onChange }: ClientPortalSetting
               
               <div className="space-y-3">
                 {options.map((option) => {
-                  const enabled = isEnabled(option.id);
+                  const enabled = isEnabled(option.id as keyof ClientPortalConfig);
                   
                   return (
                     <div
@@ -204,7 +204,7 @@ export function ClientPortalSettings({ formData, onChange }: ClientPortalSetting
                       <Switch
                         id={option.id}
                         checked={enabled}
-                        onCheckedChange={(checked) => updateConfig(option.id, checked)}
+                        onCheckedChange={(checked) => updateConfig(option.id as keyof ClientPortalConfig, checked)}
                       />
                     </div>
                   );

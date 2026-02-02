@@ -13,11 +13,11 @@ import {
   Megaphone,
   AlertCircle,
 } from 'lucide-react';
-import { BrandSettings } from '@/hooks/useBrandSettings';
+import { BrandSettings, NotificationSettingsConfig } from '@/hooks/useBrandSettings';
 
 interface NotificationSettingsProps {
   formData: Partial<BrandSettings>;
-  onChange: (field: keyof BrandSettings, value: any) => void;
+  onChange: (field: keyof BrandSettings, value: BrandSettings[keyof BrandSettings]) => void;
 }
 
 interface NotificationOption {
@@ -89,21 +89,22 @@ const categoryLabels: Record<string, { label: string; description: string; icon:
 };
 
 export function NotificationSettings({ formData, onChange }: NotificationSettingsProps) {
-  const currentSettings = formData.notification_settings || {};
+  const currentSettings: NotificationSettingsConfig = formData.notification_settings || {};
 
-  const updateSetting = (settingId: string, enabled: boolean) => {
-    const updatedSettings = {
+  const updateSetting = (settingId: keyof NotificationSettingsConfig, enabled: boolean) => {
+    const updatedSettings: NotificationSettingsConfig = {
       ...currentSettings,
       [settingId]: enabled,
     };
     onChange('notification_settings', updatedSettings);
   };
 
-  const isEnabled = (settingId: string): boolean => {
-    const value = (currentSettings as any)[settingId];
+  const isEnabled = (settingId: keyof NotificationSettingsConfig): boolean => {
+    const value = currentSettings[settingId];
     // Default values
     if (value === undefined) {
-      return ['email_notifications', 'score_change_alerts', 'dispute_updates', 'billing_reminders'].includes(settingId);
+      return ['email_notifications', 'score_change_alerts', 'dispute_updates', 'billing_reminders']
+        .includes(settingId as string);
     }
     return value;
   };
@@ -116,7 +117,7 @@ export function NotificationSettings({ formData, onChange }: NotificationSetting
     return acc;
   }, {} as Record<string, NotificationOption[]>);
 
-  const enabledCount = notificationOptions.filter(o => isEnabled(o.id)).length;
+  const enabledCount = notificationOptions.filter(o => isEnabled(o.id as keyof NotificationSettingsConfig)).length;
 
   return (
     <div className="space-y-6">
@@ -152,7 +153,7 @@ export function NotificationSettings({ formData, onChange }: NotificationSetting
               
               <div className="space-y-3">
                 {options.map((option) => {
-                  const enabled = isEnabled(option.id);
+                  const enabled = isEnabled(option.id as keyof NotificationSettingsConfig);
                   
                   return (
                     <div
@@ -177,7 +178,7 @@ export function NotificationSettings({ formData, onChange }: NotificationSetting
                       <Switch
                         id={option.id}
                         checked={enabled}
-                        onCheckedChange={(checked) => updateSetting(option.id, checked)}
+                        onCheckedChange={(checked) => updateSetting(option.id as keyof NotificationSettingsConfig, checked)}
                       />
                     </div>
                   );

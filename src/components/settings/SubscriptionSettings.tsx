@@ -12,13 +12,13 @@ import {
   Palette,
   Code,
   Headphones,
-  Infinity,
+  Infinity as InfinityIcon,
 } from 'lucide-react';
-import { BrandSettings } from '@/hooks/useBrandSettings';
+import { BrandSettings, SubscriptionFeatures } from '@/hooks/useBrandSettings';
 
 interface SubscriptionSettingsProps {
   formData: Partial<BrandSettings>;
-  onChange: (field: keyof BrandSettings, value: any) => void;
+  onChange: (field: keyof BrandSettings, value: BrandSettings[keyof BrandSettings]) => void;
 }
 
 interface LimitSetting {
@@ -89,18 +89,18 @@ const featureSettings: LimitSetting[] = [
 ];
 
 export function SubscriptionSettings({ formData, onChange }: SubscriptionSettingsProps) {
-  const currentSettings = formData.subscription_features || {};
+  const currentSettings: SubscriptionFeatures = formData.subscription_features || {};
 
-  const updateSetting = (settingId: string, value: any) => {
-    const updatedSettings = {
+  const updateSetting = (settingId: keyof SubscriptionFeatures, value: SubscriptionFeatures[keyof SubscriptionFeatures]) => {
+    const updatedSettings: SubscriptionFeatures = {
       ...currentSettings,
       [settingId]: value,
     };
     onChange('subscription_features', updatedSettings);
   };
 
-  const getValue = (settingId: string): any => {
-    return (currentSettings as any)[settingId];
+  const getValue = (settingId: keyof SubscriptionFeatures) => {
+    return currentSettings[settingId];
   };
 
   const isBoolean = (settingId: string): boolean => {
@@ -130,7 +130,7 @@ export function SubscriptionSettings({ formData, onChange }: SubscriptionSetting
           <div className="space-y-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2 font-semibold">
-                <Infinity className="w-4 h-4" />
+                <InfinityIcon className="w-4 h-4" />
                 Usage Limits
               </div>
               <p className="text-sm text-muted-foreground">
@@ -140,7 +140,7 @@ export function SubscriptionSettings({ formData, onChange }: SubscriptionSetting
             
             <div className="grid gap-4 sm:grid-cols-3">
               {limitSettings.map((setting) => {
-                const value = getValue(setting.id);
+                const value = getValue(setting.id as keyof SubscriptionFeatures);
                 
                 return (
                   <div key={setting.id} className="p-4 rounded-lg border bg-background space-y-3">
@@ -158,7 +158,7 @@ export function SubscriptionSettings({ formData, onChange }: SubscriptionSetting
                       id={setting.id}
                       type="number"
                       value={value || ''}
-                      onChange={(e) => updateSetting(setting.id, e.target.value ? parseInt(e.target.value) : null)}
+                      onChange={(e) => updateSetting(setting.id as keyof SubscriptionFeatures, e.target.value ? parseInt(e.target.value, 10) : null)}
                       placeholder={setting.placeholder}
                       className="bg-muted/30"
                     />
@@ -187,7 +187,7 @@ export function SubscriptionSettings({ formData, onChange }: SubscriptionSetting
             
             <div className="grid gap-4 sm:grid-cols-2">
               {featureSettings.map((setting) => {
-                const enabled = getValue(setting.id) !== false;
+                const enabled = getValue(setting.id as keyof SubscriptionFeatures) !== false;
                 
                 return (
                   <div
@@ -212,7 +212,7 @@ export function SubscriptionSettings({ formData, onChange }: SubscriptionSetting
                     <Switch
                       id={setting.id}
                       checked={enabled}
-                      onCheckedChange={(checked) => updateSetting(setting.id, checked)}
+                      onCheckedChange={(checked) => updateSetting(setting.id as keyof SubscriptionFeatures, checked)}
                     />
                   </div>
                 );

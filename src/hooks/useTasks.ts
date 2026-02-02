@@ -8,6 +8,7 @@ export interface Task {
   agency_id?: string;
   assigned_to?: string;
   client_id?: string;
+  client_name?: string;
   title: string;
   description?: string;
   task_type: string;
@@ -90,16 +91,17 @@ export function useTasks() {
       setTasks(prev => [newTask, ...prev]);
       toast({ title: "Task Created", description: task.title });
       return newTask;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
       console.error('Error creating task:', error);
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: message, variant: "destructive" });
       return null;
     }
   }, [user, toast]);
 
   const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
     try {
-      const updateData: any = { ...updates };
+      const updateData: Partial<Task> & { completed_at?: string } = { ...updates };
       if (updates.status === 'completed') {
         updateData.completed_at = new Date().toISOString();
       }
@@ -116,9 +118,10 @@ export function useTasks() {
       ));
 
       toast({ title: "Task Updated" });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
       console.error('Error updating task:', error);
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: message, variant: "destructive" });
     }
   }, [toast]);
 
@@ -133,9 +136,10 @@ export function useTasks() {
 
       setTasks(prev => prev.filter(t => t.id !== taskId));
       toast({ title: "Task Deleted" });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
       console.error('Error deleting task:', error);
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: message, variant: "destructive" });
     }
   }, [toast]);
 

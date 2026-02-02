@@ -29,11 +29,11 @@ import {
   Check,
   AlertCircle,
 } from 'lucide-react';
-import { BrandSettings } from '@/hooks/useBrandSettings';
+import { BrandSettings, IntegrationConfig, Integrations } from '@/hooks/useBrandSettings';
 
 interface IntegrationSettingsProps {
   formData: Partial<BrandSettings>;
-  onChange: (field: keyof BrandSettings, value: any) => void;
+  onChange: (field: keyof BrandSettings, value: BrandSettings[keyof BrandSettings]) => void;
 }
 
 interface Integration {
@@ -187,27 +187,31 @@ const categoryLabels: Record<string, { label: string; icon: React.ReactNode }> =
 export function IntegrationSettings({ formData, onChange }: IntegrationSettingsProps) {
   const [expandedIntegration, setExpandedIntegration] = useState<string | null>(null);
   
-  const currentIntegrations = formData.integrations || {};
+  const currentIntegrations: Integrations = formData.integrations || {};
 
-  const updateIntegration = (integrationId: string, field: string, value: any) => {
-    const updatedIntegrations = {
+  const updateIntegration = (
+    integrationId: keyof Integrations,
+    field: keyof IntegrationConfig,
+    value: IntegrationConfig[keyof IntegrationConfig]
+  ) => {
+    const updatedIntegrations: Integrations = {
       ...currentIntegrations,
       [integrationId]: {
-        ...((currentIntegrations as any)[integrationId] || {}),
+        ...(currentIntegrations[integrationId] || {}),
         [field]: value,
       },
     };
     onChange('integrations', updatedIntegrations);
   };
 
-  const getIntegrationStatus = (integrationId: string): 'connected' | 'configured' | 'not_configured' => {
-    const integration = (currentIntegrations as any)[integrationId];
+  const getIntegrationStatus = (integrationId: keyof Integrations): 'connected' | 'configured' | 'not_configured' => {
+    const integration = currentIntegrations[integrationId];
     if (!integration || !integration.enabled) return 'not_configured';
     
     const integrationDef = integrations.find(i => i.id === integrationId);
     if (!integrationDef) return 'not_configured';
     
-    const hasAllFields = integrationDef.fields.every(f => integration[f.key]);
+    const hasAllFields = integrationDef.fields.every((f) => integration[f.key as keyof IntegrationConfig]);
     return hasAllFields ? 'connected' : 'configured';
   };
 
@@ -219,7 +223,7 @@ export function IntegrationSettings({ formData, onChange }: IntegrationSettingsP
     return acc;
   }, {} as Record<string, Integration[]>);
 
-  const connectedCount = integrations.filter(i => getIntegrationStatus(i.id) === 'connected').length;
+  const connectedCount = integrations.filter(i => getIntegrationStatus(i.id as keyof Integrations) === 'connected').length;
 
   return (
     <div className="space-y-6">
@@ -248,9 +252,10 @@ export function IntegrationSettings({ formData, onChange }: IntegrationSettingsP
               
               <div className="grid gap-3">
                 {categoryIntegrations.map((integration) => {
-                  const status = getIntegrationStatus(integration.id);
+                  const status = getIntegrationStatus(integration.id as keyof Integrations);
                   const isExpanded = expandedIntegration === integration.id;
-                  const integrationData = (currentIntegrations as any)[integration.id] || {};
+                  const integrationData: IntegrationConfig =
+                    currentIntegrations[integration.id as keyof Integrations] || { enabled: false };
                   
                   return (
                     <Collapsible
@@ -294,7 +299,11 @@ export function IntegrationSettings({ formData, onChange }: IntegrationSettingsP
                               <Label className="text-sm">Enable Integration</Label>
                               <Switch
                                 checked={integrationData.enabled || false}
-                                onCheckedChange={(checked) => updateIntegration(integration.id, 'enabled', checked)}
+                                onCheckedChange={(checked) => updateIntegration(
+                                  integration.id as keyof Integrations,
+                                  'enabled',
+                                  checked
+                                )}
                               />
                             </div>
                             
@@ -311,7 +320,11 @@ export function IntegrationSettings({ formData, onChange }: IntegrationSettingsP
                                         id={`${integration.id}-${field.key}`}
                                         type={field.type || 'text'}
                                         value={integrationData[field.key] || ''}
-                                        onChange={(e) => updateIntegration(integration.id, field.key, e.target.value)}
+                                        onChange={(e) => updateIntegration(
+                                          integration.id as keyof Integrations,
+                                          field.key as keyof IntegrationConfig,
+                                          e.target.value
+                                        )}
                                         placeholder={field.placeholder}
                                         className="bg-background"
                                       />

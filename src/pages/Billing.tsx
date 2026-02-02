@@ -47,6 +47,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
+type ClientProfile = {
+  user_id: string;
+  first_name: string | null;
+  last_name: string | null;
+};
+
 const Billing = () => {
   const { user } = useAuth();
   const { invoices, stats, isLoading, createInvoice, updateInvoiceStatus } = useInvoices();
@@ -56,8 +62,38 @@ const Billing = () => {
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
 
+  const handleExportPayments = () => {
+    if (!recentPayments.length) {
+      toast.error('No payments to export');
+      return;
+    }
+
+    const headers = ['Client', 'Amount', 'Paid Date', 'Status'];
+    const rows = recentPayments.map((payment) => {
+      const clientName = payment.client_profile
+        ? `${payment.client_profile.first_name} ${payment.client_profile.last_name}`
+        : 'Unknown';
+      const paidDate = payment.paid_at
+        ? format(new Date(payment.paid_at), 'MMM d, yyyy')
+        : '';
+      return [clientName, Number(payment.amount).toFixed(2), paidDate, payment.status];
+    });
+
+    const csv = [headers, ...rows]
+      .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `recent-payments-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   // Fetch clients for invoice creation
-  const { data: clients = [] } = useQuery({
+  const { data: clients = [] } = useQuery<ClientProfile[]>({
     queryKey: ['billing-clients', user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -159,7 +195,7 @@ const Billing = () => {
                       <SelectValue placeholder="Select client" />
                     </SelectTrigger>
                     <SelectContent>
-                      {clients.map((client: any) => (
+                      {clients.map((client) => (
                         <SelectItem key={client.user_id} value={client.user_id}>
                           {client.first_name} {client.last_name}
                         </SelectItem>
@@ -258,7 +294,7 @@ const Billing = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Recent Payments</CardTitle>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleExportPayments}>
                 <Download className="w-4 h-4 mr-2" />
                 Export
               </Button>

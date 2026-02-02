@@ -271,6 +271,7 @@ const LetterDocumentEditor = ({
 
       {/* Toolbar */}
       {!readOnly && (
+        <>
         <div className="flex items-center gap-1 px-3 py-2 border-b border-border bg-muted/20 flex-wrap">
           {/* Font Family */}
           <Select value={fontFamily} onValueChange={setFontFamily}>
@@ -340,9 +341,10 @@ const LetterDocumentEditor = ({
             </>
           )}
         </div>
-          {isOptimizing && statusMessage && (
-            <p className="text-xs text-muted-foreground mt-2">{statusMessage}</p>
-          )}
+        {isOptimizing && statusMessage && (
+          <p className="px-3 pb-2 text-xs text-muted-foreground">{statusMessage}</p>
+        )}
+        </>
       )}
 
       {/* Document Editor Area */}

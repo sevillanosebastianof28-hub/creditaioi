@@ -53,7 +53,7 @@ export function BrandingSettings() {
     }
   }, [brandSettings, isLoading]);
 
-  const handleChange = (field: keyof BrandSettings, value: any) => {
+  const handleChange = (field: keyof BrandSettings, value: BrandSettings[keyof BrandSettings]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setHasChanges(true);
   };

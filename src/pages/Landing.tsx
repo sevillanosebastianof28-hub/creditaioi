@@ -209,8 +209,23 @@ const Landing = () => {
     }
   ];
 
+  const footerLinkMap: Record<string, string> = {
+    Features: '#features',
+    Pricing: '#pricing',
+    Integrations: '#how-it-works',
+    API: '#features',
+    About: '#why-us',
+    Blog: '#features',
+    Careers: '#why-us',
+    Contact: '#pricing',
+    Privacy: '#top',
+    Terms: '#top',
+    Security: '#why-us',
+    'FCRA Compliance': '#why-us',
+  };
+
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div id="top" className="min-h-screen bg-background overflow-x-hidden">
       {/* Navigation */}
       <motion.nav 
         className="fixed top-0 left-0 right-0 z-50 transition-all duration-500"
@@ -914,6 +929,7 @@ const Landing = () => {
                   size="lg" 
                   variant="outline"
                   className="border-2 border-white/50 bg-white/10 text-white hover:bg-white/20 hover:border-white/70 px-6 sm:px-8 py-5 sm:py-6 text-base sm:text-lg w-full sm:w-auto backdrop-blur-sm"
+                  onClick={() => navigate('/auth')}
                 >
                   Schedule Demo
                 </Button>
@@ -944,7 +960,9 @@ const Landing = () => {
                 ].map((icon, i) => (
                   <motion.a 
                     key={i}
-                    href="#" 
+                    href={i === 0 ? 'https://twitter.com' : 'https://www.linkedin.com'}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-primary hover:text-primary-foreground transition-all"
                     whileHover={{ scale: 1.1, y: -2 }}
                     whileTap={{ scale: 0.95 }}
@@ -964,7 +982,7 @@ const Landing = () => {
                 <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm text-muted-foreground">
                   {section.links.map((link, j) => (
                     <motion.li key={j} whileHover={{ x: 3 }}>
-                      <a href="#" className="hover:text-primary transition-colors">{link}</a>
+                      <a href={footerLinkMap[link] || '#top'} className="hover:text-primary transition-colors">{link}</a>
                     </motion.li>
                   ))}
                 </ul>
@@ -1017,8 +1035,8 @@ const Landing = () => {
               © 2025 Credit AI. All rights reserved.
             </p>
             <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm text-muted-foreground">
-              <a href="#" className="hover:text-primary transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-primary transition-colors">Terms of Service</a>
+              <a href="#top" className="hover:text-primary transition-colors">Privacy Policy</a>
+              <a href="#top" className="hover:text-primary transition-colors">Terms of Service</a>
             </div>
           </motion.div>
         </div>
