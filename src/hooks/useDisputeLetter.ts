@@ -151,10 +151,11 @@ export function useDisputeLetter() {
 
       return data;
     } catch (err) {
-      console.error('Unexpected error:', err);
+      const message = err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.';
+      console.error('Letter generation error:', err);
       toast({
         title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        description: message,
         variant: "destructive",
       });
       return null;

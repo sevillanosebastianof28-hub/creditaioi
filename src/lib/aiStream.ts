@@ -9,13 +9,15 @@ export async function readAiStream<T>(
   response: Response,
   onEvent?: (event: AiStreamEvent<T>) => void
 ): Promise<T> {
-  if (!response.ok) {
+  const contentType = response.headers.get('content-type') || '';
+  const isEventStream = contentType.includes('text/event-stream');
+
+  if (!response.ok && !isEventStream) {
     const errorText = await response.text();
     throw new Error(errorText || 'AI request failed');
   }
 
-  const contentType = response.headers.get('content-type') || '';
-  if (!contentType.includes('text/event-stream')) {
+  if (!isEventStream) {
     const data = await response.json();
     if (data?.error) {
       throw new Error(data.error);
