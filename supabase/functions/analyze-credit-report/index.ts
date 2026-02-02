@@ -467,6 +467,12 @@ const parseJsonResponse = (text: string) => {
   }
 };
 
+const isAbortError = (error: unknown) => {
+  if (!error || typeof error !== 'object') return false;
+  const name = (error as { name?: string }).name;
+  return name === 'AbortError';
+};
+
 const compressReportText = (text: string) => {
   const trimmed = text.trim();
   if (trimmed.length <= 30000) return trimmed;
@@ -543,7 +549,7 @@ serve(async (req) => {
       await sendEvent("status", { type: "status", message: "Optimizing report for analysis..." });
     }
 
-    const normalizedReportText = compressReportText(reportText);
+    const normalizedReportText = compressReportText(String(reportText));
 
     const controller = new AbortController();
     const timeoutMs = Number(Deno.env.get("ANALYSIS_TIMEOUT_MS") || 10000);
@@ -563,8 +569,7 @@ serve(async (req) => {
         signal: controller.signal,
       });
     } catch (error) {
-      const isAbort = error instanceof DOMException && error.name === 'AbortError';
-      if (isAbort) {
+      if (isAbortError(error)) {
         if (stream) {
           await sendEvent("status", { type: "status", message: "AI slow. Switching to fast mode..." });
         }
@@ -634,19 +639,47 @@ serve(async (req) => {
     try {
       analysisResult = parseJsonResponse(content);
     } catch (_error) {
-      const errorMessage = "Failed to parse AI analysis";
-      if (stream) {
-        await sendEvent("error", { type: "error", message: errorMessage });
-        await writer?.close();
-        return new Response(streamBody?.readable, {
+      try {
+        if (stream) {
+          await sendEvent("status", { type: "status", message: "Fixing analysis format..." });
+        }
+        const repairResponse = await fetch(`${LOCAL_AI_BASE_URL}/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system: "You fix malformed JSON. Return valid JSON only, with no extra text.",
+            user: `Repair this into strict JSON only:\n\n${content.slice(0, 8000)}`,
+            max_new_tokens: 500,
+            temperature: 0.1,
+          }),
+        });
+
+        if (repairResponse.ok) {
+          const repairData = await repairResponse.json();
+          const repaired = repairData?.content || repairData?.choices?.[0]?.message?.content;
+          if (repaired) {
+            analysisResult = parseJsonResponse(repaired);
+          } else {
+            throw new Error('Repair returned no content');
+          }
+        } else {
+          throw new Error('Repair request failed');
+        }
+      } catch {
+        const errorMessage = "Failed to parse AI analysis";
+        if (stream) {
+          await sendEvent("error", { type: "error", message: errorMessage });
+          await writer?.close();
+          return new Response(streamBody?.readable, {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+          });
+        }
+        return new Response(JSON.stringify({ error: errorMessage }), {
           status: 500,
-          headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      return new Response(JSON.stringify({ error: errorMessage }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     }
 
     if (stream) {
