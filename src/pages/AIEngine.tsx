@@ -6,6 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { useCreditAnalysis, DisputableItem } from '@/hooks/useCreditAnalysis';
+import { useDisputeLetter, LetterType } from '@/hooks/useDisputeLetter';
+import LetterDocumentEditor from '@/components/disputes/LetterDocumentEditor';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -28,8 +36,19 @@ const AIEngine = () => {
   const [reportText, setReportText] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLetterOpen, setIsLetterOpen] = useState(false);
+  const [activeItem, setActiveItem] = useState<DisputableItem | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { isAnalyzing, analysisResult, analyzeReport, clearAnalysis, statusMessage } = useCreditAnalysis();
+  const {
+    isGenerating,
+    generatedLetter,
+    statusMessage: letterStatusMessage,
+    generateLetter,
+    clearLetter,
+    downloadLetter,
+    copyLetter,
+  } = useDisputeLetter();
   const { toast } = useToast();
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -276,6 +295,28 @@ const AIEngine = () => {
     }
     
     return text;
+  };
+
+  const mapLetterType = (item: DisputableItem): LetterType => {
+    const issue = item.issueType?.toLowerCase() || '';
+    const law = item.applicableLaw?.toLowerCase() || '';
+
+    if (law.includes('605')) return 'fcra_605b';
+    if (issue.includes('collection')) return 'collection_validation';
+    if (issue.includes('charge')) return 'factual_dispute';
+    if (issue.includes('inquiry')) return 'inquiry_removal';
+    if (issue.includes('identity')) return 'identity_theft';
+    if (issue.includes('medical')) return 'hipaa_medical';
+    if (issue.includes('goodwill')) return 'goodwill';
+    if (issue.includes('data')) return 'data_breach';
+    return 'factual_dispute';
+  };
+
+  const handleGenerateLetter = async (item: DisputableItem) => {
+    setActiveItem(item);
+    setIsLetterOpen(true);
+    const letterType = mapLetterType(item);
+    await generateLetter(letterType, item);
   };
 
   const handleNewAnalysis = () => {
@@ -581,11 +622,30 @@ Creditor: Capital One"
                                 Strategy: {item.strategy}
                               </p>
                             </div>
-                            <Button size="sm" variant="outline">
-                              Generate Letter
-                              <ArrowRight className="w-4 h-4 ml-1" />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleGenerateLetter(item)}
+                              disabled={isGenerating && activeItem?.id === item.id}
+                            >
+                              {isGenerating && activeItem?.id === item.id ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Generating...
+                                </>
+                              ) : (
+                                <>
+                                  Generate Letter
+                                  <ArrowRight className="w-4 h-4 ml-1" />
+                                </>
+                              )}
                             </Button>
                           </div>
+                          {letterStatusMessage && activeItem?.id === item.id && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {letterStatusMessage}
+                            </p>
+                          )}
                         </div>
                       ))
                     ) : (
@@ -686,6 +746,62 @@ Creditor: Capital One"
           </div>
         </div>
       </div>
+
+      <Dialog
+        open={isLetterOpen}
+        onOpenChange={(open) => {
+          setIsLetterOpen(open);
+          if (!open) {
+            clearLetter();
+            setActiveItem(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Generated Dispute Letter</DialogTitle>
+          </DialogHeader>
+          {generatedLetter?.letter ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>Type: {generatedLetter.letterType}</span>
+                <span>•</span>
+                <span>Creditor: {generatedLetter.creditor}</span>
+                <span>•</span>
+                <span>Bureaus: {generatedLetter.bureaus.join(', ')}</span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copyLetter(generatedLetter.letter)}
+                >
+                  Copy
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => downloadLetter(generatedLetter.letter, `dispute-letter-${generatedLetter.letterType}.txt`)}
+                >
+                  Download
+                </Button>
+              </div>
+              <LetterDocumentEditor
+                content={generatedLetter.letter}
+                creditor={generatedLetter.creditor}
+                bureaus={generatedLetter.bureaus}
+                readOnly
+                showOptimize={false}
+              />
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {letterStatusMessage || 'Generating letter...'}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
