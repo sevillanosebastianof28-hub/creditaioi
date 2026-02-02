@@ -113,7 +113,9 @@ serve(async (req) => {
       clientInfo,
       customInstructions,
       stream,
-      maxWaitMs
+      maxWaitMs,
+      fastMode,
+      forceTemplate
     } = await req.json();
 
     if (!letterType || !disputableItem) {
@@ -133,6 +135,55 @@ serve(async (req) => {
     }
 
     const templateInstructions = letterTemplates[letterType] || letterTemplates.factual_dispute;
+
+    const encoder = new TextEncoder();
+    const streamBody = stream ? new TransformStream() : null;
+    const writer = streamBody ? streamBody.writable.getWriter() : null;
+
+    const sendEvent = async (event: string, data: Record<string, unknown>) => {
+      if (!writer) return;
+      await writer.write(
+        encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+      );
+    };
+
+    if (forceTemplate) {
+      const fallback = buildFallbackLetter(disputableItem, templateInstructions);
+      if (stream) {
+        const chunkSize = 800;
+        for (let i = 0; i < fallback.length; i += chunkSize) {
+          await sendEvent('delta', { type: 'delta', delta: fallback.slice(i, i + chunkSize) });
+        }
+        await sendEvent('result', {
+          type: 'result',
+          result: {
+            letter: fallback,
+            letterType,
+            creditor: disputableItem.creditor,
+            bureaus: disputableItem.bureaus || ['equifax', 'experian', 'transunion']
+          }
+        });
+        await writer?.close();
+        return new Response(streamBody?.readable, {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive"
+          },
+        });
+      }
+
+      return new Response(JSON.stringify({
+        letter: fallback,
+        letterType,
+        creditor: disputableItem.creditor,
+        bureaus: disputableItem.bureaus || ['equifax', 'experian', 'transunion'],
+        fallbackUsed: true
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     const userPrompt = `${templateInstructions}
 
@@ -157,17 +208,6 @@ Generate a complete, ready-to-send dispute letter.`;
 
     console.log("Generating dispute letter, type:", letterType);
 
-    const encoder = new TextEncoder();
-    const streamBody = stream ? new TransformStream() : null;
-    const writer = streamBody ? streamBody.writable.getWriter() : null;
-
-    const sendEvent = async (event: string, data: Record<string, unknown>) => {
-      if (!writer) return;
-      await writer.write(
-        encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
-      );
-    };
-
     if (stream) {
       await sendEvent('status', { type: 'status', message: 'Analyzing dispute details...' });
       await sendEvent('status', { type: 'status', message: 'Drafting dispute letter...' });
@@ -178,7 +218,7 @@ Generate a complete, ready-to-send dispute letter.`;
     const controller = new AbortController();
     const defaultTimeout = Number(Deno.env.get("LETTER_GEN_TIMEOUT_MS") || 30000);
     const requestedTimeout = typeof maxWaitMs === 'number' ? maxWaitMs : defaultTimeout;
-    const timeoutMs = Math.min(Math.max(requestedTimeout, 2000), 30000);
+    const timeoutMs = Math.min(Math.max(requestedTimeout, 2000), fastMode ? 12000 : 30000);
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
@@ -189,7 +229,7 @@ Generate a complete, ready-to-send dispute letter.`;
           body: JSON.stringify({
             system: systemPrompt,
             user: userPrompt,
-            max_new_tokens: 400,
+            max_new_tokens: fastMode ? 250 : 400,
             temperature: 0.3
           }),
           signal: controller.signal
@@ -207,7 +247,7 @@ Generate a complete, ready-to-send dispute letter.`;
               { role: "system", content: systemPrompt },
               { role: "user", content: userPrompt }
             ],
-            max_tokens: 400,
+            max_tokens: fastMode ? 250 : 400,
             temperature: 0.3,
           }),
           signal: controller.signal

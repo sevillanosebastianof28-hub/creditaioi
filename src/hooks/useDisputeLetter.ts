@@ -103,7 +103,8 @@ export function useDisputeLetter() {
   const generateLetter = async (
     letterType: LetterType,
     disputableItem: DisputableItem,
-    customInstructions?: string
+    customInstructions?: string,
+    options?: { maxWaitMs?: number; fastMode?: boolean }
   ) => {
     setIsGenerating(true);
     setGeneratedLetter(null);
@@ -115,7 +116,12 @@ export function useDisputeLetter() {
       const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
-      const response = await fetch(`${supabaseUrl}/functions/v1/generate-dispute-letter`, {
+      const maxWaitMs = options?.maxWaitMs ?? 30000;
+      const fastMode = options?.fastMode ?? true;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), maxWaitMs + 2000);
+
+      let response = await fetch(`${supabaseUrl}/functions/v1/generate-dispute-letter`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -127,24 +133,68 @@ export function useDisputeLetter() {
           disputableItem,
           customInstructions,
           stream: true,
-          maxWaitMs: 30000
-        })
+          maxWaitMs,
+          fastMode
+        }),
+        signal: controller.signal
       });
 
-      const data = await readAiStream<GeneratedLetter>(response, (event) => {
-        if (event.type === 'status') {
-          setStatusMessage(event.message || null);
-        }
-        if (event.type === 'delta') {
-          const delta = (event as { delta?: string }).delta;
-          if (delta) {
-            setDraftLetter((prev) => prev + delta);
+      let data: GeneratedLetter | null = null;
+      try {
+        data = await readAiStream<GeneratedLetter>(response, (event) => {
+          if (event.type === 'status') {
+            setStatusMessage(event.message || null);
           }
+          if (event.type === 'delta') {
+            const delta = (event as { delta?: string }).delta;
+            if (delta) {
+              setDraftLetter((prev) => prev + delta);
+            }
+          }
+        });
+      } catch (streamError) {
+        if (controller.signal.aborted) {
+          response = await fetch(`${supabaseUrl}/functions/v1/generate-dispute-letter`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session?.access_token || publishableKey}`,
+              apikey: publishableKey
+            },
+            body: JSON.stringify({
+              letterType,
+              disputableItem,
+              customInstructions,
+              stream: true,
+              maxWaitMs: 2000,
+              forceTemplate: true
+            })
+          });
+
+          data = await readAiStream<GeneratedLetter>(response, (event) => {
+            if (event.type === 'status') {
+              setStatusMessage(event.message || null);
+            }
+            if (event.type === 'delta') {
+              const delta = (event as { delta?: string }).delta;
+              if (delta) {
+                setDraftLetter((prev) => prev + delta);
+              }
+            }
+          });
+        } else {
+          throw streamError;
         }
-      });
+      } finally {
+        clearTimeout(timeout);
+      }
+
+      if (!data) {
+        throw new Error('No letter generated');
+      }
 
       setGeneratedLetter(data);
-      
+
       toast({
         title: "Letter Generated",
         description: `${letterTemplates.find(t => t.id === letterType)?.name} letter is ready.`,
