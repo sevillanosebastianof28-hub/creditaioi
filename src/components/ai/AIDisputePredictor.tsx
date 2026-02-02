@@ -5,8 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Target, Sparkles, TrendingUp, AlertTriangle, CheckCircle2, FileText } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useCreditData } from '@/hooks/useCreditData';
+import { readAiStream } from '@/lib/aiStream';
 import { toast } from 'sonner';
 
 interface Prediction {
@@ -23,6 +23,7 @@ export function AIDisputePredictor() {
   const { creditData } = useCreditData();
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const getPredictions = async () => {
     if (!creditData?.negativeItems?.length) {
@@ -31,6 +32,7 @@ export function AIDisputePredictor() {
     }
 
     setIsLoading(true);
+    setStatusMessage('Starting prediction...');
     try {
       const items = creditData.negativeItems
         .filter(item => item.status !== 'deleted')
@@ -45,19 +47,32 @@ export function AIDisputePredictor() {
           disputeReason: item.disputeReason
         }));
 
-      const { data, error } = await supabase.functions.invoke('ai-smart-analyzer', {
-        body: {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-smart-analyzer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+        },
+        body: JSON.stringify({
           analysisType: 'success_prediction',
-          items
+          items,
+          stream: true
+        })
+      });
+
+      const result = await readAiStream<{ predictions: Prediction[] }>(response, (event) => {
+        if (event.type === 'status') {
+          setStatusMessage(event.message || null);
         }
       });
 
-      if (error) throw error;
-      setPredictions(data.result.predictions || []);
+      setPredictions(result.predictions || []);
     } catch (error) {
       console.error('Prediction error:', error);
       toast.error('Failed to generate predictions');
     } finally {
+      setStatusMessage(null);
       setIsLoading(false);
     }
   };
@@ -105,6 +120,9 @@ export function AIDisputePredictor() {
       <CardContent>
         {isLoading ? (
           <div className="space-y-4">
+            {statusMessage && (
+              <p className="text-xs text-muted-foreground">{statusMessage}</p>
+            )}
             {[1, 2, 3].map(i => (
               <Skeleton key={i} className="h-32 w-full" />
             ))}

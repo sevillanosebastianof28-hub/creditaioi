@@ -1,19 +1,19 @@
-import { useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-export interface CachedPrediction {
+export interface CachedPrediction<T = unknown> {
   id: string;
   prediction_type: string;
   item_id?: string;
-  prediction_data: any;
+  prediction_data: T;
   created_at: string;
   expires_at: string;
 }
 
-export function useAIPredictions() {
+export function useAIPredictions<T = unknown>() {
   const [isLoading, setIsLoading] = useState(false);
-  const [predictions, setPredictions] = useState<CachedPrediction[]>([]);
+  const [predictions, setPredictions] = useState<Array<CachedPrediction<T>>>([]);
   const { user } = useAuth();
 
   const fetchPredictions = useCallback(async (type?: string) => {
@@ -33,8 +33,8 @@ export function useAIPredictions() {
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPredictions((data || []) as CachedPrediction[]);
-      return data as CachedPrediction[];
+      setPredictions((data || []) as Array<CachedPrediction<T>>);
+      return data as Array<CachedPrediction<T>>;
     } catch (error) {
       console.error('Error fetching predictions:', error);
       return [];
@@ -63,7 +63,7 @@ export function useAIPredictions() {
       const { data, error } = await query.maybeSingle();
 
       if (error) throw error;
-      return data as CachedPrediction | null;
+      return data as CachedPrediction<T> | null;
     } catch (error) {
       console.error('Error getting cached prediction:', error);
       return null;
@@ -72,7 +72,7 @@ export function useAIPredictions() {
 
   const cachePrediction = useCallback(async (
     type: string,
-    predictionData: any,
+    predictionData: T,
     itemId?: string,
     expiresInHours: number = 24
   ): Promise<CachedPrediction | null> => {
@@ -97,7 +97,7 @@ export function useAIPredictions() {
           .single();
 
         if (error) throw error;
-        return data as CachedPrediction;
+        return data as CachedPrediction<T>;
       }
 
       // Insert new
@@ -114,7 +114,7 @@ export function useAIPredictions() {
         .single();
 
       if (error) throw error;
-      return data as CachedPrediction;
+      return data as CachedPrediction<T>;
     } catch (error) {
       console.error('Error caching prediction:', error);
       return null;
@@ -142,4 +142,44 @@ export function useAIPredictions() {
     cachePrediction,
     clearExpiredPredictions
   };
+}
+
+export function useAIPredictionsRealtime<T = unknown>() {
+  const predictionsApi = useAIPredictions<T>();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`ai_predictions_${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'ai_predictions',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          if (payload.eventType === 'DELETE') {
+            predictionsApi.fetchPredictions();
+            return;
+          }
+
+          const record = payload.new as CachedPrediction<T> | undefined;
+          if (!record) return;
+          if (new Date(record.expires_at) <= new Date()) return;
+
+          predictionsApi.fetchPredictions(record.prediction_type);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [predictionsApi.fetchPredictions, user]);
+
+  return predictionsApi;
 }

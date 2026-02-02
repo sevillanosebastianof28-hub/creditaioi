@@ -5,9 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BarChart3, Sparkles, TrendingUp, AlertTriangle, CheckCircle2, ArrowUp } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useCreditData } from '@/hooks/useCreditData';
-import { useAIPredictions } from '@/hooks/useAIPredictions';
+import { useAIPredictionsRealtime } from '@/hooks/useAIPredictions';
+import { readAiStream } from '@/lib/aiStream';
 import { toast } from 'sonner';
 
 interface PrioritizedItem {
@@ -32,16 +32,17 @@ interface PrioritizationResult {
 
 export function AISmartPrioritization() {
   const { creditData } = useCreditData();
-  const { getCachedPrediction, cachePrediction } = useAIPredictions();
+  const { getCachedPrediction, cachePrediction } = useAIPredictionsRealtime<PrioritizationResult>();
   const [result, setResult] = useState<PrioritizationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   // Load cached prediction on mount
   useEffect(() => {
     const loadCached = async () => {
       const cached = await getCachedPrediction('smart_priority');
       if (cached) {
-        setResult(cached.prediction_data as PrioritizationResult);
+        setResult(cached.prediction_data);
       }
     };
     loadCached();
@@ -54,6 +55,7 @@ export function AISmartPrioritization() {
     }
 
     setIsLoading(true);
+    setStatusMessage('Analyzing items...');
     try {
       const items = creditData.negativeItems.map((item, idx) => ({
         id: `item-${idx}`,
@@ -65,22 +67,35 @@ export function AISmartPrioritization() {
         deletionProbability: item.deletionProbability
       }));
 
-      const { data, error } = await supabase.functions.invoke('ai-smart-analyzer', {
-        body: {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-smart-analyzer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+        },
+        body: JSON.stringify({
           analysisType: 'smart_priority',
-          items
+          items,
+          stream: true
+        })
+      });
+
+      const analysis = await readAiStream<PrioritizationResult>(response, (event) => {
+        if (event.type === 'status') {
+          setStatusMessage(event.message || null);
         }
       });
 
-      if (error) throw error;
-      setResult(data.result);
+      setResult(analysis);
       
       // Cache the prediction
-      await cachePrediction('smart_priority', data.result);
+      await cachePrediction('smart_priority', analysis);
     } catch (error) {
       console.error('Analysis error:', error);
       toast.error('Failed to analyze items');
     } finally {
+      setStatusMessage(null);
       setIsLoading(false);
     }
   };
@@ -125,6 +140,9 @@ export function AISmartPrioritization() {
       <CardContent>
         {isLoading ? (
           <div className="space-y-4">
+            {statusMessage && (
+              <p className="text-xs text-muted-foreground">{statusMessage}</p>
+            )}
             {[1, 2, 3].map(i => (
               <Skeleton key={i} className="h-24 w-full" />
             ))}

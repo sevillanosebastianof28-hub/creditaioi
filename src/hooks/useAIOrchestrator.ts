@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { readAiStream } from '@/lib/aiStream';
 
 interface ClassificationResult {
   eligibility: 'eligible' | 'conditionally_eligible' | 'not_eligible' | 'insufficient_information';
@@ -61,6 +62,7 @@ export function useAIOrchestrator() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastResponse, setLastResponse] = useState<OrchestratorResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const { toast } = useToast();
 
   const orchestrate = useCallback(async (
@@ -77,59 +79,82 @@ export function useAIOrchestrator() {
         throw new Error("Authentication required");
       }
 
-      const { data, error: fnError } = await supabase.functions.invoke('ai-orchestrator', {
-        body: {
+      const { data: { session } } = await supabase.auth.getSession();
+      const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/ai-orchestrator`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token || publishableKey}`,
+          apikey: publishableKey
+        },
+        body: JSON.stringify({
           action,
           input,
           context,
-          userId: user.id
+          userId: user.id,
+          stream: true
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to process AI request');
+      }
+
+      const parsed = await readAiStream<OrchestratorResponse>(response, (event) => {
+        if (event.type === 'status') {
+          setStatusMessage(event.message || null);
         }
       });
 
-      if (fnError) {
-        throw fnError;
-      }
-
-      const response = data as OrchestratorResponse;
-      setLastResponse(response);
+      setStatusMessage(null);
+      const responseData = parsed as OrchestratorResponse;
+      setLastResponse(responseData);
 
       // Handle refused requests
-      if (response.wasRefused) {
+      if (responseData.wasRefused) {
         toast({
           title: "Request Outside Scope",
-          description: response.refusalReason || "This request cannot be processed.",
+          description: responseData.refusalReason || "This request cannot be processed.",
           variant: "destructive"
         });
-        return response;
+        return responseData;
       }
 
       // Handle compliance flags
-      if (response.complianceFlags && response.complianceFlags.length > 0) {
-        console.warn("Compliance flags detected:", response.complianceFlags);
+      if (responseData.complianceFlags && responseData.complianceFlags.length > 0) {
+        console.warn("Compliance flags detected:", responseData.complianceFlags);
       }
 
       // Success feedback
-      if (response.success && response.response) {
+      if (responseData.success && responseData.response) {
         toast({
           title: "Analysis Complete",
-          description: response.response.summary.slice(0, 100) + (response.response.summary.length > 100 ? '...' : ''),
+          description: responseData.response.summary.slice(0, 100) + (responseData.response.summary.length > 100 ? '...' : ''),
         });
       }
 
-      return response;
-    } catch (err: any) {
+      return responseData;
+    } catch (err: unknown) {
       console.error("AI Orchestrator error:", err);
-      const errorMessage = err.message || "Failed to process AI request";
+      const errorMessage = err instanceof Error ? err.message : "Failed to process AI request";
+      const status = typeof err === 'object' && err !== null && 'status' in err
+        ? (err as { status?: number }).status
+        : undefined;
+      setStatusMessage(null);
       setError(errorMessage);
       
       // Handle rate limits
-      if (err.status === 429) {
+      if (status === 429) {
         toast({
           title: "Rate Limited",
           description: "Please wait a moment before trying again.",
           variant: "destructive"
         });
-      } else if (err.status === 402) {
+      } else if (status === 402) {
         toast({
           title: "AI Credits Exhausted",
           description: "Please contact support to add more credits.",
@@ -145,6 +170,7 @@ export function useAIOrchestrator() {
       
       return null;
     } finally {
+      setStatusMessage(null);
       setIsProcessing(false);
     }
   }, [toast]);
@@ -216,6 +242,7 @@ export function useAIOrchestrator() {
     isProcessing,
     lastResponse,
     error,
+    statusMessage,
     
     // Actions
     orchestrate,

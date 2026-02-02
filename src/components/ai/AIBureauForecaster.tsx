@@ -5,8 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, Sparkles, Clock, CheckCircle2, AlertCircle, FileSearch } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useCreditData } from '@/hooks/useCreditData';
+import { readAiStream } from '@/lib/aiStream';
 import { toast } from 'sonner';
 
 interface Forecast {
@@ -34,6 +34,7 @@ export function AIBureauForecaster() {
   const [selectedBureau, setSelectedBureau] = useState<string>('experian');
   const [result, setResult] = useState<ForecastResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const getForecast = async () => {
     if (!creditData?.negativeItems?.length) {
@@ -42,6 +43,7 @@ export function AIBureauForecaster() {
     }
 
     setIsLoading(true);
+    setStatusMessage('Forecasting responses...');
     try {
       const items = creditData.negativeItems
         .filter(item => item.status === 'in_progress' && item.bureau.toLowerCase() === selectedBureau)
@@ -60,20 +62,33 @@ export function AIBureauForecaster() {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('ai-smart-analyzer', {
-        body: {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-smart-analyzer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+        },
+        body: JSON.stringify({
           analysisType: 'bureau_forecast',
           items,
-          bureau: selectedBureau
+          bureau: selectedBureau,
+          stream: true
+        })
+      });
+
+      const forecast = await readAiStream<ForecastResult>(response, (event) => {
+        if (event.type === 'status') {
+          setStatusMessage(event.message || null);
         }
       });
 
-      if (error) throw error;
-      setResult(data.result);
+      setResult(forecast);
     } catch (error) {
       console.error('Forecast error:', error);
       toast.error('Failed to generate forecast');
     } finally {
+      setStatusMessage(null);
       setIsLoading(false);
     }
   };
@@ -144,6 +159,9 @@ export function AIBureauForecaster() {
       <CardContent>
         {isLoading ? (
           <div className="space-y-4">
+            {statusMessage && (
+              <p className="text-xs text-muted-foreground">{statusMessage}</p>
+            )}
             {[1, 2, 3].map(i => (
               <Skeleton key={i} className="h-24 w-full" />
             ))}

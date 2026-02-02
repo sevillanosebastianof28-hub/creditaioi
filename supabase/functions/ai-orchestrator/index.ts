@@ -111,7 +111,7 @@ serve(async (req) => {
   const startTime = Date.now();
 
   try {
-    const { action, input, context, userId } = await req.json() as OrchestratorRequest;
+    const { action, input, context, userId, stream } = await req.json() as OrchestratorRequest & { stream?: boolean };
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -122,6 +122,105 @@ serve(async (req) => {
 
     // Create Supabase client for logging
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+
+    if (stream) {
+      const encoder = new TextEncoder();
+      const streamBody = new TransformStream();
+      const writer = streamBody.writable.getWriter();
+
+      const sendEvent = async (event: string, data: Record<string, unknown>) => {
+        await writer.write(
+          encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+        );
+      };
+
+      await sendEvent('status', { type: 'status', message: 'Validating request scope...' });
+
+      // Step 1: Validate scope - Check if request is within credit domain
+      const scopeValidation = validateScope(input);
+      if (!scopeValidation.valid) {
+        const response: OrchestratorResponse = {
+          success: false,
+          complianceFlags: ['out_of_scope'],
+          wasRefused: true,
+          refusalReason: scopeValidation.reason,
+          processingTimeMs: Date.now() - startTime
+        };
+
+        await logInteraction(supabase, {
+          userId,
+          input,
+          action,
+          response,
+          context
+        });
+
+        await sendEvent('result', { type: 'result', result: response });
+        await writer.close();
+
+        return new Response(streamBody.readable, {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive"
+          }
+        });
+      }
+
+      await sendEvent('status', { type: 'status', message: 'Retrieving knowledge context...' });
+
+      // Step 2: Retrieve relevant knowledge based on action type
+      const retrievedContext = retrieveKnowledge(action, context?.disputeType);
+
+      // Step 3: For dispute-related requests, run classifier first (Model 2 equivalent)
+      let classification: ClassificationResult | undefined;
+      if (action === 'classify_dispute' || action === 'full_orchestration') {
+        await sendEvent('status', { type: 'status', message: 'Classifying request...' });
+        classification = await runClassifier(LOVABLE_API_KEY, input, context, retrievedContext);
+      }
+
+      // Step 4: Generate response using explainer model (Model 1 equivalent)
+      await sendEvent('status', { type: 'status', message: 'Generating response...' });
+      const response = await runExplainer(LOVABLE_API_KEY, input, context, retrievedContext, classification);
+
+      // Step 5: Validate response for compliance
+      await sendEvent('status', { type: 'status', message: 'Checking compliance...' });
+      const complianceFlags = validateCompliance(response);
+
+      // Step 6: Build final response
+      const finalResponse: OrchestratorResponse = {
+        success: true,
+        classification,
+        response,
+        complianceFlags,
+        wasRefused: false,
+        processingTimeMs: Date.now() - startTime
+      };
+
+      // Step 7: Log interaction for fine-tuning
+      await sendEvent('status', { type: 'status', message: 'Saving interaction...' });
+      await logInteraction(supabase, {
+        userId,
+        input,
+        action,
+        response: finalResponse,
+        context,
+        classification
+      });
+
+      await sendEvent('result', { type: 'result', result: finalResponse });
+      await writer.close();
+
+      return new Response(streamBody.readable, {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive"
+        }
+      });
+    }
 
     // Step 1: Validate scope - Check if request is within credit domain
     const scopeValidation = validateScope(input);

@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Bot, Send, User, Sparkles, X, Maximize2, Minimize2, MessageCircle, Zap } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useCreditData } from '@/hooks/useCreditData';
 import { toast } from 'sonner';
 
@@ -43,6 +42,7 @@ export function AICreditCoach() {
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
 
+    let assistantAdded = false;
     try {
       const creditContext = creditData ? {
         scores: creditData.scores,
@@ -79,8 +79,10 @@ export function AICreditCoach() {
       let assistantContent = '';
 
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+      assistantAdded = true;
 
       let buffer = '';
+      let streamComplete = false;
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -97,7 +99,10 @@ export function AICreditCoach() {
           if (!line.startsWith('data: ')) continue;
 
           const jsonStr = line.slice(6).trim();
-          if (jsonStr === '[DONE]') break;
+          if (jsonStr === '[DONE]') {
+            streamComplete = true;
+            break;
+          }
 
           try {
             const parsed = JSON.parse(jsonStr);
@@ -115,11 +120,18 @@ export function AICreditCoach() {
             break;
           }
         }
+
+        if (streamComplete) {
+          await reader.cancel();
+          break;
+        }
       }
     } catch (error) {
       console.error('Chat error:', error);
       toast.error('Failed to send message. Please try again.');
-      setMessages(prev => prev.slice(0, -1));
+      if (assistantAdded) {
+        setMessages(prev => prev.slice(0, -1));
+      }
     } finally {
       setIsLoading(false);
     }

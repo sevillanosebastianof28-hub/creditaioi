@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { analysisType, items, bureau } = await req.json();
+    const { analysisType, items, bureau, stream } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -125,6 +125,125 @@ serve(async (req) => {
       };
     } else {
       throw new Error("Invalid analysis type");
+    }
+
+    if (stream) {
+      const encoder = new TextEncoder();
+      const streamBody = new TransformStream();
+      const writer = streamBody.writable.getWriter();
+
+      const sendEvent = async (event: string, data: Record<string, unknown>) => {
+        await writer.write(
+          encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+        );
+      };
+
+      await sendEvent('status', { type: 'status', message: 'Analyzing items...' });
+
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt },
+          ],
+          tools: [{ type: "function", function: toolSchema }],
+          tool_choice: { type: "function", function: { name: toolSchema.name } },
+          stream: true
+        }),
+      });
+
+      if (!response.ok || !response.body) {
+        if (response.status === 429) {
+          await sendEvent('error', { type: 'error', message: 'Rate limit exceeded' });
+          await writer.close();
+          return new Response(streamBody.readable, {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+          });
+        }
+        await sendEvent('error', { type: 'error', message: 'AI service error' });
+        await writer.close();
+        return new Response(streamBody.readable, {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+        });
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let toolArgs = '';
+      let streamComplete = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+          let line = buffer.slice(0, newlineIndex);
+          buffer = buffer.slice(newlineIndex + 1);
+
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (line.startsWith(':') || line.trim() === '') continue;
+          if (!line.startsWith('data: ')) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === '[DONE]') {
+            streamComplete = true;
+            break;
+          }
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const toolCalls = parsed.choices?.[0]?.delta?.tool_calls || [];
+
+            for (const call of toolCalls) {
+              if (!call?.function) continue;
+              if (call.function.name && call.function.name !== toolSchema.name) continue;
+              if (call.function.arguments) {
+                toolArgs += call.function.arguments;
+              }
+            }
+          } catch {
+            buffer = line + '\n' + buffer;
+            break;
+          }
+        }
+
+        if (streamComplete) {
+          await reader.cancel();
+          break;
+        }
+      }
+
+      await sendEvent('status', { type: 'status', message: 'Finalizing results...' });
+
+      try {
+        const result = JSON.parse(toolArgs);
+        await sendEvent('result', { type: 'result', result, analysisType });
+      } catch (error) {
+        console.error('Tool parse error:', error);
+        await sendEvent('error', { type: 'error', message: 'Failed to parse AI response' });
+      }
+
+      await writer.close();
+      return new Response(streamBody.readable, {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive"
+        },
+      });
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
