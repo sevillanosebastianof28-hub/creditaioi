@@ -23,6 +23,24 @@ interface OrchestratorResponse {
     recommendedAction: string;
     nextSteps: string[];
   };
+  confidenceScore?: number;
+  tags?: {
+    dispute_type?: string | null;
+    eligibility_label?: string | null;
+    confidence_level?: 'low' | 'medium' | 'high';
+    refusal_reason?: string | null;
+    compliance_risk?: 'low' | 'medium' | 'high';
+  };
+  modelVersions?: {
+    classifier: string;
+    core: string;
+    retriever: string;
+  };
+  validation?: {
+    missingSections: string[];
+    forbiddenPhrases: string[];
+    overrideAttempted: boolean;
+  };
   complianceFlags: string[];
   wasRefused: boolean;
   refusalReason?: string;
@@ -65,6 +83,43 @@ export function useAIOrchestrator() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const { toast } = useToast();
 
+  const submitFeedback = useCallback(async (
+    interactionId: string,
+    feedback: 'helpful' | 'not_helpful' | 'incorrect' | 'needs_more_detail',
+    reason?: string
+  ) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Authentication required');
+      }
+
+      const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/ai-feedback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${publishableKey}`,
+          apikey: publishableKey
+        },
+        body: JSON.stringify({
+          interactionId,
+          userId: user.id,
+          feedback,
+          reason
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit feedback');
+      }
+    } catch (err) {
+      console.error('Feedback submission failed', err);
+    }
+  }, []);
+
   const orchestrate = useCallback(async (
     action: ActionType,
     input: string,
@@ -84,6 +139,7 @@ export function useAIOrchestrator() {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
       const response = await fetch(`${supabaseUrl}/functions/v1/ai-orchestrator`, {
+      submitFeedback,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
