@@ -29,6 +29,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { readAiStream } from '@/lib/aiStream';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import LetterDocumentEditor from '@/components/disputes/LetterDocumentEditor';
 import { useQuery } from '@tanstack/react-query';
 import {
   FileText,
@@ -39,7 +40,6 @@ import {
   Filter,
   Plus,
   Mail,
-  Download,
   Eye,
   Loader2,
   Save,
@@ -185,18 +185,32 @@ const Disputes = () => {
     }
   };
 
-  const handleSaveLetter = async () => {
-    if (!selectedItem || !letterContent) return;
-    
+  const handleSaveLetter = async (contentOverride?: string) => {
+    if (!selectedItem || !(contentOverride || letterContent)) return;
+
     const saved = await saveLetter(
       selectedItem.letter_type || 'factual_dispute',
-      letterContent,
+      contentOverride || letterContent,
       selectedItem.id
     );
 
     if (saved) {
       toast({ title: "Letter Saved", description: "Letter saved to database successfully." });
     }
+  };
+
+  const handleDownload = () => {
+    if (!letterContent) return;
+    const blob = new Blob([letterContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const name = selectedItem?.creditor_name?.replace(/\s+/g, '_') || 'dispute_letter';
+    a.href = url;
+    a.download = `${name}_dispute_letter.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const handleMarkAsSent = async () => {
@@ -429,23 +443,33 @@ const Disputes = () => {
 
         {/* Letter View Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col min-h-0">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-primary" />
                 Dispute Letter - {selectedItem?.creditor_name}
               </DialogTitle>
             </DialogHeader>
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 min-h-0 overflow-hidden">
               {isGenerating ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
                   <p className="text-muted-foreground">{statusMessage || 'Generating dispute letter...'}</p>
                 </div>
               ) : (
-                <div className="bg-muted/30 rounded-lg p-6">
-                  <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">{letterContent}</pre>
-                </div>
+                <LetterDocumentEditor
+                  content={letterContent}
+                  creditor={selectedItem?.creditor_name}
+                  letterType={selectedItem?.letter_type || 'Dispute Letter'}
+                  bureaus={selectedItem?.bureau ? [selectedItem.bureau] : []}
+                  onChange={(content) => setLetterContent(content)}
+                  onSave={(content) => {
+                    setLetterContent(content);
+                    handleSaveLetter(content);
+                  }}
+                  onDownload={() => handleDownload()}
+                  showOptimize={true}
+                />
               )}
             </div>
             {!isGenerating && letterContent && (

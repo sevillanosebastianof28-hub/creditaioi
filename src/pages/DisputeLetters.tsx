@@ -77,8 +77,7 @@ const DisputeLetters = () => {
     statusMessage,
     generateLetter, 
     clearLetter,
-    downloadLetter,
-    copyLetter 
+    downloadLetter
   } = useDisputeLetter();
 
   const { saveLetter } = useLetterTracking();
@@ -298,67 +297,71 @@ const DisputeLetters = () => {
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    {clientDisputableItems.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                        <p>No disputable items found for this client.</p>
-                        <p className="text-sm mt-1">Run an AI analysis to identify issues.</p>
-                      </div>
-                    ) : (
-                      clientDisputableItems.map((item) => (
-                        <div
-                          key={item.id}
-                          className={cn(
-                            "p-4 rounded-lg border transition-all cursor-pointer",
-                            selectedItem?.id === item.id
-                              ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                              : "border-border hover:border-primary/30"
-                          )}
-                          onClick={() => {
-                            setSelectedItem(item);
-                            setSelectedLetterType(getSuggestedLetterType(item));
-                          }}
-                        >
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
-                              <div className="flex flex-wrap items-center gap-2 mb-2">
-                                <span className="font-semibold">{item.creditor}</span>
-                                <Badge 
-                                  variant="outline" 
-                                  className={cn(
-                                    item.priority === 'high' && 'bg-destructive/10 text-destructive',
-                                    item.priority === 'medium' && 'bg-warning/10 text-warning',
-                                    item.priority === 'low' && 'bg-muted'
-                                  )}
-                                >
-                                  {item.priority}
-                                </Badge>
-                                <Badge variant="secondary">
-                                  {item.deletionProbability}% deletion chance
-                                </Badge>
-                              </div>
-                              <p className="text-sm text-muted-foreground mb-2">
-                                {item.disputeReason}
-                              </p>
-                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                  <Shield className="w-3 h-3" />
-                                  {item.applicableLaw}
-                                </span>
-                                <span>${item.balance.toLocaleString()}</span>
-                                <span>{item.bureaus.join(', ')}</span>
+                  <CardContent>
+                    <ScrollArea className="max-h-[60vh] pr-2">
+                      <div className="space-y-3">
+                        {clientDisputableItems.length === 0 ? (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                            <p>No disputable items found for this client.</p>
+                            <p className="text-sm mt-1">Run an AI analysis to identify issues.</p>
+                          </div>
+                        ) : (
+                          clientDisputableItems.map((item) => (
+                            <div
+                              key={item.id}
+                              className={cn(
+                                "p-4 rounded-lg border transition-all cursor-pointer",
+                                selectedItem?.id === item.id
+                                  ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                                  : "border-border hover:border-primary/30"
+                              )}
+                              onClick={() => {
+                                setSelectedItem(item);
+                                setSelectedLetterType(getSuggestedLetterType(item));
+                              }}
+                            >
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                                    <span className="font-semibold">{item.creditor}</span>
+                                    <Badge 
+                                      variant="outline" 
+                                      className={cn(
+                                        item.priority === 'high' && 'bg-destructive/10 text-destructive',
+                                        item.priority === 'medium' && 'bg-warning/10 text-warning',
+                                        item.priority === 'low' && 'bg-muted'
+                                      )}
+                                    >
+                                      {item.priority}
+                                    </Badge>
+                                    <Badge variant="secondary">
+                                      {item.deletionProbability}% deletion chance
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground mb-2">
+                                    {item.disputeReason}
+                                  </p>
+                                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                      <Shield className="w-3 h-3" />
+                                      {item.applicableLaw}
+                                    </span>
+                                    <span>${item.balance.toLocaleString()}</span>
+                                    <span>{item.bureaus.join(', ')}</span>
+                                  </div>
+                                </div>
+                                {selectedItem?.id === item.id && (
+                                  <div className="text-primary">
+                                    <ArrowRight className="w-5 h-5" />
+                                  </div>
+                                )}
                               </div>
                             </div>
-                            {selectedItem?.id === item.id && (
-                              <div className="text-primary">
-                                <ArrowRight className="w-5 h-5" />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    )}
+                          ))
+                        )}
+                      </div>
+                    </ScrollArea>
                   </CardContent>
                 </Card>
 
@@ -496,8 +499,18 @@ const DisputeLetters = () => {
       </div>
 
       {/* Generated Letter Dialog */}
-      <Dialog open={showLetterDialog} onOpenChange={setShowLetterDialog}>
-        <DialogContent className="max-w-5xl h-[90vh] p-0 overflow-hidden flex flex-col">
+      <Dialog
+        open={showLetterDialog}
+        onOpenChange={(open) => {
+          setShowLetterDialog(open);
+          if (!open) {
+            setIsEditingLetter(false);
+            setLetterContent('');
+            clearLetter();
+          }
+        }}
+      >
+        <DialogContent className="max-w-5xl h-[90vh] p-0 overflow-hidden flex flex-col min-h-0">
           <DialogHeader className="sr-only">
             <DialogTitle>
               Generated Dispute Letter
@@ -512,21 +525,32 @@ const DisputeLetters = () => {
             </DialogDescription>
           </DialogHeader>
 
-          {generatedLetter && (
-            <LetterDocumentEditor
-              content={generatedLetter.letter}
-              creditor={generatedLetter.creditor}
-              letterType={letterTemplates.find(t => t.id === generatedLetter.letterType)?.name}
-              bureaus={generatedLetter.bureaus}
-              onDownload={(content) => downloadLetter(content, `${generatedLetter.creditor.replace(/\s+/g, '_')}_dispute_letter.txt`)}
-              onSave={(content) => {
-                saveLetter(
-                  generatedLetter.letterType,
-                  content,
-                  selectedItem?.id
-                );
-              }}
-            />
+          {(letterContent || isGenerating) && (
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <LetterDocumentEditor
+                content={letterContent}
+                creditor={generatedLetter?.creditor || selectedItem?.creditor}
+                letterType={letterTemplates.find(t => t.id === generatedLetter?.letterType)?.name}
+                bureaus={generatedLetter?.bureaus || selectedItem?.bureaus}
+                onDownload={(content) => {
+                  const name = (generatedLetter?.creditor || selectedItem?.creditor || 'dispute_letter')
+                    .replace(/\s+/g, '_');
+                  downloadLetter(content, `${name}_dispute_letter.txt`);
+                }}
+                onSave={(content) => {
+                  if (!generatedLetter?.letterType) return;
+                  saveLetter(
+                    generatedLetter.letterType,
+                    content,
+                    selectedItem?.id
+                  );
+                }}
+                onChange={(content) => {
+                  setIsEditingLetter(true);
+                  setLetterContent(content);
+                }}
+              />
+            </div>
           )}
         </DialogContent>
       </Dialog>
