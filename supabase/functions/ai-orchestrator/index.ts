@@ -116,7 +116,8 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!LOVABLE_API_KEY) {
+    const LOCAL_AI_BASE_URL = Deno.env.get("LOCAL_AI_BASE_URL");
+    if (!LOCAL_AI_BASE_URL && !LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
@@ -247,7 +248,7 @@ serve(async (req) => {
     }
 
     // Step 2: Retrieve relevant knowledge based on action type
-    const retrievedContext = retrieveKnowledge(action, context?.disputeType);
+    const retrievedContext = await retrieveKnowledge(action, context?.disputeType);
 
     // Step 3: For dispute-related requests, run classifier first (Model 2 equivalent)
     let classification: ClassificationResult | undefined;
@@ -321,7 +322,7 @@ function validateScope(input: string): { valid: boolean; reason?: string } {
   return { valid: true };
 }
 
-function retrieveKnowledge(action: string, disputeType?: string): string {
+async function retrieveKnowledge(action: string, disputeType?: string): Promise<string> {
   let relevantDocs: string[] = [];
   
   // Always include compliance docs
@@ -355,6 +356,27 @@ function retrieveKnowledge(action: string, disputeType?: string): string {
       break;
   }
 
+  const localBaseUrl = Deno.env.get("LOCAL_AI_BASE_URL");
+  if (localBaseUrl) {
+    try {
+      const query = `${action} ${disputeType || ''}`.trim();
+      const response = await fetch(`${localBaseUrl}/retrieve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, top_k: 6 })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data?.contexts?.length) {
+          return data.contexts.join("\n\n");
+        }
+      }
+    } catch (error) {
+      console.error("Local retrieval error:", error);
+    }
+  }
+
   // Return as context string (in production, this would fetch actual content)
   return `Retrieved knowledge context from: ${relevantDocs.join(', ')}. 
   
@@ -374,6 +396,22 @@ async function runClassifier(
   context: OrchestratorRequest['context'],
   retrievedKnowledge: string
 ): Promise<ClassificationResult> {
+  const localBaseUrl = Deno.env.get("LOCAL_AI_BASE_URL");
+  if (localBaseUrl) {
+    try {
+      const response = await fetch(`${localBaseUrl}/classify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: input })
+      });
+
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.error("Local classifier error:", error);
+    }
+  }
   
   const classifierPrompt = `You are a DISPUTE ELIGIBILITY CLASSIFIER. Your ONLY job is to determine if a credit item is eligible for dispute.
 
@@ -531,6 +569,33 @@ USER REQUEST:
 ${input}
 
 Generate a response following this EXACT structure. Be concise but thorough.`;
+
+  const localBaseUrl = Deno.env.get("LOCAL_AI_BASE_URL");
+  if (localBaseUrl) {
+    try {
+      const response = await fetch(`${localBaseUrl}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system: explainerPrompt,
+          user: "Generate the response following the required structure. Respond with JSON only.",
+          max_new_tokens: 700,
+          temperature: 0.2
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const content = data?.content || "";
+        const jsonMatch = content.match(/```json\n?([\s\S]*?)\n?```/) || content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          return JSON.parse(jsonMatch[1] || jsonMatch[0]);
+        }
+      }
+    } catch (error) {
+      console.error("Local explainer error:", error);
+    }
+  }
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",

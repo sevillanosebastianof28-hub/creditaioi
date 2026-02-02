@@ -13,8 +13,9 @@ serve(async (req) => {
   try {
     const { action, creditData, stream } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const LOCAL_AI_BASE_URL = Deno.env.get("LOCAL_AI_BASE_URL");
     
-    if (!LOVABLE_API_KEY) {
+    if (!LOCAL_AI_BASE_URL && !LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
@@ -116,6 +117,59 @@ Also calculate analytics on prediction accuracy and pending opportunities.`;
 
     if (stream) {
       await sendEvent('status', { type: 'status', message: 'Generating insights...' });
+    }
+
+    const parseJson = (text: string) => {
+      const jsonMatch = text.match(/```json\n?([\s\S]*?)\n?```/) || text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[1] || jsonMatch[0]);
+      }
+      return JSON.parse(text);
+    };
+
+    if (LOCAL_AI_BASE_URL) {
+      const response = await fetch(`${LOCAL_AI_BASE_URL}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system: systemPrompt,
+          user: `${userPrompt}\n\nReturn JSON only for: ${JSON.stringify(toolSchema.parameters)}`,
+          max_new_tokens: 700,
+          temperature: 0.2
+        })
+      });
+
+      if (!response.ok) {
+        if (stream) {
+          await sendEvent('error', { type: 'error', message: 'AI service error' });
+          await writer?.close();
+          return new Response(streamBody?.readable, {
+            status: 502,
+            headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+          });
+        }
+        throw new Error("AI service error");
+      }
+
+      const data = await response.json();
+      const result = parseJson(data?.content || "{}");
+
+      if (stream) {
+        await sendEvent('result', { type: 'result', result });
+        await writer?.close();
+        return new Response(streamBody?.readable, {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive"
+          },
+        });
+      }
+
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

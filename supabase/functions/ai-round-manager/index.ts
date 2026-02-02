@@ -13,8 +13,9 @@ serve(async (req) => {
   try {
     const { action, clientId, roundId, disputeItems, bureauResponses, stream } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const LOCAL_AI_BASE_URL = Deno.env.get("LOCAL_AI_BASE_URL");
     
-    if (!LOVABLE_API_KEY) {
+    if (!LOCAL_AI_BASE_URL && !LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
@@ -124,20 +125,34 @@ Extract all outcomes and required actions.`;
       await sendEvent('status', { type: 'status', message: 'Analyzing round data...' });
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
-        ],
-      }),
-    });
+    let response: Response;
+    if (LOCAL_AI_BASE_URL) {
+      response = await fetch(`${LOCAL_AI_BASE_URL}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system: systemPrompt,
+          user: `${userPrompt}\n\nReturn JSON only.`,
+          max_new_tokens: 700,
+          temperature: 0.2
+        })
+      });
+    } else {
+      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+        }),
+      });
+    }
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -182,7 +197,7 @@ Extract all outcomes and required actions.`;
     }
 
     const data = await response.json();
-    const aiResponse = data.choices[0].message.content;
+    const aiResponse = data?.content || data.choices?.[0]?.message?.content;
 
     // Try to parse as JSON, otherwise return as text
     let result;

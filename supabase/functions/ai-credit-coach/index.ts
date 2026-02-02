@@ -13,8 +13,9 @@ serve(async (req) => {
   try {
     const { messages, creditContext } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const LOCAL_AI_BASE_URL = Deno.env.get("LOCAL_AI_BASE_URL");
     
-    if (!LOVABLE_API_KEY) {
+    if (!LOCAL_AI_BASE_URL && !LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
@@ -85,6 +86,43 @@ RESPONSE GUIDELINES:
 - Reference their actual data to personalize advice
 - Never make specific legal claims or guarantees
 - If unsure, recommend speaking with their credit repair specialist`;
+
+    if (LOCAL_AI_BASE_URL) {
+      const conversation = messages
+        .map((m: { role: string; content: string }) => `${m.role.toUpperCase()}: ${m.content}`)
+        .join("\n");
+
+      const localResponse = await fetch(`${LOCAL_AI_BASE_URL}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system: systemPrompt,
+          user: `${conversation}\nASSISTANT:`,
+          max_new_tokens: 700,
+          temperature: 0.6
+        })
+      });
+
+      if (!localResponse.ok) {
+        throw new Error("AI service temporarily unavailable");
+      }
+
+      const data = await localResponse.json();
+      const content = data?.content || "";
+
+      const encoder = new TextEncoder();
+      const streamBody = new TransformStream();
+      const writer = streamBody.writable.getWriter();
+      await writer.write(
+        encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`)
+      );
+      await writer.write(encoder.encode("data: [DONE]\n\n"));
+      await writer.close();
+
+      return new Response(streamBody.readable, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

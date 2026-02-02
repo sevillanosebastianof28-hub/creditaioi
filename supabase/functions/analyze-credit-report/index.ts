@@ -186,7 +186,8 @@ serve(async (req) => {
       );
     }
 
-    if (!LOVABLE_API_KEY) {
+    const LOCAL_AI_BASE_URL = Deno.env.get("LOCAL_AI_BASE_URL");
+    if (!LOCAL_AI_BASE_URL && !LOVABLE_API_KEY) {
       console.error("LOVABLE_API_KEY is not configured");
       return new Response(
         JSON.stringify({ error: "AI service is not configured" }),
@@ -197,21 +198,35 @@ serve(async (req) => {
     console.log("Analyzing credit report, text length:", reportText.length);
 
     // Call Lovable AI Gateway
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Analyze this credit report and identify all disputable items:\n\n${reportText}` }
-        ],
-        temperature: 0.2,
-      }),
-    });
+    let response: Response;
+    if (LOCAL_AI_BASE_URL) {
+      response = await fetch(`${LOCAL_AI_BASE_URL}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system: systemPrompt,
+          user: `Analyze this credit report and identify all disputable items:\n\n${reportText}\n\nReturn JSON only.`,
+          max_new_tokens: 1200,
+          temperature: 0.2
+        })
+      });
+    } else {
+      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `Analyze this credit report and identify all disputable items:\n\n${reportText}` }
+          ],
+          temperature: 0.2,
+        }),
+      });
+    }
         await sendEvent('result', { type: 'result', result: analysisResult });
         await writer?.close();
         return new Response(streamBody?.readable, {
@@ -248,7 +263,7 @@ serve(async (req) => {
     }
 
     const aiResponse = await response.json();
-    const content = aiResponse.choices?.[0]?.message?.content;
+    const content = aiResponse?.content || aiResponse.choices?.[0]?.message?.content;
 
     if (!content) {
       console.error("No content in AI response");
