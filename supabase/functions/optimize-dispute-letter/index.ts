@@ -39,10 +39,10 @@ serve(async (req) => {
     }
 
     const LOCAL_AI_BASE_URL = Deno.env.get("LOCAL_AI_BASE_URL");
-    if (!LOCAL_AI_BASE_URL && !LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY is not configured");
+    if (!LOCAL_AI_BASE_URL) {
+      console.error("LOCAL_AI_BASE_URL is not configured");
       return new Response(
-        JSON.stringify({ error: "AI service is not configured" }),
+        JSON.stringify({ error: "Local AI service is not configured" }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -72,35 +72,16 @@ Improve this letter to be more legally compelling and effective while preserving
       await sendEvent('status', { type: 'status', message: 'Optimizing letter...' });
     }
 
-    let response: Response;
-    if (LOCAL_AI_BASE_URL) {
-      response = await fetch(`${LOCAL_AI_BASE_URL}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system: systemPrompt,
-          user: userPrompt,
-          max_new_tokens: 900,
-          temperature: 0.3
-        })
-      });
-    } else {
-      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
-          ],
-          temperature: 0.3,
-        }),
-      });
-    }
+    const response = await fetch(`${LOCAL_AI_BASE_URL}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        system: systemPrompt,
+        user: userPrompt,
+        max_new_tokens: 900,
+        temperature: 0.3
+      })
+    });
 
     if (!response.ok) {
       const errorText = await response.text();

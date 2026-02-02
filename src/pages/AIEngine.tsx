@@ -758,7 +758,7 @@ Creditor: Capital One"
           }
         }}
       >
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col min-h-0">
+        <DialogContent className="max-w-4xl h-[90vh] overflow-hidden flex flex-col min-h-0">
           <DialogHeader>
             <DialogTitle>Generated Dispute Letter</DialogTitle>
           </DialogHeader>
@@ -796,6 +796,7 @@ Creditor: Capital One"
                   bureaus={generatedLetter?.bureaus || activeItem?.bureaus || []}
                   readOnly={false}
                   showOptimize={false}
+                  showPageBreaks
                 />
               </div>
             </div>

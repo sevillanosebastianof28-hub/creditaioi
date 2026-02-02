@@ -126,10 +126,10 @@ serve(async (req) => {
     }
 
     const LOCAL_AI_BASE_URL = Deno.env.get("LOCAL_AI_BASE_URL");
-    if (!LOCAL_AI_BASE_URL && !LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY is not configured");
+    if (!LOCAL_AI_BASE_URL) {
+      console.error("LOCAL_AI_BASE_URL is not configured");
       return new Response(
-        JSON.stringify({ error: "AI service is not configured" }),
+        JSON.stringify({ error: "Local AI service is not configured" }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -222,37 +222,17 @@ Generate a complete, ready-to-send dispute letter.`;
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
-      if (LOCAL_AI_BASE_URL) {
-        response = await fetch(`${LOCAL_AI_BASE_URL}/chat`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            system: systemPrompt,
-            user: userPrompt,
-            max_new_tokens: fastMode ? 250 : 400,
-            temperature: 0.3
-          }),
-          signal: controller.signal
-        });
-      } else {
-        response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: userPrompt }
-            ],
-            max_tokens: fastMode ? 250 : 400,
-            temperature: 0.3,
-          }),
-          signal: controller.signal
-        });
-      }
+      response = await fetch(`${LOCAL_AI_BASE_URL}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system: systemPrompt,
+          user: userPrompt,
+          max_new_tokens: fastMode ? 250 : 400,
+          temperature: 0.3
+        }),
+        signal: controller.signal
+      });
     } catch (error) {
       aiError = error instanceof Error ? error.message : "Unknown AI error";
     } finally {

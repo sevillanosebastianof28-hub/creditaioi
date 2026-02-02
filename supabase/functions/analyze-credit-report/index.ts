@@ -455,7 +455,31 @@ const stripJsonFences = (text: string) =>
 
 const parseJsonResponse = (text: string) => {
   const cleaned = stripJsonFences(text);
-  return JSON.parse(cleaned);
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    if (start !== -1 && end !== -1 && end > start) {
+      return JSON.parse(cleaned.slice(start, end + 1));
+    }
+    throw new Error('Unable to parse JSON response');
+  }
+};
+
+const compressReportText = (text: string) => {
+  const trimmed = text.trim();
+  if (trimmed.length <= 30000) return trimmed;
+
+  const lines = trimmed.split(/\r?\n/);
+  const keywordRegex = /(collection|charge\s*off|late|delinquen|inquiry|account|creditor|balance|bureau|experian|equifax|transunion|status|opened|closed|limit|payment|dispute|reported)/i;
+  const important = lines.filter((line) => keywordRegex.test(line) || /\d{4}/.test(line));
+
+  const head = trimmed.slice(0, 8000);
+  const tail = trimmed.slice(-4000);
+  const middle = important.slice(0, 400).join('\n');
+
+  return `${head}\n\n[...KEY DETAILS...]\n${middle}\n\n[...REPORT END...]\n${tail}`.trim();
 };
 
 serve(async (req) => {
@@ -498,8 +522,8 @@ serve(async (req) => {
       });
     }
 
-    if (!LOCAL_AI_BASE_URL && !LOVABLE_API_KEY) {
-      const errorPayload = { error: "AI service is not configured" };
+    if (!LOCAL_AI_BASE_URL) {
+      const errorPayload = { error: "Local AI service is not configured" };
       if (stream) {
         await sendEvent("error", { type: "error", message: errorPayload.error });
         await writer?.close();
@@ -516,7 +540,10 @@ serve(async (req) => {
 
     if (stream) {
       await sendEvent("status", { type: "status", message: "Analyzing credit report..." });
+      await sendEvent("status", { type: "status", message: "Optimizing report for analysis..." });
     }
+
+    const normalizedReportText = compressReportText(reportText);
 
     const controller = new AbortController();
     const timeoutMs = Number(Deno.env.get("ANALYSIS_TIMEOUT_MS") || 10000);
@@ -524,36 +551,35 @@ serve(async (req) => {
 
     let response: Response;
     try {
-      if (LOCAL_AI_BASE_URL) {
+      response = await fetch(`${LOCAL_AI_BASE_URL}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system: systemPrompt,
+          user: `Analyze this credit report and identify all disputable items:\n\n${normalizedReportText}\n\nReturn JSON only.`,
+          max_new_tokens: 700,
+          temperature: 0.2,
+        }),
+        signal: controller.signal,
+      });
+    } catch (error) {
+      const isAbort = error instanceof DOMException && error.name === 'AbortError';
+      if (isAbort) {
+        if (stream) {
+          await sendEvent("status", { type: "status", message: "AI slow. Switching to fast mode..." });
+        }
         response = await fetch(`${LOCAL_AI_BASE_URL}/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             system: systemPrompt,
-            user: `Analyze this credit report and identify all disputable items:\n\n${reportText}\n\nReturn JSON only.`,
-            max_new_tokens: 800,
+            user: `Provide a fast analysis of the most disputable items (top 10) from this report. Return JSON only.\n\n${normalizedReportText}`,
+            max_new_tokens: 350,
             temperature: 0.2,
           }),
-          signal: controller.signal,
         });
       } else {
-        response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: `Analyze this credit report and identify all disputable items:\n\n${reportText}` },
-            ],
-            max_tokens: 800,
-            temperature: 0.2,
-          }),
-          signal: controller.signal,
-        });
+        throw error;
       }
     } finally {
       clearTimeout(timeout);

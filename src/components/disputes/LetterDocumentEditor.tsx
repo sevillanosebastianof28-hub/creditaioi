@@ -46,6 +46,7 @@ interface LetterDocumentEditorProps {
   onPrint?: (content: string) => void;
   readOnly?: boolean;
   showOptimize?: boolean;
+  showPageBreaks?: boolean;
 }
 
 const LetterDocumentEditor = ({
@@ -59,6 +60,7 @@ const LetterDocumentEditor = ({
   onPrint,
   readOnly = false,
   showOptimize = true,
+  showPageBreaks = true,
 }: LetterDocumentEditorProps) => {
   const [editedContent, setEditedContent] = useState(content);
   const [hasChanges, setHasChanges] = useState(false);
@@ -354,6 +356,14 @@ const LetterDocumentEditor = ({
           className="mx-auto bg-white shadow-lg rounded-sm max-w-[8.5in] min-h-[11in]"
           style={{
             boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24), 0 0 40px rgba(0,0,0,0.05)',
+            ...(showPageBreaks
+              ? {
+                  backgroundImage:
+                    'linear-gradient(#ffffff 0, #ffffff calc(11in - 1px), #e5e7eb calc(11in - 1px), #e5e7eb 11in)',
+                  backgroundSize: '100% 11in',
+                  backgroundRepeat: 'repeat-y',
+                }
+              : {}),
           }}
         >
           <div
