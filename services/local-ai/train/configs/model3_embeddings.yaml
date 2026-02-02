@@ -1,0 +1,7 @@
+model_id: sentence-transformers/all-MiniLM-L6-v2
+output_dir: ../../models/finetuned/minilm-embeddings
+train_file: ../../data/finetune/model3_pairs.train.jsonl
+valid_file: ../../data/finetune/model3_pairs.valid.jsonl
+batch_size: 32
+epochs: 1
+seed: 42

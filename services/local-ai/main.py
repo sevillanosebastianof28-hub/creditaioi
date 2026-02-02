@@ -6,13 +6,38 @@ import torch
 from fastapi import FastAPI
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
-from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoModelForSequenceClassification, AutoTokenizer
 
 app = FastAPI()
 
-QWEN_MODEL_ID = os.getenv("QWEN_MODEL_ID", "Qwen/Qwen2.5-1.5B-Instruct")
-DISTILBERT_MODEL_ID = os.getenv("DISTILBERT_MODEL_ID", "distilbert-base-uncased")
-MINILM_MODEL_ID = os.getenv("MINILM_MODEL_ID", "sentence-transformers/all-MiniLM-L6-v2")
+BASE_DIR = os.path.dirname(__file__)
+
+
+def resolve_model_id(env_var: str, default_id: str, finetuned_rel_path: str) -> str:
+    explicit = os.getenv(env_var)
+    if explicit:
+        return explicit
+    finetuned_path = os.path.abspath(os.path.join(BASE_DIR, finetuned_rel_path))
+    if os.path.isdir(finetuned_path):
+        return finetuned_path
+    return default_id
+
+
+QWEN_MODEL_ID = resolve_model_id(
+    "QWEN_MODEL_ID",
+    "Qwen/Qwen2.5-1.5B-Instruct",
+    "../../models/finetuned/qwen-credit-sft",
+)
+DISTILBERT_MODEL_ID = resolve_model_id(
+    "DISTILBERT_MODEL_ID",
+    "distilbert-base-uncased",
+    "../../models/finetuned/distilbert-eligibility",
+)
+MINILM_MODEL_ID = resolve_model_id(
+    "MINILM_MODEL_ID",
+    "sentence-transformers/all-MiniLM-L6-v2",
+    "../../models/finetuned/minilm-embeddings",
+)
 KNOWLEDGE_BASE_DIR = os.getenv("KNOWLEDGE_BASE_DIR", "../../data/knowledge-base")
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -21,7 +46,7 @@ qwen_tokenizer = AutoTokenizer.from_pretrained(QWEN_MODEL_ID)
 qwen_model = AutoModelForCausalLM.from_pretrained(QWEN_MODEL_ID).to(DEVICE)
 
 bert_tokenizer = AutoTokenizer.from_pretrained(DISTILBERT_MODEL_ID)
-bert_model = AutoModel.from_pretrained(DISTILBERT_MODEL_ID).to(DEVICE)
+bert_model = AutoModelForSequenceClassification.from_pretrained(DISTILBERT_MODEL_ID).to(DEVICE)
 
 minilm_model = SentenceTransformer(MINILM_MODEL_ID, device=DEVICE)
 
@@ -32,22 +57,6 @@ LABELS = {
     "insufficient_information": "Not enough information to determine dispute eligibility",
 }
 
-label_embeddings = None
-
-
-def mean_pooling(model_output, attention_mask):
-    token_embeddings = model_output[0]
-    input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
-    return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
-
-
-def embed_with_distilbert(texts: List[str]) -> np.ndarray:
-    encoded = bert_tokenizer(texts, padding=True, truncation=True, return_tensors="pt").to(DEVICE)
-    with torch.no_grad():
-        model_output = bert_model(**encoded)
-    embeddings = mean_pooling(model_output, encoded["attention_mask"])
-    embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
-    return embeddings.cpu().numpy()
 
 
 def build_prompt(system: Optional[str], user: str) -> str:
@@ -146,8 +155,6 @@ def load_knowledge_base():
 
 @app.on_event("startup")
 def startup_event():
-    global label_embeddings
-    label_embeddings = embed_with_distilbert(list(LABELS.values()))
     load_knowledge_base()
 
 
@@ -164,12 +171,16 @@ def chat(req: ChatRequest):
 
 @app.post("/classify", response_model=ClassifyResponse)
 def classify(req: ClassifyRequest):
-    embeddings = embed_with_distilbert([req.text])
-    sims = np.dot(embeddings, label_embeddings.T)[0]
-    best_idx = int(np.argmax(sims))
-    label = list(LABELS.keys())[best_idx]
-    scores = np.exp(sims) / np.sum(np.exp(sims))
-    confidence = float(scores[best_idx])
+    encoded = bert_tokenizer(req.text, padding=True, truncation=True, return_tensors="pt").to(DEVICE)
+    with torch.no_grad():
+        logits = bert_model(**encoded).logits
+    probs = torch.nn.functional.softmax(logits, dim=-1).cpu().numpy()[0]
+    best_idx = int(np.argmax(probs))
+
+    id2label = bert_model.config.id2label or {idx: label for idx, label in enumerate(LABELS.keys())}
+    label_key = id2label.get(best_idx, str(best_idx))
+    label = label_key if label_key in LABELS else label_key.lower()
+    confidence = float(probs[best_idx])
 
     reasoning = {
         "factors": ["Semantic similarity match to eligibility criteria"],
