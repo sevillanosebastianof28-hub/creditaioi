@@ -114,6 +114,7 @@ Return structured JSON with:
           );
       "id": "unique-id",
       "creditor": "Creditor Name",
+      "accountNumber": "Full or last 4 digits if available",
       "accountType": "collection|credit_card|auto_loan|mortgage|inquiry|public_record|medical",
           if (stream) {
             await sendEvent('error', { type: 'error', message: 'AI credits exhausted. Please add credits to continue.' });
@@ -517,34 +518,45 @@ serve(async (req) => {
       await sendEvent("status", { type: "status", message: "Analyzing credit report..." });
     }
 
+    const controller = new AbortController();
+    const timeoutMs = Number(Deno.env.get("ANALYSIS_TIMEOUT_MS") || 10000);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
     let response: Response;
-    if (LOCAL_AI_BASE_URL) {
-      response = await fetch(`${LOCAL_AI_BASE_URL}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system: systemPrompt,
-          user: `Analyze this credit report and identify all disputable items:\n\n${reportText}\n\nReturn JSON only.`,
-          max_new_tokens: 1200,
-          temperature: 0.2,
-        }),
-      });
-    } else {
-      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: `Analyze this credit report and identify all disputable items:\n\n${reportText}` },
-          ],
-          temperature: 0.2,
-        }),
-      });
+    try {
+      if (LOCAL_AI_BASE_URL) {
+        response = await fetch(`${LOCAL_AI_BASE_URL}/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system: systemPrompt,
+            user: `Analyze this credit report and identify all disputable items:\n\n${reportText}\n\nReturn JSON only.`,
+            max_new_tokens: 800,
+            temperature: 0.2,
+          }),
+          signal: controller.signal,
+        });
+      } else {
+        response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: `Analyze this credit report and identify all disputable items:\n\n${reportText}` },
+            ],
+            max_tokens: 800,
+            temperature: 0.2,
+          }),
+          signal: controller.signal,
+        });
+      }
+    } finally {
+      clearTimeout(timeout);
     }
 
     if (!response.ok) {

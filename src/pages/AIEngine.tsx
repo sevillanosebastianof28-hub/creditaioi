@@ -758,12 +758,12 @@ Creditor: Capital One"
           }
         }}
       >
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col min-h-0">
           <DialogHeader>
             <DialogTitle>Generated Dispute Letter</DialogTitle>
           </DialogHeader>
           {generatedLetter?.letter || draftLetter ? (
-            <div className="space-y-4">
+            <div className="flex-1 min-h-0 overflow-hidden flex flex-col gap-4">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span>Type: {generatedLetter?.letterType || mapLetterType(activeItem || analysisResult?.items?.[0] as DisputableItem)}</span>
                 <span>•</span>
@@ -789,13 +789,15 @@ Creditor: Capital One"
                   Download
                 </Button>
               </div>
-              <LetterDocumentEditor
-                content={generatedLetter?.letter || draftLetter}
-                creditor={generatedLetter?.creditor || activeItem?.creditor}
-                bureaus={generatedLetter?.bureaus || activeItem?.bureaus || []}
-                readOnly
-                showOptimize={false}
-              />
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <LetterDocumentEditor
+                  content={generatedLetter?.letter || draftLetter}
+                  creditor={generatedLetter?.creditor || activeItem?.creditor}
+                  bureaus={generatedLetter?.bureaus || activeItem?.bureaus || []}
+                  readOnly={false}
+                  showOptimize={false}
+                />
+              </div>
             </div>
           ) : (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">

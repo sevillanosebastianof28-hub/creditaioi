@@ -6,6 +6,7 @@ import { readAiStream } from '@/lib/aiStream';
 export interface DisputableItem {
   id: string;
   creditor: string;
+  accountNumber?: string;
   accountType: string;
   issueType: string;
   balance: number;
@@ -81,14 +82,29 @@ export function useCreditAnalysis() {
         }
       });
 
-      setAnalysisResult(data);
+      const normalizedItems = (data.items || []).map((item: any) => ({
+        ...item,
+        accountNumber:
+          item.accountNumber ||
+          item.account_number ||
+          item.accountNo ||
+          item.account_no ||
+          item.account ||
+          item.acct ||
+          undefined,
+      }));
+
+      setAnalysisResult({
+        ...data,
+        items: normalizedItems,
+      });
       
       toast({
         title: "Analysis Complete",
-        description: `Found ${data.items?.length || 0} disputable items.`,
+        description: `Found ${normalizedItems.length || 0} disputable items.`,
       });
 
-      return data;
+        return { ...data, items: normalizedItems };
     } catch (err) {
       console.error('Unexpected error:', err);
       toast({

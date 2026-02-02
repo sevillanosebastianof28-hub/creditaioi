@@ -66,7 +66,7 @@ const buildFallbackLetter = (item: any, templateInstructions: string) => {
     '[BUREAU/CREDITOR NAME]',
     '[ADDRESS]',
     '',
-    `Re: Dispute of ${item.creditor || 'Account'} – [ACCOUNT NUMBER]`,
+    `Re: Dispute of ${item.creditor || 'Account'} – ${item.accountNumber || '[ACCOUNT NUMBER]'}`,
     '',
     'To Whom It May Concern,',
     '',
@@ -75,6 +75,7 @@ const buildFallbackLetter = (item: any, templateInstructions: string) => {
     `Account Details:`,
     `- Creditor/Account: ${item.creditor || 'Unknown'}`,
     `- Account Type: ${item.accountType || 'Unknown'}`,
+    `- Account Number: ${item.accountNumber || '[ACCOUNT NUMBER]'}`,
     `- Balance: $${item.balance || 0}`,
     `- Issue Type: ${item.issueType || 'Unknown'}`,
     `- Dispute Reason: ${item.disputeReason || 'Inaccurate information'}`,
@@ -136,6 +137,7 @@ serve(async (req) => {
 
 Account Details:
 - Creditor/Account: ${disputableItem.creditor || 'Unknown'}
+- Account Number: ${disputableItem.accountNumber || '[ACCOUNT NUMBER]'}
 - Account Type: ${disputableItem.accountType || 'Unknown'}
 - Balance: $${disputableItem.balance || 0}
 - Issue Type: ${disputableItem.issueType || 'Unknown'}
