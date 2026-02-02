@@ -50,6 +50,56 @@ Format the letter with:
 
 Do NOT include any markdown formatting. Output plain text only.`;
 
+const stripMarkdown = (text: string) =>
+  text.replace(/```[\s\S]*?```/g, '').replace(/[*_`#>-]/g, '').trim();
+
+const buildFallbackLetter = (item: any, templateInstructions: string) => {
+  const today = new Date().toLocaleDateString();
+  const bureaus = item.bureaus?.join(', ') || 'All three bureaus';
+  return [
+    today,
+    '',
+    '[YOUR NAME]',
+    '[YOUR ADDRESS]',
+    '[CITY, STATE ZIP]',
+    '',
+    '[BUREAU/CREDITOR NAME]',
+    '[ADDRESS]',
+    '',
+    `Re: Dispute of ${item.creditor || 'Account'} – [ACCOUNT NUMBER]`,
+    '',
+    'To Whom It May Concern,',
+    '',
+    templateInstructions,
+    '',
+    `Account Details:`,
+    `- Creditor/Account: ${item.creditor || 'Unknown'}`,
+    `- Account Type: ${item.accountType || 'Unknown'}`,
+    `- Balance: $${item.balance || 0}`,
+    `- Issue Type: ${item.issueType || 'Unknown'}`,
+    `- Dispute Reason: ${item.disputeReason || 'Inaccurate information'}`,
+    `- Applicable Law: ${item.applicableLaw || 'FCRA'}`,
+    `- Bureaus to Send To: ${bureaus}`,
+    '',
+    'I am requesting a prompt investigation under the Fair Credit Reporting Act. Please verify the accuracy of the above information and remove or correct any inaccurate or unverifiable data.',
+    '',
+    'Please provide written confirmation of the results of your investigation.',
+    '',
+    'Sincerely,',
+    '',
+    '[YOUR NAME]'
+  ].join('\n');
+};
+
+const ensureLetterFormatting = (content: string, item: any, templateInstructions: string) => {
+  const clean = stripMarkdown(content);
+  const lineBreaks = clean.split('\n').filter(Boolean).length;
+  if (lineBreaks < 6) {
+    return buildFallbackLetter(item, templateInstructions);
+  }
+  return clean;
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -116,6 +166,7 @@ Generate a complete, ready-to-send dispute letter.`;
     };
 
     if (stream) {
+      await sendEvent('status', { type: 'status', message: 'Analyzing dispute details...' });
       await sendEvent('status', { type: 'status', message: 'Drafting dispute letter...' });
     }
 
@@ -219,19 +270,22 @@ Generate a complete, ready-to-send dispute letter.`;
 
     console.log("Letter generated successfully");
 
+    const formattedLetter = ensureLetterFormatting(letterContent, disputableItem, templateInstructions);
+
     const result = {
-      letter: letterContent,
+      letter: formattedLetter,
       letterType,
       creditor: disputableItem.creditor,
       bureaus: disputableItem.bureaus || ['equifax', 'experian', 'transunion']
     };
 
     if (stream) {
+      await sendEvent('status', { type: 'status', message: 'Finalizing letter format...' });
       await sendEvent('status', { type: 'status', message: 'Streaming draft...' });
 
       const chunkSize = 800;
-      for (let i = 0; i < letterContent.length; i += chunkSize) {
-        const chunk = letterContent.slice(i, i + chunkSize);
+      for (let i = 0; i < formattedLetter.length; i += chunkSize) {
+        const chunk = formattedLetter.slice(i, i + chunkSize);
         await sendEvent('delta', { type: 'delta', delta: chunk });
       }
 
