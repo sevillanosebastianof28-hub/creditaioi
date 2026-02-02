@@ -1,0 +1,164 @@
+credit_ai:
+  system:
+    name: Credit AI RAG Intelligence
+    domain: credit_repair
+    mode: compliance_first
+    hallucination_policy: zero_tolerance
+
+  knowledge_priority:
+    - system_rules
+    - compliance
+    - credit_laws
+    - reporting_standards
+    - dispute_logic
+    - account_types
+    - workflows
+    - templates
+    - education
+
+  knowledge_base:
+    root: /knowledge_base
+
+    folders:
+      system_rules:
+        priority: 1
+        documents:
+          - response_structure.md
+          - confidence_downgrade_rules.md
+          - insufficient_info_rules.md
+
+      compliance:
+        priority: 2
+        documents:
+          - compliance_restrictions.md
+          - do_not_say_list.md
+          - guarantee_prohibition.md
+          - legal_advice_boundary.md
+
+      credit_laws:
+        priority: 3
+        documents:
+          - fcra_summary.md
+          - fdcpa_summary.md
+          - state_level_variations.md
+
+      reporting_standards:
+        priority: 4
+        documents:
+          - metro2_overview.md
+          - reporting_accuracy_rules.md
+          - common_reporting_errors.md
+
+      dispute_logic:
+        priority: 5
+        documents:
+          - eligibility_decision_tree.md
+          - dispute_allowed_conditions.md
+          - dispute_block_conditions.md
+
+      account_types:
+        priority: 6
+        documents:
+          - collections.md
+          - charge_offs.md
+          - credit_cards.md
+          - installment_loans.md
+          - public_records.md
+          - inquiries.md
+
+      workflows:
+        priority: 7
+        documents:
+          - credit_report_analysis_flow.md
+          - dispute_submission_flow.md
+          - post_dispute_monitoring.md
+          - cooldown_rules.md
+
+      templates:
+        priority: 8
+        documents:
+          - educational_dispute_templates.md
+          - verification_request_templates.md
+
+      education:
+        priority: 9
+        documents:
+          - credit_score_factors.md
+          - utilization_explained.md
+          - what_disputes_can_and_cannot_do.md
+
+  rag:
+    retrieval:
+      chunk_size_tokens: 400
+      overlap_tokens: 50
+      max_chunks: 8
+      metadata_required:
+        - doc_type
+        - priority
+        - account_type
+        - risk_level
+
+    query_routing:
+      dispute:
+        retrieve:
+          - compliance
+          - dispute_logic
+          - account_types
+      education:
+        retrieve:
+          - education
+          - credit_laws
+      document_generation:
+        retrieve:
+          - templates
+          - compliance
+      risk_analysis:
+        retrieve:
+          - compliance
+          - workflows
+
+  pipeline:
+    steps:
+      - input_validation
+      - data_completeness_check
+      - intent_classification
+      - rag_retrieval
+      - conflict_resolution
+      - eligibility_classification
+      - llm_reasoning
+      - output_validation
+      - logging
+
+  models:
+    classifier:
+      name: dispute_eligibility_classifier
+      outputs:
+        - eligible
+        - conditionally_eligible
+        - not_eligible
+        - insufficient_information
+
+    llm:
+      role: explanation_only
+      enforce_structure: true
+
+    embeddings:
+      role: retrieval_support
+
+  output:
+    required_sections:
+      - summary
+      - analysis
+      - eligibility_status
+      - recommended_action
+      - next_steps
+
+  logging:
+    enabled: true
+    store:
+      - input
+      - retrieved_documents
+      - eligibility_label
+      - confidence_score
+      - output
+      - user_feedback
