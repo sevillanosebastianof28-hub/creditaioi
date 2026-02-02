@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -67,10 +67,13 @@ const DisputeLetters = () => {
   const [selectedLetterType, setSelectedLetterType] = useState<LetterType>('factual_dispute');
   const [customInstructions, setCustomInstructions] = useState('');
   const [showLetterDialog, setShowLetterDialog] = useState(false);
+  const [letterContent, setLetterContent] = useState('');
+  const [isEditingLetter, setIsEditingLetter] = useState(false);
   
   const { 
     isGenerating, 
     generatedLetter, 
+    draftLetter,
     statusMessage,
     generateLetter, 
     clearLetter,
@@ -100,13 +103,26 @@ const DisputeLetters = () => {
     [selectedClientId]
   );
 
+  useEffect(() => {
+    if (isEditingLetter) return;
+    if (draftLetter) {
+      setLetterContent(draftLetter);
+      return;
+    }
+    if (generatedLetter?.letter) {
+      setLetterContent(generatedLetter.letter);
+      return;
+    }
+    setLetterContent('');
+  }, [draftLetter, generatedLetter, isEditingLetter]);
+
   const handleGenerateLetter = async () => {
     if (!selectedItem) return;
-    
-    const result = await generateLetter(selectedLetterType, selectedItem, customInstructions);
-    if (result) {
-      setShowLetterDialog(true);
-    }
+
+    setIsEditingLetter(false);
+    setLetterContent('');
+    setShowLetterDialog(true);
+    await generateLetter(selectedLetterType, selectedItem, customInstructions);
   };
 
   const handleDownload = () => {
