@@ -1,0 +1,21 @@
+text,label
+"Account Type: Collection | Status: Unpaid | Balance: 1200 | Last Updated: 2021-06 | Previously Disputed: No | Bureau: Experian",eligible
+"Account Type: Collection | Status: Paid | Balance: 0 | Last Updated: 2022-09 | Previously Disputed: Yes | Bureau: TransUnion",conditionally_eligible
+"Account Type: Credit Card | Status: Open | Utilization: 8% | Late Payments: None | Bureau: Equifax",not_eligible
+"Account Type: Charge-Off | Status: Unpaid | Last Updated: Unknown | Bureau: Unknown",insufficient_information
+"Account Type: Installment Loan | Status: Open | Late Payments: 1 | Balance: 3500 | Bureau: Experian",conditionally_eligible
+"Account Type: Inquiry | Type: Hard | Authorized: Yes | Bureau: Experian",not_eligible
+"Account Type: Collection | Status: Unpaid | Balance: 600 | Furnisher Missing | Bureau: Equifax",insufficient_information
+"Account Type: Collection | Status: Unpaid | Balance: 980 | Last Updated: 2019-11 | Dispute Reason: Not mine | Bureau: Equifax",eligible
+"Account Type: Charge-Off | Status: Unpaid | Balance: 4100 | Date of First Delinquency: 2016-03 | Reported as 2023 | Bureau: TransUnion",eligible
+"Account Type: Collection | Status: Unpaid | Balance: 300 | Account Number Missing | Bureau: Experian",eligible
+"Account Type: Judgment | Status: Vacated | Balance: 0 | Bureau: Experian",eligible
+"Account Type: Late Payment | Status: Open | 30 Days Late: 1 | Consumer Claims Never Late | Bureau: Equifax",conditionally_eligible
+"Account Type: Installment Loan | Status: Open | Balance: 5200 | Payment History: Unknown | Bureau: TransUnion",conditionally_eligible
+"Account Type: Collection | Status: Paid | Balance: 0 | Date Paid: 2020-02 | Bureau: Experian",conditionally_eligible
+"Account Type: Credit Card | Status: Open | Utilization: 12% | Late Payments: 0 | Bureau: TransUnion",not_eligible
+"Account Type: Auto Loan | Status: Closed | Paid as Agreed | Bureau: Equifax",not_eligible
+"Account Type: Inquiry | Type: Hard | Authorized: Yes | Date: 2023-07 | Bureau: Experian",not_eligible
+"Account Type: Collection | Status: Unknown | Balance: Unknown | Bureau: Unknown",insufficient_information
+"Account Type: Revolving | Status: Unknown | Utilization: Unknown | Bureau: Equifax",insufficient_information
+"Account Type: Charge-Off | Status: Unpaid | Balance: 2400 | Bureau: Unknown | Date: Unknown",insufficient_information

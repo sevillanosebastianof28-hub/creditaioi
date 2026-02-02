@@ -1,0 +1,18 @@
+{"text":"Account Type: Collection | Status: Unpaid | Balance: 1200 | Last Updated: 2021-06 | Previously Disputed: No | Bureau: Experian","label":"eligible"}
+{"text":"Account Type: Collection | Status: Paid | Balance: 0 | Last Updated: 2022-09 | Previously Disputed: Yes | Bureau: TransUnion","label":"conditionally_eligible"}
+{"text":"Account Type: Credit Card | Status: Open | Utilization: 8% | Late Payments: None | Bureau: Equifax","label":"not_eligible"}
+{"text":"Account Type: Charge-Off | Status: Unpaid | Last Updated: Unknown | Bureau: Unknown","label":"insufficient_information"}
+{"text":"Account Type: Installment Loan | Status: Open | Late Payments: 1 | Balance: 3500 | Bureau: Experian","label":"conditionally_eligible"}
+{"text":"Account Type: Collection | Status: Unpaid | Balance: 980 | Last Updated: 2019-11 | Dispute Reason: Not mine | Bureau: Equifax","label":"eligible"}
+{"text":"Account Type: Charge-Off | Status: Unpaid | Balance: 4100 | Date of First Delinquency: 2016-03 | Reported as 2023 | Bureau: TransUnion","label":"eligible"}
+{"text":"Account Type: Collection | Status: Unpaid | Balance: 300 | Account Number Missing | Bureau: Experian","label":"eligible"}
+{"text":"Account Type: Judgment | Status: Vacated | Balance: 0 | Bureau: Experian","label":"eligible"}
+{"text":"Account Type: Late Payment | Status: Open | 30 Days Late: 1 | Consumer Claims Never Late | Bureau: Equifax","label":"conditionally_eligible"}
+{"text":"Account Type: Installment Loan | Status: Open | Balance: 5200 | Payment History: Unknown | Bureau: TransUnion","label":"conditionally_eligible"}
+{"text":"Account Type: Collection | Status: Paid | Balance: 0 | Date Paid: 2020-02 | Bureau: Experian","label":"conditionally_eligible"}
+{"text":"Account Type: Credit Card | Status: Open | Utilization: 12% | Late Payments: 0 | Bureau: TransUnion","label":"not_eligible"}
+{"text":"Account Type: Auto Loan | Status: Closed | Paid as Agreed | Bureau: Equifax","label":"not_eligible"}
+{"text":"Account Type: Inquiry | Type: Hard | Authorized: Yes | Date: 2023-07 | Bureau: Experian","label":"not_eligible"}
+{"text":"Account Type: Collection | Status: Unknown | Balance: Unknown | Bureau: Unknown","label":"insufficient_information"}
+{"text":"Account Type: Revolving | Status: Unknown | Utilization: Unknown | Bureau: Equifax","label":"insufficient_information"}
+{"text":"Account Type: Charge-Off | Status: Unpaid | Balance: 2400 | Bureau: Unknown | Date: Unknown","label":"insufficient_information"}

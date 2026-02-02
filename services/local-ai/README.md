@@ -15,14 +15,14 @@ This service runs the requested models locally and exposes a small HTTP API for 
 
 2. Install dependencies:
    - python -m venv .venv
+- `MONGODB_URI` (required to enable MongoDB)
+- `MONGODB_DB` (default: credit_ai)
    - source .venv/bin/activate
    - pip install -r requirements.txt
 
 3. Run the service:
    - export QWEN_MODEL_ID=/models/qwen
    - export DISTILBERT_MODEL_ID=/models/distilbert
-   - export MINILM_MODEL_ID=/models/minilm
-   - export KNOWLEDGE_BASE_DIR=../../data/knowledge-base
    - uvicorn main:app --host 0.0.0.0 --port 8000
 
 4. Point edge functions to the local service:

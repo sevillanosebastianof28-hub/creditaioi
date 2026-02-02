@@ -4,6 +4,7 @@ from typing import List, Optional
 import numpy as np
 import torch
 from fastapi import FastAPI
+from pymongo import MongoClient
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 from transformers import AutoModelForCausalLM, AutoModelForSequenceClassification, AutoTokenizer
@@ -39,6 +40,8 @@ MINILM_MODEL_ID = resolve_model_id(
     "../../models/finetuned/minilm-embeddings",
 )
 KNOWLEDGE_BASE_DIR = os.getenv("KNOWLEDGE_BASE_DIR", "../../data/knowledge-base")
+MONGODB_URI = os.getenv("MONGODB_URI")
+MONGODB_DB = os.getenv("MONGODB_DB", "credit_ai")
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -122,6 +125,8 @@ class RetrieveResponse(BaseModel):
 
 documents = []
 doc_embeddings = None
+mongo_client = None
+mongo_db = None
 
 
 def load_knowledge_base():
@@ -155,12 +160,34 @@ def load_knowledge_base():
 
 @app.on_event("startup")
 def startup_event():
+    global mongo_client, mongo_db
+    if MONGODB_URI:
+        mongo_client = MongoClient(MONGODB_URI)
+        mongo_db = mongo_client[MONGODB_DB]
     load_knowledge_base()
 
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "device": DEVICE}
+    mongo_status = "disabled"
+    if mongo_client is not None:
+        try:
+            mongo_client.admin.command("ping")
+            mongo_status = "connected"
+        except Exception:
+            mongo_status = "error"
+    return {"status": "ok", "device": DEVICE, "mongo": mongo_status}
+
+
+@app.get("/mongo/health")
+def mongo_health():
+    if mongo_client is None:
+        return {"status": "disabled"}
+    try:
+        mongo_client.admin.command("ping")
+        return {"status": "connected", "database": MONGODB_DB}
+    except Exception as exc:
+        return {"status": "error", "message": str(exc)}
 
 
 @app.post("/chat", response_model=ChatResponse)

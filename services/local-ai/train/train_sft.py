@@ -32,6 +32,14 @@ def load_config(path: str) -> Config:
     return Config(**data)
 
 
+def stringify_value(value: Any) -> str:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False, indent=2)
+    return str(value)
+
+
 def build_messages(example: Dict[str, Any]) -> List[Dict[str, str]]:
     if isinstance(example.get("messages"), list):
         return example["messages"]
@@ -51,6 +59,10 @@ def build_messages(example: Dict[str, Any]) -> List[Dict[str, str]]:
         or example.get("answer")
         or ""
     )
+
+    system = stringify_value(system) if system else ""
+    user = stringify_value(user) if user else ""
+    assistant = stringify_value(assistant) if assistant else ""
 
     messages: List[Dict[str, str]] = []
     if system:

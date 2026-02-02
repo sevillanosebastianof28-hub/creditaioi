@@ -32,6 +32,7 @@ def resolve_pair(example: Dict[str, Any]) -> Tuple[str, str, float]:
     pairs = [
         ("text_a", "text_b"),
         ("text1", "text2"),
+        ("text_1", "text_2"),
         ("sentence1", "sentence2"),
         ("query", "document"),
         ("anchor", "positive"),
