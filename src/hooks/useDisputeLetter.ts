@@ -126,7 +126,8 @@ export function useDisputeLetter() {
           letterType,
           disputableItem,
           customInstructions,
-          stream: true
+          stream: true,
+          maxWaitMs: 30000
         })
       });
 
