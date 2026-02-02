@@ -60,7 +60,8 @@ serve(async (req) => {
       letterType, 
       disputableItem, 
       clientInfo,
-      customInstructions 
+      customInstructions,
+      stream
     } = await req.json();
 
     if (!letterType || !disputableItem) {
@@ -102,6 +103,21 @@ Generate a complete, ready-to-send dispute letter.`;
 
     console.log("Generating dispute letter, type:", letterType);
 
+    const encoder = new TextEncoder();
+    const streamBody = stream ? new TransformStream() : null;
+    const writer = streamBody ? streamBody.writable.getWriter() : null;
+
+    const sendEvent = async (event: string, data: Record<string, unknown>) => {
+      if (!writer) return;
+      await writer.write(
+        encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+      );
+    };
+
+    if (stream) {
+      await sendEvent('status', { type: 'status', message: 'Drafting dispute letter...' });
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -123,6 +139,14 @@ Generate a complete, ready-to-send dispute letter.`;
       console.error("AI Gateway error:", response.status, errorText);
       
       if (response.status === 429) {
+        if (stream) {
+          await sendEvent('error', { type: 'error', message: 'Rate limit exceeded. Please try again in a moment.' });
+          await writer?.close();
+          return new Response(streamBody?.readable, {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+          });
+        }
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -130,10 +154,27 @@ Generate a complete, ready-to-send dispute letter.`;
       }
       
       if (response.status === 402) {
+        if (stream) {
+          await sendEvent('error', { type: 'error', message: 'AI credits exhausted. Please add credits to continue.' });
+          await writer?.close();
+          return new Response(streamBody?.readable, {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+          });
+        }
         return new Response(
           JSON.stringify({ error: "AI credits exhausted. Please add credits to continue." }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      }
+
+      if (stream) {
+        await sendEvent('error', { type: 'error', message: 'Failed to generate letter. Please try again.' });
+        await writer?.close();
+        return new Response(streamBody?.readable, {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+        });
       }
 
       return new Response(
@@ -147,6 +188,14 @@ Generate a complete, ready-to-send dispute letter.`;
 
     if (!letterContent) {
       console.error("No content in AI response");
+      if (stream) {
+        await sendEvent('error', { type: 'error', message: 'No letter generated' });
+        await writer?.close();
+        return new Response(streamBody?.readable, {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+        });
+      }
       return new Response(
         JSON.stringify({ error: "No letter generated" }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -155,13 +204,28 @@ Generate a complete, ready-to-send dispute letter.`;
 
     console.log("Letter generated successfully");
 
+    const result = {
+      letter: letterContent,
+      letterType,
+      creditor: disputableItem.creditor,
+      bureaus: disputableItem.bureaus || ['equifax', 'experian', 'transunion']
+    };
+
+    if (stream) {
+      await sendEvent('result', { type: 'result', result });
+      await writer?.close();
+      return new Response(streamBody?.readable, {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive"
+        },
+      });
+    }
+
     return new Response(
-      JSON.stringify({ 
-        letter: letterContent,
-        letterType,
-        creditor: disputableItem.creditor,
-        bureaus: disputableItem.bureaus || ['equifax', 'experian', 'transunion']
-      }),
+      JSON.stringify(result),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

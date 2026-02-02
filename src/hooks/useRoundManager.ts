@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { readAiStream } from '@/lib/aiStream';
 
 interface RoundRecommendation {
   creditorName: string;
@@ -25,23 +26,45 @@ interface RoundAnalysis {
 export function useRoundManager() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [analysis, setAnalysis] = useState<RoundAnalysis | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const invokeRoundManager = async (payload: Record<string, unknown>) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/ai-round-manager`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session?.access_token || publishableKey}`,
+        apikey: publishableKey
+      },
+      body: JSON.stringify({
+        ...payload,
+        stream: true
+      })
+    });
+
+    return readAiStream<{ result: RoundAnalysis }>(response, (event) => {
+      if (event.type === 'status') {
+        setStatusMessage(event.message || null);
+      }
+    });
+  };
 
   const analyzeRound = async (clientId: string, roundId: string, disputeItems: any[], bureauResponses: any[]) => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-round-manager', {
-        body: {
-          action: 'analyze_round',
-          clientId,
-          roundId,
-          disputeItems,
-          bureauResponses
-        }
+      const data = await invokeRoundManager({
+        action: 'analyze_round',
+        clientId,
+        roundId,
+        disputeItems,
+        bureauResponses
       });
 
-      if (error) throw error;
-      
       setAnalysis(data.result);
       toast({
         title: "Round Analysis Complete",
@@ -58,6 +81,7 @@ export function useRoundManager() {
       });
       throw error;
     } finally {
+      setStatusMessage(null);
       setIsProcessing(false);
     }
   };
@@ -65,17 +89,13 @@ export function useRoundManager() {
   const generateNextRound = async (clientId: string, previousItems: any[], responses: any[]) => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-round-manager', {
-        body: {
-          action: 'generate_next_round',
-          clientId,
-          disputeItems: previousItems,
-          bureauResponses: responses
-        }
+      const data = await invokeRoundManager({
+        action: 'generate_next_round',
+        clientId,
+        disputeItems: previousItems,
+        bureauResponses: responses
       });
 
-      if (error) throw error;
-      
       setAnalysis(data.result);
       toast({
         title: "Next Round Generated",
@@ -92,6 +112,7 @@ export function useRoundManager() {
       });
       throw error;
     } finally {
+      setStatusMessage(null);
       setIsProcessing(false);
     }
   };
@@ -99,15 +120,11 @@ export function useRoundManager() {
   const detectResponses = async (responseData: any) => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-round-manager', {
-        body: {
-          action: 'detect_responses',
-          bureauResponses: responseData
-        }
+      const data = await invokeRoundManager({
+        action: 'detect_responses',
+        bureauResponses: responseData
       });
 
-      if (error) throw error;
-      
       toast({
         title: "Responses Detected",
         description: "Bureau responses have been parsed and outcomes extracted.",
@@ -123,6 +140,7 @@ export function useRoundManager() {
       });
       throw error;
     } finally {
+      setStatusMessage(null);
       setIsProcessing(false);
     }
   };
@@ -132,6 +150,7 @@ export function useRoundManager() {
   return {
     isProcessing,
     analysis,
+    statusMessage,
     analyzeRound,
     generateNextRound,
     detectResponses,

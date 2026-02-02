@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { readAiStream } from '@/lib/aiStream';
 
 interface SimulationResult {
   currentScore?: number;
@@ -34,22 +35,44 @@ interface SimulationResult {
 export function useScoreSimulator() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [simulation, setSimulation] = useState<SimulationResult | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const invokeScoreSimulator = async (payload: Record<string, unknown>) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/ai-score-simulator`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session?.access_token || publishableKey}`,
+        apikey: publishableKey
+      },
+      body: JSON.stringify({
+        ...payload,
+        stream: true
+      })
+    });
+
+    return readAiStream<{ result: SimulationResult }>(response, (event) => {
+      if (event.type === 'status') {
+        setStatusMessage(event.message || null);
+      }
+    });
+  };
 
   const simulateDeletions = async (currentScores: any, selectedDeletions: any[], tradelines?: any[]) => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-score-simulator', {
-        body: {
-          action: 'simulate_deletions',
-          currentScores,
-          selectedDeletions,
-          tradelines
-        }
+      const data = await invokeScoreSimulator({
+        action: 'simulate_deletions',
+        currentScores,
+        selectedDeletions,
+        tradelines
       });
 
-      if (error) throw error;
-      
       setSimulation(data.result);
       toast({
         title: "Simulation Complete",
@@ -66,6 +89,7 @@ export function useScoreSimulator() {
       });
       throw error;
     } finally {
+      setStatusMessage(null);
       setIsProcessing(false);
     }
   };
@@ -73,18 +97,14 @@ export function useScoreSimulator() {
   const checkLoanQualification = async (currentScores: any, loanType: string, loanAmount?: number, tradelines?: any[]) => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-score-simulator', {
-        body: {
-          action: 'check_loan_qualification',
-          currentScores,
-          loanType,
-          loanAmount,
-          tradelines
-        }
+      const data = await invokeScoreSimulator({
+        action: 'check_loan_qualification',
+        currentScores,
+        loanType,
+        loanAmount,
+        tradelines
       });
 
-      if (error) throw error;
-      
       setSimulation(data.result);
       
       if (data.result.qualified) {
@@ -105,6 +125,7 @@ export function useScoreSimulator() {
       console.error('Error checking loan qualification:', error);
       throw error;
     } finally {
+      setStatusMessage(null);
       setIsProcessing(false);
     }
   };
@@ -112,16 +133,12 @@ export function useScoreSimulator() {
   const optimizeDeletionOrder = async (currentScores: any, tradelines: any[]) => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-score-simulator', {
-        body: {
-          action: 'optimize_deletion_order',
-          currentScores,
-          tradelines
-        }
+      const data = await invokeScoreSimulator({
+        action: 'optimize_deletion_order',
+        currentScores,
+        tradelines
       });
 
-      if (error) throw error;
-      
       setSimulation(data.result);
       toast({
         title: "Strategy Optimized",
@@ -133,6 +150,7 @@ export function useScoreSimulator() {
       console.error('Error optimizing deletion order:', error);
       throw error;
     } finally {
+      setStatusMessage(null);
       setIsProcessing(false);
     }
   };
@@ -140,16 +158,12 @@ export function useScoreSimulator() {
   const projectTimeline = async (currentScores: any, tradelines: any[]) => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-score-simulator', {
-        body: {
-          action: 'project_timeline',
-          currentScores,
-          tradelines
-        }
+      const data = await invokeScoreSimulator({
+        action: 'project_timeline',
+        currentScores,
+        tradelines
       });
 
-      if (error) throw error;
-      
       setSimulation(data.result);
       toast({
         title: "Timeline Projected",
@@ -161,6 +175,7 @@ export function useScoreSimulator() {
       console.error('Error projecting timeline:', error);
       throw error;
     } finally {
+      setStatusMessage(null);
       setIsProcessing(false);
     }
   };
@@ -170,6 +185,7 @@ export function useScoreSimulator() {
   return {
     isProcessing,
     simulation,
+    statusMessage,
     simulateDeletions,
     checkLoanQualification,
     optimizeDeletionOrder,

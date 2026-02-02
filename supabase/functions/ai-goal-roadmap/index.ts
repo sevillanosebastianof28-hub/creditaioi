@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { currentScore, targetScore, goalType, creditData } = await req.json();
+    const { currentScore, targetScore, goalType, creditData, stream } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -57,6 +57,21 @@ Generate a JSON response with this exact structure:
 }
 
 Be realistic and conservative with estimates. Consider typical credit bureau timelines.`;
+
+    const encoder = new TextEncoder();
+    const streamBody = stream ? new TransformStream() : null;
+    const writer = streamBody ? streamBody.writable.getWriter() : null;
+
+    const sendEvent = async (event: string, data: Record<string, unknown>) => {
+      if (!writer) return;
+      await writer.write(
+        encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+      );
+    };
+
+    if (stream) {
+      await sendEvent('status', { type: 'status', message: 'Generating roadmap...' });
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -121,9 +136,25 @@ Be realistic and conservative with estimates. Consider typical credit bureau tim
 
     if (!response.ok) {
       if (response.status === 429) {
+        if (stream) {
+          await sendEvent('error', { type: 'error', message: 'Rate limit exceeded' });
+          await writer?.close();
+          return new Response(streamBody?.readable, {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+          });
+        }
         return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (stream) {
+        await sendEvent('error', { type: 'error', message: 'AI service error' });
+        await writer?.close();
+        return new Response(streamBody?.readable, {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
         });
       }
       throw new Error("AI service error");
@@ -134,8 +165,29 @@ Be realistic and conservative with estimates. Consider typical credit bureau tim
     
     if (toolCall?.function?.arguments) {
       const roadmap = JSON.parse(toolCall.function.arguments);
+      if (stream) {
+        await sendEvent('result', { type: 'result', result: { roadmap } });
+        await writer?.close();
+        return new Response(streamBody?.readable, {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive"
+          },
+        });
+      }
       return new Response(JSON.stringify({ roadmap }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (stream) {
+      await sendEvent('error', { type: 'error', message: 'Failed to generate roadmap' });
+      await writer?.close();
+      return new Response(streamBody?.readable, {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
     }
 

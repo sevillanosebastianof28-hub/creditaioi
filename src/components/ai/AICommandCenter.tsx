@@ -12,7 +12,7 @@ import {
   AlertTriangle, Lightbulb, RefreshCw, ChevronRight
 } from 'lucide-react';
 import { useCreditData } from '@/hooks/useCreditData';
-import { supabase } from '@/integrations/supabase/client';
+import { readAiStream } from '@/lib/aiStream';
 import { toast } from 'sonner';
 
 interface AIInsight {
@@ -39,6 +39,7 @@ export function AICommandCenter() {
   const [insights, setInsights] = useState<AIInsight[]>([]);
   const [analytics, setAnalytics] = useState<AIAnalytics | null>(null);
   const [activeTab, setActiveTab] = useState('insights');
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const generateInsights = async () => {
     if (!creditData) {
@@ -47,9 +48,16 @@ export function AICommandCenter() {
     }
 
     setIsAnalyzing(true);
+    setStatusMessage('Running AI analysis...');
     try {
-      const { data, error } = await supabase.functions.invoke('ai-intelligence-hub', {
-        body: {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-intelligence-hub`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+        },
+        body: JSON.stringify({
           action: 'generate_insights',
           creditData: {
             scores: creditData.scores,
@@ -57,11 +65,16 @@ export function AICommandCenter() {
             summary: creditData.summary,
             averageScore,
             disputeProgress
-          }
-        }
+          },
+          stream: true
+        })
       });
 
-      if (error) throw error;
+      const data = await readAiStream<{ insights: AIInsight[]; analytics: AIAnalytics | null }>(response, (event) => {
+        if (event.type === 'status') {
+          setStatusMessage(event.message || null);
+        }
+      });
       
       setInsights(data.insights || []);
       setAnalytics(data.analytics || null);
@@ -70,6 +83,7 @@ export function AICommandCenter() {
       console.error('AI analysis error:', error);
       toast.error('Failed to generate insights');
     } finally {
+      setStatusMessage(null);
       setIsAnalyzing(false);
     }
   };
@@ -135,6 +149,9 @@ export function AICommandCenter() {
             )}
           </Button>
         </div>
+        {isAnalyzing && statusMessage && (
+          <p className="text-xs text-muted-foreground mt-2">{statusMessage}</p>
+        )}
       </CardHeader>
 
       <CardContent className="p-0">

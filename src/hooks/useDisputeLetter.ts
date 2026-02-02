@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { DisputableItem } from './useCreditAnalysis';
+import { readAiStream } from '@/lib/aiStream';
 
 export type LetterType = 
   | 'fcra_605b'
@@ -95,6 +96,7 @@ export interface GeneratedLetter {
 export function useDisputeLetter() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedLetter, setGeneratedLetter] = useState<GeneratedLetter | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const { toast } = useToast();
 
   const generateLetter = async (
@@ -106,47 +108,31 @@ export function useDisputeLetter() {
     setGeneratedLetter(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-dispute-letter', {
-        body: {
+      setStatusMessage('Drafting letter...');
+      const { data: { session } } = await supabase.auth.getSession();
+      const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-dispute-letter`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token || publishableKey}`,
+          apikey: publishableKey
+        },
+        body: JSON.stringify({
           letterType,
           disputableItem,
           customInstructions,
-        },
+          stream: true
+        })
       });
 
-      if (error) {
-        console.error('Letter generation error:', error);
-        
-        if (error.message?.includes('429')) {
-          toast({
-            title: "Rate Limited",
-            description: "Too many requests. Please wait a moment and try again.",
-            variant: "destructive",
-          });
-        } else if (error.message?.includes('402')) {
-          toast({
-            title: "Credits Exhausted",
-            description: "AI credits have been exhausted. Please add more credits.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Generation Failed",
-            description: error.message || "Failed to generate letter.",
-            variant: "destructive",
-          });
+      const data = await readAiStream<GeneratedLetter>(response, (event) => {
+        if (event.type === 'status') {
+          setStatusMessage(event.message || null);
         }
-        return null;
-      }
-
-      if (data?.error) {
-        toast({
-          title: "Generation Error",
-          description: data.error,
-          variant: "destructive",
-        });
-        return null;
-      }
+      });
 
       setGeneratedLetter(data);
       
@@ -165,6 +151,7 @@ export function useDisputeLetter() {
       });
       return null;
     } finally {
+      setStatusMessage(null);
       setIsGenerating(false);
     }
   };
@@ -204,6 +191,7 @@ export function useDisputeLetter() {
   return {
     isGenerating,
     generatedLetter,
+    statusMessage,
     generateLetter,
     clearLetter,
     downloadLetter,

@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useCreditData, NegativeItem } from '@/hooks/useCreditData';
 import { useLetterTracking } from '@/hooks/useLetterTracking';
 import { supabase } from '@/integrations/supabase/client';
+import { readAiStream } from '@/lib/aiStream';
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Clock, CheckCircle2, AlertCircle, Eye, Link2, RefreshCw, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -25,6 +26,7 @@ export default function ClientDisputes() {
   const [selectedDispute, setSelectedDispute] = useState<NegativeItem | null>(null);
   const [letterContent, setLetterContent] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   
   const { 
@@ -46,6 +48,7 @@ export default function ClientDisputes() {
     setSelectedDispute(dispute);
     setDialogOpen(true);
     setIsGenerating(true);
+    setStatusMessage('Generating dispute letter...');
     setLetterContent('');
 
     // Check if we have a saved letter for this item
@@ -57,8 +60,14 @@ export default function ClientDisputes() {
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-dispute-letter', {
-        body: {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-dispute-letter`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+        },
+        body: JSON.stringify({
           letterType: 'factual_dispute',
           disputableItem: {
             creditor: dispute.creditor,
@@ -68,11 +77,17 @@ export default function ClientDisputes() {
             disputeReason: dispute.disputeReason,
             applicableLaw: 'FCRA',
             bureaus: [dispute.bureau]
-          }
+          },
+          stream: true
+        })
+      });
+
+      const data = await readAiStream<{ letter: string }>(response, (event) => {
+        if (event.type === 'status') {
+          setStatusMessage(event.message || null);
         }
       });
 
-      if (error) throw error;
       setLetterContent(data.letter || 'Unable to generate letter');
     } catch (err: any) {
       console.error('Letter generation error:', err);
@@ -83,6 +98,7 @@ export default function ClientDisputes() {
         variant: 'destructive'
       });
     } finally {
+      setStatusMessage(null);
       setIsGenerating(false);
     }
   };
@@ -347,7 +363,7 @@ export default function ClientDisputes() {
             {isGenerating ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
-                <p className="text-muted-foreground">Generating dispute letter...</p>
+                <p className="text-muted-foreground">{statusMessage || 'Generating dispute letter...'}</p>
               </div>
             ) : (
               <LetterDocumentEditor

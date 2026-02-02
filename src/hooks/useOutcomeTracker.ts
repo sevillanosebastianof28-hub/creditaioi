@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { readAiStream } from '@/lib/aiStream';
 
 interface PatternAnalysis {
   bureauPatterns?: Record<string, any>;
@@ -24,23 +25,45 @@ interface PatternAnalysis {
 export function useOutcomeTracker() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [insights, setInsights] = useState<PatternAnalysis | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const invokeOutcomeTracker = async (payload: Record<string, unknown>) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/ai-outcome-tracker`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session?.access_token || publishableKey}`,
+        apikey: publishableKey
+      },
+      body: JSON.stringify({
+        ...payload,
+        stream: true
+      })
+    });
+
+    return readAiStream<{ result: PatternAnalysis }>(response, (event) => {
+      if (event.type === 'status') {
+        setStatusMessage(event.message || null);
+      }
+    });
+  };
 
   const analyzePatterns = async (outcomes: any[], bureau?: string, letterType?: string, timeframe?: string) => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-outcome-tracker', {
-        body: {
-          action: 'analyze_patterns',
-          outcomes,
-          bureau,
-          letterType,
-          timeframe
-        }
+      const data = await invokeOutcomeTracker({
+        action: 'analyze_patterns',
+        outcomes,
+        bureau,
+        letterType,
+        timeframe
       });
 
-      if (error) throw error;
-      
       setInsights(data.result);
       toast({
         title: "Pattern Analysis Complete",
@@ -57,6 +80,7 @@ export function useOutcomeTracker() {
       });
       throw error;
     } finally {
+      setStatusMessage(null);
       setIsProcessing(false);
     }
   };
@@ -64,15 +88,11 @@ export function useOutcomeTracker() {
   const predictSuccess = async (outcomes: any[]) => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-outcome-tracker', {
-        body: {
-          action: 'predict_success',
-          outcomes
-        }
+      const data = await invokeOutcomeTracker({
+        action: 'predict_success',
+        outcomes
       });
 
-      if (error) throw error;
-      
       toast({
         title: "Predictions Generated",
         description: "AI has predicted success rates for potential disputes.",
@@ -88,6 +108,7 @@ export function useOutcomeTracker() {
       });
       throw error;
     } finally {
+      setStatusMessage(null);
       setIsProcessing(false);
     }
   };
@@ -95,16 +116,12 @@ export function useOutcomeTracker() {
   const generateInsights = async (outcomes: any[], timeframe?: string) => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-outcome-tracker', {
-        body: {
-          action: 'generate_insights',
-          outcomes,
-          timeframe
-        }
+      const data = await invokeOutcomeTracker({
+        action: 'generate_insights',
+        outcomes,
+        timeframe
       });
 
-      if (error) throw error;
-      
       setInsights(data.result);
       toast({
         title: "Insights Generated",
@@ -121,6 +138,7 @@ export function useOutcomeTracker() {
       });
       throw error;
     } finally {
+      setStatusMessage(null);
       setIsProcessing(false);
     }
   };
@@ -128,15 +146,11 @@ export function useOutcomeTracker() {
   const learnFromOutcome = async (outcome: any) => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-outcome-tracker', {
-        body: {
-          action: 'learn_from_outcome',
-          outcomes: outcome
-        }
+      const data = await invokeOutcomeTracker({
+        action: 'learn_from_outcome',
+        outcomes: outcome
       });
 
-      if (error) throw error;
-      
       toast({
         title: "Learning Complete",
         description: "AI has extracted patterns from this outcome.",
@@ -152,6 +166,7 @@ export function useOutcomeTracker() {
       });
       throw error;
     } finally {
+      setStatusMessage(null);
       setIsProcessing(false);
     }
   };
@@ -161,6 +176,7 @@ export function useOutcomeTracker() {
   return {
     isProcessing,
     insights,
+    statusMessage,
     analyzePatterns,
     predictSuccess,
     generateInsights,

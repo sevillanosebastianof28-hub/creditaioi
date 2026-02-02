@@ -7,8 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Target, Sparkles, CheckCircle2, Clock, AlertTriangle, TrendingUp } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useCreditData } from '@/hooks/useCreditData';
+import { readAiStream } from '@/lib/aiStream';
 import { toast } from 'sonner';
 
 interface Milestone {
@@ -40,14 +40,22 @@ export function AIGoalRoadmap() {
   const [goalType, setGoalType] = useState('general');
   const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const generateRoadmap = async () => {
     if (!targetScore) return;
 
     setIsLoading(true);
+    setStatusMessage('Generating roadmap...');
     try {
-      const { data, error } = await supabase.functions.invoke('ai-goal-roadmap', {
-        body: {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-goal-roadmap`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+        },
+        body: JSON.stringify({
           currentScore: averageScore || 600,
           targetScore: parseInt(targetScore),
           goalType,
@@ -56,17 +64,24 @@ export function AIGoalRoadmap() {
             collections: creditData.negativeItems?.filter(i => i.type === 'Collection').length || 0,
             latePayments: creditData.negativeItems?.filter(i => i.type === 'Late Payment').length || 0,
             utilization: creditData.summary?.creditUtilization || 30
-          } : null
+          } : null,
+          stream: true
+        })
+      });
+
+      const result = await readAiStream<{ roadmap: Roadmap }>(response, (event) => {
+        if (event.type === 'status') {
+          setStatusMessage(event.message || null);
         }
       });
 
-      if (error) throw error;
-      setRoadmap(data.roadmap);
+      setRoadmap(result.roadmap);
       toast.success('Roadmap generated successfully!');
     } catch (error) {
       console.error('Roadmap error:', error);
       toast.error('Failed to generate roadmap');
     } finally {
+      setStatusMessage(null);
       setIsLoading(false);
     }
   };
@@ -145,6 +160,9 @@ export function AIGoalRoadmap() {
           <Sparkles className="w-4 h-4 mr-2" />
           {isLoading ? 'Generating Roadmap...' : 'Generate AI Roadmap'}
         </Button>
+        {isLoading && statusMessage && (
+          <p className="text-xs text-muted-foreground">{statusMessage}</p>
+        )}
 
         {/* Roadmap Display */}
         {roadmap && (

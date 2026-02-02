@@ -29,7 +29,7 @@ serve(async (req) => {
   }
 
   try {
-    const { letterContent, letterType, creditor } = await req.json();
+    const { letterContent, letterType, creditor, stream } = await req.json();
 
     if (!letterContent) {
       return new Response(
@@ -56,6 +56,21 @@ Improve this letter to be more legally compelling and effective while preserving
 
     console.log("Optimizing dispute letter");
 
+    const encoder = new TextEncoder();
+    const streamBody = stream ? new TransformStream() : null;
+    const writer = streamBody ? streamBody.writable.getWriter() : null;
+
+    const sendEvent = async (event: string, data: Record<string, unknown>) => {
+      if (!writer) return;
+      await writer.write(
+        encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+      );
+    };
+
+    if (stream) {
+      await sendEvent('status', { type: 'status', message: 'Optimizing letter...' });
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -77,6 +92,14 @@ Improve this letter to be more legally compelling and effective while preserving
       console.error("AI Gateway error:", response.status, errorText);
       
       if (response.status === 429) {
+        if (stream) {
+          await sendEvent('error', { type: 'error', message: 'Rate limit exceeded. Please try again in a moment.' });
+          await writer?.close();
+          return new Response(streamBody?.readable, {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+          });
+        }
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -84,10 +107,27 @@ Improve this letter to be more legally compelling and effective while preserving
       }
       
       if (response.status === 402) {
+        if (stream) {
+          await sendEvent('error', { type: 'error', message: 'AI credits exhausted.' });
+          await writer?.close();
+          return new Response(streamBody?.readable, {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+          });
+        }
         return new Response(
           JSON.stringify({ error: "AI credits exhausted." }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      }
+
+      if (stream) {
+        await sendEvent('error', { type: 'error', message: 'Failed to optimize letter.' });
+        await writer?.close();
+        return new Response(streamBody?.readable, {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+        });
       }
 
       return new Response(
@@ -100,6 +140,14 @@ Improve this letter to be more legally compelling and effective while preserving
     const optimizedLetter = aiResponse.choices?.[0]?.message?.content;
 
     if (!optimizedLetter) {
+      if (stream) {
+        await sendEvent('error', { type: 'error', message: 'No optimized letter generated' });
+        await writer?.close();
+        return new Response(streamBody?.readable, {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+        });
+      }
       return new Response(
         JSON.stringify({ error: "No optimized letter generated" }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -107,6 +155,19 @@ Improve this letter to be more legally compelling and effective while preserving
     }
 
     console.log("Letter optimized successfully");
+
+    if (stream) {
+      await sendEvent('result', { type: 'result', result: { optimizedLetter } });
+      await writer?.close();
+      return new Response(streamBody?.readable, {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive"
+        },
+      });
+    }
 
     return new Response(
       JSON.stringify({ optimizedLetter }),

@@ -79,7 +79,7 @@ const defaultDisputableItems = [
 
 const ScoreSimulator = () => {
   const { user } = useAuth();
-  const { isProcessing, simulation, simulateDeletions, clearSimulation } = useScoreSimulator();
+  const { isProcessing, simulation, simulateDeletions, clearSimulation, statusMessage } = useScoreSimulator();
   
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [disputableItems, setDisputableItems] = useState(defaultDisputableItems);
@@ -397,6 +397,9 @@ const ScoreSimulator = () => {
                 </Button>
               </div>
             </div>
+            {isProcessing && statusMessage && (
+              <p className="text-xs text-muted-foreground mt-2">{statusMessage}</p>
+            )}
           </CardContent>
         </Card>
       </div>

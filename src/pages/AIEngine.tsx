@@ -29,7 +29,7 @@ const AIEngine = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { isAnalyzing, analysisResult, analyzeReport, clearAnalysis } = useCreditAnalysis();
+  const { isAnalyzing, analysisResult, analyzeReport, clearAnalysis, statusMessage } = useCreditAnalysis();
   const { toast } = useToast();
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -471,6 +471,9 @@ Creditor: Capital One"
                       </>
                     )}
                   </Button>
+                  {(isAnalyzing || isUploading) && statusMessage && (
+                    <p className="text-xs text-muted-foreground">{statusMessage}</p>
+                  )}
                 </CardContent>
               </Card>
             ) : (

@@ -52,7 +52,7 @@ ANALYSIS FRAMEWORK:
    - FCRA 623: Furnisher accuracy requirements
    - FDCPA violations: For collection accounts
    - HIPAA: Unauthorized medical debt disclosure
-   - State-specific protections
+      const { reportText, userId, stream } = await req.json();
 
 4. SCORE IMPACT MODELING
    Use this impact matrix:
@@ -61,6 +61,20 @@ ANALYSIS FRAMEWORK:
    - Collections (24+ months): 30-50 points
    - Late payments (30 days): 15-30 points
    - Late payments (60+ days): 30-60 points
+      const encoder = new TextEncoder();
+      const streamBody = stream ? new TransformStream() : null;
+      const writer = streamBody ? streamBody.writable.getWriter() : null;
+
+      const sendEvent = async (event: string, data: Record<string, unknown>) => {
+        if (!writer) return;
+        await writer.write(
+          encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+        );
+      };
+
+      if (stream) {
+        await sendEvent('status', { type: 'status', message: 'Analyzing credit report...' });
+      }
    - Charge-offs: 60-100 points
    - Inquiries: 5-15 points each
    - High utilization (>50%): 30-50 points
@@ -82,14 +96,30 @@ Return structured JSON with:
     "estimatedScoreIncrease": number,
     "highPriorityItems": number,
     "avgDeletionProbability": number,
-    "quickWins": number,
-    "complexCases": number
-  },
-  "items": [
-    {
+        if (response.status === 429) {
+          if (stream) {
+            await sendEvent('error', { type: 'error', message: 'Rate limit exceeded. Please try again in a moment.' });
+            await writer?.close();
+            return new Response(streamBody?.readable, {
+              status: 429,
+              headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+            });
+          }
+          return new Response(
+            JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
       "id": "unique-id",
       "creditor": "Creditor Name",
       "accountType": "collection|credit_card|auto_loan|mortgage|inquiry|public_record|medical",
+          if (stream) {
+            await sendEvent('error', { type: 'error', message: 'AI credits exhausted. Please add credits to continue.' });
+            await writer?.close();
+            return new Response(streamBody?.readable, {
+              status: 402,
+              headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+            });
+          }
       "issueType": "late_payment|collection|charge_off|inquiry|duplicate|wrong_dofd|identity_error|balance_error|status_error",
       "balance": number,
       "originalBalance": number,
@@ -97,6 +127,12 @@ Return structured JSON with:
       "dateOfFirstDelinquency": "YYYY-MM-DD",
       "disputeReason": "Specific, detailed reason for dispute",
       "legalViolation": "Specific law violated",
+          await sendEvent('error', { type: 'error', message: 'Failed to analyze credit report. Please try again.' });
+          await writer?.close();
+          return new Response(streamBody?.readable, {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+          });
       "deletionProbability": number,
       "expectedScoreImpact": number,
       "applicableLaw": "FCRA 605|FCRA 611|FCRA 623|FDCPA|HIPAA",
@@ -111,6 +147,13 @@ Return structured JSON with:
   "recommendations": [
     "Prioritized, specific action items"
   ],
+          await sendEvent('error', { type: 'error', message: 'No analysis returned from AI' });
+          await writer?.close();
+          return new Response(streamBody?.readable, {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+          });
+        }
   "analysisNotes": {
     "patternsDetected": ["List of patterns"],
     "immediateActions": ["What to do first"],
@@ -132,6 +175,13 @@ serve(async (req) => {
     if (!reportText || reportText.trim().length < 50) {
       return new Response(
         JSON.stringify({ error: "Please provide a valid credit report with sufficient data to analyze." }),
+          await sendEvent('error', { type: 'error', message: 'Failed to parse AI analysis' });
+          await writer?.close();
+          return new Response(streamBody?.readable, {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+          });
+        }
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -162,6 +212,16 @@ serve(async (req) => {
         temperature: 0.2,
       }),
     });
+        await sendEvent('result', { type: 'result', result: analysisResult });
+        await writer?.close();
+        return new Response(streamBody?.readable, {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive"
+          },
+        });
 
     if (!response.ok) {
       const errorText = await response.text();

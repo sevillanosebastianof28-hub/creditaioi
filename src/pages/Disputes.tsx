@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { useDisputeWorkflow, DisputeItem, DisputeRound } from '@/hooks/useDisputeWorkflow';
 import { useLetterTracking } from '@/hooks/useLetterTracking';
 import { supabase } from '@/integrations/supabase/client';
+import { readAiStream } from '@/lib/aiStream';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -53,6 +54,7 @@ const Disputes = () => {
   const [selectedItem, setSelectedItem] = useState<DisputeItem | null>(null);
   const [letterContent, setLetterContent] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newRoundDialogOpen, setNewRoundDialogOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState('');
@@ -137,11 +139,18 @@ const Disputes = () => {
     }
 
     setIsGenerating(true);
+    setStatusMessage('Generating dispute letter...');
     setLetterContent('');
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-dispute-letter', {
-        body: {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-dispute-letter`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+        },
+        body: JSON.stringify({
           letterType: item.letter_type || 'factual_dispute',
           disputableItem: {
             creditor: item.creditor_name,
@@ -150,11 +159,17 @@ const Disputes = () => {
             disputeReason: item.dispute_reason,
             applicableLaw: 'FCRA',
             bureaus: [item.bureau]
-          }
+          },
+          stream: true
+        })
+      });
+
+      const data = await readAiStream<{ letter: string }>(response, (event) => {
+        if (event.type === 'status') {
+          setStatusMessage(event.message || null);
         }
       });
 
-      if (error) throw error;
       setLetterContent(data.letter || 'Unable to generate letter');
     } catch (err: any) {
       console.error('Letter generation error:', err);
@@ -165,6 +180,7 @@ const Disputes = () => {
         variant: 'destructive'
       });
     } finally {
+      setStatusMessage(null);
       setIsGenerating(false);
     }
   };
@@ -424,7 +440,7 @@ const Disputes = () => {
               {isGenerating ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
-                  <p className="text-muted-foreground">Generating dispute letter...</p>
+                  <p className="text-muted-foreground">{statusMessage || 'Generating dispute letter...'}</p>
                 </div>
               ) : (
                 <div className="bg-muted/30 rounded-lg p-6">

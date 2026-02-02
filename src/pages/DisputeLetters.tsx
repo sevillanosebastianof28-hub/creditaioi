@@ -71,6 +71,7 @@ const DisputeLetters = () => {
   const { 
     isGenerating, 
     generatedLetter, 
+    statusMessage,
     generateLetter, 
     clearLetter,
     downloadLetter,
@@ -413,6 +414,9 @@ const DisputeLetters = () => {
                           )}
                         </Button>
                       </div>
+                      {isGenerating && statusMessage && (
+                        <p className="text-xs text-muted-foreground">{statusMessage}</p>
+                      )}
                     </CardContent>
                   </Card>
                 )}

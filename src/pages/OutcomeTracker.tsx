@@ -50,7 +50,7 @@ const letterTypeStats = [
 export default function OutcomeTracker() {
   const [timeframe, setTimeframe] = useState("90days");
   const [bureauFilter, setBureauFilter] = useState("all");
-  const { isProcessing, insights, analyzePatterns, predictSuccess, generateInsights, clearInsights } = useOutcomeTracker();
+  const { isProcessing, insights, analyzePatterns, predictSuccess, generateInsights, clearInsights, statusMessage } = useOutcomeTracker();
 
   const handleAnalyzePatterns = async () => {
     await analyzePatterns(
@@ -157,6 +157,10 @@ export default function OutcomeTracker() {
             </CardContent>
           </Card>
         </div>
+
+        {isProcessing && statusMessage && (
+          <p className="text-xs text-muted-foreground">{statusMessage}</p>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Bureau Performance */}

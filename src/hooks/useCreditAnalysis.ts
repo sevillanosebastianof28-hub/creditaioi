@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { readAiStream } from '@/lib/aiStream';
 
 export interface DisputableItem {
   id: string;
@@ -35,6 +36,7 @@ export interface AnalysisResult {
 export function useCreditAnalysis() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const { toast } = useToast();
 
   const analyzeReport = async (reportText: string) => {
@@ -48,52 +50,36 @@ export function useCreditAnalysis() {
     }
 
     setIsAnalyzing(true);
+    setStatusMessage('Analyzing credit report...');
     setAnalysisResult(null);
 
     try {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
 
-      const { data, error } = await supabase.functions.invoke('analyze-credit-report', {
-        body: { 
-          reportText,
-          userId: user?.id 
+      const { data: { session } } = await supabase.auth.getSession();
+      const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/analyze-credit-report`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token || publishableKey}`,
+          apikey: publishableKey
         },
+        body: JSON.stringify({
+          reportText,
+          userId: user?.id,
+          stream: true
+        })
       });
 
-      if (error) {
-        console.error('Analysis error:', error);
-        
-        if (error.message?.includes('429')) {
-          toast({
-            title: "Rate Limited",
-            description: "Too many requests. Please wait a moment and try again.",
-            variant: "destructive",
-          });
-        } else if (error.message?.includes('402')) {
-          toast({
-            title: "Credits Exhausted",
-            description: "AI credits have been exhausted. Please add more credits.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Analysis Failed",
-            description: error.message || "Failed to analyze credit report.",
-            variant: "destructive",
-          });
+      const data = await readAiStream<AnalysisResult>(response, (event) => {
+        if (event.type === 'status') {
+          setStatusMessage(event.message || null);
         }
-        return null;
-      }
-
-      if (data?.error) {
-        toast({
-          title: "Analysis Error",
-          description: data.error,
-          variant: "destructive",
-        });
-        return null;
-      }
+      });
 
       setAnalysisResult(data);
       
@@ -112,6 +98,7 @@ export function useCreditAnalysis() {
       });
       return null;
     } finally {
+      setStatusMessage(null);
       setIsAnalyzing(false);
     }
   };
@@ -123,6 +110,7 @@ export function useCreditAnalysis() {
   return {
     isAnalyzing,
     analysisResult,
+    statusMessage,
     analyzeReport,
     clearAnalysis,
   };

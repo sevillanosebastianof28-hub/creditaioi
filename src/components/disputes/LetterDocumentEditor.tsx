@@ -33,7 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { supabase } from '@/integrations/supabase/client';
+import { readAiStream } from '@/lib/aiStream';
 
 interface LetterDocumentEditorProps {
   content: string;
@@ -65,6 +65,7 @@ const LetterDocumentEditor = ({
   const [fontSize, setFontSize] = useState('12');
   const [fontFamily, setFontFamily] = useState('serif');
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -75,12 +76,28 @@ const LetterDocumentEditor = ({
     }
 
     setIsOptimizing(true);
+    setStatusMessage('Optimizing letter...');
     try {
-      const { data, error } = await supabase.functions.invoke('optimize-dispute-letter', {
-        body: { letterContent: editedContent, letterType, creditor }
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/optimize-dispute-letter`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+        },
+        body: JSON.stringify({
+          letterContent: editedContent,
+          letterType,
+          creditor,
+          stream: true
+        })
       });
 
-      if (error) throw error;
+      const data = await readAiStream<{ optimizedLetter: string }>(response, (event) => {
+        if (event.type === 'status') {
+          setStatusMessage(event.message || null);
+        }
+      });
 
       if (data?.optimizedLetter) {
         if (editorRef.current) {
@@ -102,6 +119,7 @@ const LetterDocumentEditor = ({
         variant: 'destructive',
       });
     } finally {
+      setStatusMessage(null);
       setIsOptimizing(false);
     }
   };
@@ -322,6 +340,9 @@ const LetterDocumentEditor = ({
             </>
           )}
         </div>
+          {isOptimizing && statusMessage && (
+            <p className="text-xs text-muted-foreground mt-2">{statusMessage}</p>
+          )}
       )}
 
       {/* Document Editor Area */}

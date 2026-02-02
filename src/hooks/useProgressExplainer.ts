@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { readAiStream } from '@/lib/aiStream';
 
 interface ProgressExplanation {
   summary?: string;
@@ -35,22 +36,44 @@ interface ProgressExplanation {
 export function useProgressExplainer() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [explanation, setExplanation] = useState<ProgressExplanation | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const invokeExplainer = async (payload: Record<string, unknown>) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/ai-progress-explainer`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session?.access_token || publishableKey}`,
+        apikey: publishableKey
+      },
+      body: JSON.stringify({
+        ...payload,
+        stream: true
+      })
+    });
+
+    return readAiStream<{ result: ProgressExplanation }>(response, (event) => {
+      if (event.type === 'status') {
+        setStatusMessage(event.message || null);
+      }
+    });
+  };
 
   const explainScoreChange = async (scoreHistory: any, disputeResults?: any[], clientData?: any) => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-progress-explainer', {
-        body: {
-          action: 'explain_score_change',
-          scoreHistory,
-          disputeResults,
-          clientData
-        }
+      const data = await invokeExplainer({
+        action: 'explain_score_change',
+        scoreHistory,
+        disputeResults,
+        clientData
       });
 
-      if (error) throw error;
-      
       setExplanation(data.result);
       return data.result;
     } catch (error: any) {
@@ -62,6 +85,7 @@ export function useProgressExplainer() {
       });
       throw error;
     } finally {
+      setStatusMessage(null);
       setIsProcessing(false);
     }
   };
@@ -69,16 +93,12 @@ export function useProgressExplainer() {
   const generateMilestoneMessage = async (clientData: any, milestones: any) => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-progress-explainer', {
-        body: {
-          action: 'generate_milestone_message',
-          clientData,
-          milestones
-        }
+      const data = await invokeExplainer({
+        action: 'generate_milestone_message',
+        clientData,
+        milestones
       });
 
-      if (error) throw error;
-      
       setExplanation(data.result);
       toast({
         title: "🎉 Milestone Achieved!",
@@ -90,6 +110,7 @@ export function useProgressExplainer() {
       console.error('Error generating milestone message:', error);
       throw error;
     } finally {
+      setStatusMessage(null);
       setIsProcessing(false);
     }
   };
@@ -97,22 +118,19 @@ export function useProgressExplainer() {
   const explainDeletion = async (disputeResults: any, clientData?: any) => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-progress-explainer', {
-        body: {
-          action: 'explain_deletion',
-          disputeResults,
-          clientData
-        }
+      const data = await invokeExplainer({
+        action: 'explain_deletion',
+        disputeResults,
+        clientData
       });
 
-      if (error) throw error;
-      
       setExplanation(data.result);
       return data.result;
     } catch (error: any) {
       console.error('Error explaining deletion:', error);
       throw error;
     } finally {
+      setStatusMessage(null);
       setIsProcessing(false);
     }
   };
@@ -120,17 +138,13 @@ export function useProgressExplainer() {
   const generateProgressReport = async (clientData: any, scoreHistory: any, disputeResults?: any[]) => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-progress-explainer', {
-        body: {
-          action: 'generate_progress_report',
-          clientData,
-          scoreHistory,
-          disputeResults
-        }
+      const data = await invokeExplainer({
+        action: 'generate_progress_report',
+        clientData,
+        scoreHistory,
+        disputeResults
       });
 
-      if (error) throw error;
-      
       setExplanation(data.result);
       toast({
         title: "Progress Report Generated",
@@ -142,6 +156,7 @@ export function useProgressExplainer() {
       console.error('Error generating progress report:', error);
       throw error;
     } finally {
+      setStatusMessage(null);
       setIsProcessing(false);
     }
   };
@@ -149,22 +164,19 @@ export function useProgressExplainer() {
   const explainScoreDrop = async (scoreHistory: any, clientData?: any) => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-progress-explainer', {
-        body: {
-          action: 'explain_why_score_dropped',
-          scoreHistory,
-          clientData
-        }
+      const data = await invokeExplainer({
+        action: 'explain_why_score_dropped',
+        scoreHistory,
+        clientData
       });
 
-      if (error) throw error;
-      
       setExplanation(data.result);
       return data.result;
     } catch (error: any) {
       console.error('Error explaining score drop:', error);
       throw error;
     } finally {
+      setStatusMessage(null);
       setIsProcessing(false);
     }
   };
@@ -174,6 +186,7 @@ export function useProgressExplainer() {
   return {
     isProcessing,
     explanation,
+    statusMessage,
     explainScoreChange,
     generateMilestoneMessage,
     explainDeletion,

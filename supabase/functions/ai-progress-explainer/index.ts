@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { action, clientData, scoreHistory, disputeResults, milestones } = await req.json();
+    const { action, clientData, scoreHistory, disputeResults, milestones, stream } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -188,6 +188,21 @@ Explain the drop in a supportive, non-alarming way.`;
 
     console.log(`AI Progress Explainer: Processing ${action}`);
 
+    const encoder = new TextEncoder();
+    const streamBody = stream ? new TransformStream() : null;
+    const writer = streamBody ? streamBody.writable.getWriter() : null;
+
+    const sendEvent = async (event: string, data: Record<string, unknown>) => {
+      if (!writer) return;
+      await writer.write(
+        encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+      );
+    };
+
+    if (stream) {
+      await sendEvent('status', { type: 'status', message: 'Generating explanation...' });
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -205,12 +220,28 @@ Explain the drop in a supportive, non-alarming way.`;
 
     if (!response.ok) {
       if (response.status === 429) {
+        if (stream) {
+          await sendEvent('error', { type: 'error', message: 'Rate limit exceeded. Please try again later.' });
+          await writer?.close();
+          return new Response(streamBody?.readable, {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+          });
+        }
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
+        if (stream) {
+          await sendEvent('error', { type: 'error', message: 'AI credits exhausted. Please add more credits.' });
+          await writer?.close();
+          return new Response(streamBody?.readable, {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+          });
+        }
         return new Response(JSON.stringify({ error: "AI credits exhausted. Please add more credits." }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -218,6 +249,14 @@ Explain the drop in a supportive, non-alarming way.`;
       }
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
+      if (stream) {
+        await sendEvent('error', { type: 'error', message: `AI gateway error: ${response.status}` });
+        await writer?.close();
+        return new Response(streamBody?.readable, {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+        });
+      }
       throw new Error(`AI gateway error: ${response.status}`);
     }
 
@@ -238,6 +277,19 @@ Explain the drop in a supportive, non-alarming way.`;
     }
 
     console.log(`AI Progress Explainer: Completed ${action}`);
+
+    if (stream) {
+      await sendEvent('result', { type: 'result', result });
+      await writer?.close();
+      return new Response(streamBody?.readable, {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive"
+        },
+      });
+    }
 
     return new Response(JSON.stringify({ success: true, result }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

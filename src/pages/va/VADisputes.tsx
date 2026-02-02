@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { FileText, Search, Eye, Edit, Send, CheckCircle2, Clock, AlertCircle, Brain, User, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { readAiStream } from '@/lib/aiStream';
 import LetterDocumentEditor from '@/components/disputes/LetterDocumentEditor';
 
 const mockLetters = [
@@ -82,17 +83,25 @@ export default function VADisputes() {
   const [selectedLetter, setSelectedLetter] = useState<typeof mockLetters[0] | null>(null);
   const [letterContent, setLetterContent] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleViewLetter = async (letter: typeof mockLetters[0]) => {
     setSelectedLetter(letter);
     setDialogOpen(true);
     setIsGenerating(true);
+    setStatusMessage('Generating dispute letter...');
     setLetterContent('');
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-dispute-letter', {
-        body: {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-dispute-letter`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+        },
+        body: JSON.stringify({
           letterType: 'factual_dispute',
           disputableItem: {
             creditor: letter.creditor,
@@ -102,11 +111,17 @@ export default function VADisputes() {
             disputeReason: letter.type,
             applicableLaw: 'FCRA',
             bureaus: [letter.bureau]
-          }
+          },
+          stream: true
+        })
+      });
+
+      const data = await readAiStream<{ letter: string }>(response, (event) => {
+        if (event.type === 'status') {
+          setStatusMessage(event.message || null);
         }
       });
 
-      if (error) throw error;
       setLetterContent(data.letter || 'Unable to generate letter');
     } catch (err: any) {
       console.error('Letter generation error:', err);
@@ -117,6 +132,7 @@ export default function VADisputes() {
         variant: 'destructive'
       });
     } finally {
+      setStatusMessage(null);
       setIsGenerating(false);
     }
   };
@@ -313,7 +329,7 @@ export default function VADisputes() {
             {isGenerating ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
-                <p className="text-muted-foreground">Generating dispute letter...</p>
+                <p className="text-muted-foreground">{statusMessage || 'Generating dispute letter...'}</p>
               </div>
             ) : (
               <LetterDocumentEditor
