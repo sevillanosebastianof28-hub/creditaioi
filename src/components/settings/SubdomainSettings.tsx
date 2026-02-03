@@ -67,10 +67,15 @@ export function SubdomainSettings({ formData, onChange, onPublish }: SubdomainSe
       onChange('is_published', true);
       onChange('published_at', new Date().toISOString());
       
+      console.log('Publishing portal with subdomain:', subdomain);
+      
       // Then save to database
       if (onPublish) {
-        await onPublish();
-        toast.success('White-label portal published successfully!');
+        const result = await onPublish();
+        console.log('Publish result:', result);
+        if (result !== false) {
+          toast.success('White-label portal published successfully!');
+        }
       } else {
         toast.error('Save function not available');
       }

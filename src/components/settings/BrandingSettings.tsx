@@ -52,6 +52,7 @@ export function BrandingSettings() {
       // Only update formData if there are no unsaved changes
       // This prevents overwriting user input when real-time updates come in
       if (!hasChanges) {
+        console.log('Updating formData from brandSettings:', brandSettings);
         setFormData(brandSettings);
       }
     }
