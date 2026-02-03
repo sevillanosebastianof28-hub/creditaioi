@@ -474,7 +474,7 @@ const Disputes = () => {
             </div>
             {!isGenerating && letterContent && (
               <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button variant="outline" onClick={handleSaveLetter}>
+                <Button variant="outline" onClick={() => handleSaveLetter()}>
                   <Save className="w-4 h-4 mr-2" />
                   Save Letter
                 </Button>

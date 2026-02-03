@@ -30,6 +30,7 @@ interface SimulationResult {
   risks?: string[];
   accelerators?: string[];
   analysis?: string;
+  estimatedMonths?: number | string;
 }
 
 export function useScoreSimulator() {
