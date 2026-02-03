@@ -44,7 +44,7 @@ function extractSubdomain(): string | null {
   }
   
   // Handle production subdomains
-  // Expected format: subdomain.yourdomain.com or subdomain.lovable.app
+  // Expected format: subdomain.credit-ai.online
   const parts = hostname.split('.');
   
   // Skip if it's a direct domain (no subdomain)

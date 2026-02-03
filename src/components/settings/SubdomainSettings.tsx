@@ -35,11 +35,11 @@ export function SubdomainSettings({ formData, onChange, onPublish }: SubdomainSe
   // Generate the full white-label URL
   const getWhiteLabelUrl = () => {
     // In production, this would be your actual domain
-    const baseDomain = window.location.hostname.includes('lovable.app') 
-      ? 'lovable.app' 
+    const baseDomain = window.location.hostname.includes('credit-ai.online') 
+      ? 'credit-ai.online' 
       : window.location.hostname.includes('localhost')
         ? 'localhost:8080'
-        : window.location.hostname;
+        : 'credit-ai.online';
     
     if (window.location.hostname.includes('localhost')) {
       return `${window.location.origin}?subdomain=${subdomain}`;
@@ -63,22 +63,40 @@ export function SubdomainSettings({ formData, onChange, onPublish }: SubdomainSe
     
     setIsPublishing(true);
     try {
+      // Update the form data first
       onChange('is_published', true);
       onChange('published_at', new Date().toISOString());
+      
+      // Then save to database
       if (onPublish) {
         await onPublish();
+        toast.success('White-label portal published successfully!');
+      } else {
+        toast.error('Save function not available');
       }
-      toast.success('White-label portal published successfully!');
     } catch (error) {
+      console.error('Publish error:', error);
       toast.error('Failed to publish portal');
     } finally {
       setIsPublishing(false);
     }
   };
   
-  const handleUnpublish = () => {
+  const handleUnpublish = async () => {
     onChange('is_published', false);
-    toast.success('White-label portal unpublished');
+    
+    // Save the unpublished state to database
+    if (onPublish) {
+      try {
+        await onPublish();
+        toast.success('White-label portal unpublished');
+      } catch (error) {
+        console.error('Unpublish error:', error);
+        toast.error('Failed to unpublish portal');
+      }
+    } else {
+      toast.success('White-label portal unpublished');
+    }
   };
   
   const validateSubdomain = (value: string) => {
@@ -125,7 +143,7 @@ export function SubdomainSettings({ formData, onChange, onPublish }: SubdomainSe
                 className="pr-32"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                .creditai.com
+                .credit-ai.online
               </span>
             </div>
           </div>
