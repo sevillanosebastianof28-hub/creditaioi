@@ -34,23 +34,26 @@ interface SubdomainDetectionResult {
 
 // Get subdomain from current URL
 function extractSubdomain(): string | null {
-  const hostname = window.location.hostname;
-  
-  // Handle localhost development
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    // Check URL params for testing subdomain
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('subdomain');
-  }
-  
-  // Check URL params for preview testing (works on any domain including Lovable previews)
+  // ALWAYS check URL params first - this works on all domains
   const urlParams = new URLSearchParams(window.location.search);
   const subdomainParam = urlParams.get('subdomain');
   if (subdomainParam) {
     return subdomainParam;
   }
   
-  // Handle credit-ai.online subdomains
+  const hostname = window.location.hostname;
+  
+  // Handle localhost development - check params only
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return null;
+  }
+  
+  // For credit-ai.online main domain, rely on URL parameter
+  if (hostname === 'credit-ai.online' || hostname === 'www.credit-ai.online') {
+    return null;
+  }
+  
+  // Handle credit-ai.online subdomains if they exist in the future
   // Expected format: subdomain.credit-ai.online
   if (hostname.endsWith('.credit-ai.online')) {
     const parts = hostname.split('.');
@@ -65,16 +68,16 @@ function extractSubdomain(): string | null {
     }
   }
   
-  // Handle other production subdomains (generic pattern)
-  const parts = hostname.split('.');
-  
-  // Skip if it's a direct domain (no subdomain) or Lovable preview domains
-  if (parts.length < 3) {
+  // Skip Lovable preview/staging domains - these should NOT auto-detect subdomains
+  if (hostname.includes('lovable.app') || hostname.includes('lovable.dev')) {
     return null;
   }
   
-  // Skip Lovable preview/staging domains - these should NOT auto-detect subdomains
-  if (hostname.includes('lovable.app') || hostname.includes('lovable.dev')) {
+  // Handle other production subdomains (generic pattern) - for future custom domains
+  const parts = hostname.split('.');
+  
+  // Skip if it's a direct domain (no subdomain)
+  if (parts.length < 3) {
     return null;
   }
   

@@ -22,7 +22,7 @@ export function DNSStatus({ subdomain }: DNSStatusProps) {
 
       try {
         // Try to fetch the subdomain URL
-        const testUrl = `https://${subdomain}.credit-ai.online`;
+        const testUrl = `https://credit-ai.online?subdomain=${subdomain}`;
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
 
@@ -82,7 +82,7 @@ export function DNSStatus({ subdomain }: DNSStatusProps) {
           <div className="space-y-1">
             <div className="font-medium">DNS is properly configured! ✅</div>
             <div className="text-sm">
-              Your white-label portal is accessible at: <code className="bg-green-100 dark:bg-green-900 px-1 rounded">https://{subdomain}.credit-ai.online</code>
+              Your white-label portal is accessible at: <code className="bg-green-100 dark:bg-green-900 px-1 rounded">https://credit-ai.online?subdomain={subdomain}</code>
             </div>
           </div>
         </AlertDescription>
@@ -98,7 +98,7 @@ export function DNSStatus({ subdomain }: DNSStatusProps) {
           <div className="font-medium">DNS not yet configured for production</div>
           <div className="text-sm space-y-1">
             <div>✅ You can still preview your portal using the "Preview Portal Now" button above</div>
-            <div>⏳ Production URL (<code className="bg-yellow-100 dark:bg-yellow-900 px-1 rounded">https://{subdomain}.credit-ai.online</code>) will work after platform admin configures DNS</div>
+            <div>✅ Production URL: <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">https://credit-ai.online?subdomain={subdomain}</code></div>
             <div className="text-xs text-muted-foreground mt-2">
               Note: DNS setup is a one-time configuration by the platform administrator. Once configured, all user subdomains work automatically.
             </div>

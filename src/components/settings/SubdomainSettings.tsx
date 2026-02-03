@@ -37,18 +37,13 @@ export function SubdomainSettings({ formData, onChange, onPublish }: SubdomainSe
   
   // Generate the full white-label URL
   const getWhiteLabelUrl = () => {
-    // In production, this would be your actual domain
-    const baseDomain = window.location.hostname.includes('credit-ai.online') 
-      ? 'credit-ai.online' 
-      : window.location.hostname.includes('localhost')
-        ? 'localhost:8080'
-        : 'credit-ai.online';
-    
+    // Use credit-ai.online as the main domain
     if (window.location.hostname.includes('localhost')) {
       return `${window.location.origin}?subdomain=${subdomain}`;
     }
     
-    return `https://${subdomain}.${baseDomain}`;
+    // Use the main domain with subdomain parameter for now
+    return `https://credit-ai.online?subdomain=${subdomain}`;
   };
   
   const handleCopyUrl = () => {
