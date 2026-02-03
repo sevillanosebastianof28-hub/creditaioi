@@ -118,7 +118,9 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
     };
 
     fetchBrand();
-
+  }, [profile?.agency_id]);
+  
+  useEffect(() => {
     // Set up real-time subscription for brand settings updates
     if (profile?.agency_id) {
       const channel = supabase
@@ -180,6 +182,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
 
       // Cleanup subscription on unmount
       return () => {
+        console.log('Cleaning up brand settings realtime subscription (context)');
         supabase.removeChannel(channel);
       };
     }

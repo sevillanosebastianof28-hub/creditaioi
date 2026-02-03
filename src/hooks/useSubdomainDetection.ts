@@ -161,7 +161,9 @@ export function useSubdomainDetection(): SubdomainDetectionResult {
   
   useEffect(() => {
     fetchWhiteLabelConfig();
-
+  }, [subdomain]);
+  
+  useEffect(() => {
     // Set up real-time subscription for white-label updates
     // We subscribe to ALL brand_settings changes, not just the current subdomain
     // This allows us to detect when a subdomain is being set or changed
@@ -239,9 +241,10 @@ export function useSubdomainDetection(): SubdomainDetectionResult {
 
     // Cleanup subscription on unmount
     return () => {
+      console.log('Cleaning up whitelabel realtime subscription');
       supabase.removeChannel(channel);
     };
-  }, [fetchWhiteLabelConfig, subdomain]);
+  }, [subdomain]); // Only depend on subdomain, not fetchWhiteLabelConfig
   
   return {
     isWhiteLabeled: !!subdomain && !!config,

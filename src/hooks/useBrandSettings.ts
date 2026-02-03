@@ -311,7 +311,9 @@ export function useBrandSettings() {
 
   useEffect(() => {
     fetchBrandSettings();
-
+  }, [user, profile?.agency_id]);
+  
+  useEffect(() => {
     // Set up real-time subscription for brand settings updates
     if (user && profile?.agency_id) {
       const channel = supabase
@@ -388,10 +390,11 @@ export function useBrandSettings() {
 
       // Cleanup subscription on unmount
       return () => {
+        console.log('Cleaning up brand settings realtime subscription');
         supabase.removeChannel(channel);
       };
     }
-  }, [fetchBrandSettings, user, profile?.agency_id]);
+  }, [user, profile?.agency_id]); // Don't include fetchBrandSettings to avoid infinite loops
 
   return {
     brandSettings,
