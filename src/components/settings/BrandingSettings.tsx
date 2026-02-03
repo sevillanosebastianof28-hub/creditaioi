@@ -41,7 +41,7 @@ import {
 } from 'lucide-react';
 
 export function BrandingSettings() {
-  const { brandSettings, isLoading, isSaving, saveBrandSettings } = useBrandSettings();
+  const { brandSettings, isLoading, isSaving, saveBrandSettings, refreshBrandSettings } = useBrandSettings();
   const [formData, setFormData] = useState<Partial<BrandSettings>>({});
   const [previewMode, setPreviewMode] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -68,7 +68,10 @@ export function BrandingSettings() {
       setHasChanges(false);
       applyColorsGlobally();
       applyCustomCSS();
+      // Refresh brand settings to get the latest data including published state
+      await refreshBrandSettings();
     }
+    return success;
   };
 
   const applyColorsGlobally = () => {
