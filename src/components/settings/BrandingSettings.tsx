@@ -71,6 +71,28 @@ export function BrandingSettings() {
   const handleChange = (field: keyof BrandSettings, value: BrandSettings[keyof BrandSettings]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setHasChanges(true);
+    
+    // Apply certain changes immediately for real-time preview
+    if (field === 'primary_color' || field === 'secondary_color' || field === 'accent_color') {
+      const root = document.documentElement;
+      root.style.setProperty(`--${field.replace('_color', '')}`, value as string);
+    }
+    
+    if (field === 'company_name' && value) {
+      document.title = value as string;
+    }
+    
+    if (field === 'favicon_url' && value) {
+      const existingFavicon = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
+      if (existingFavicon) {
+        existingFavicon.href = value as string;
+      } else {
+        const favicon = document.createElement('link');
+        favicon.rel = 'icon';
+        favicon.href = value as string;
+        document.head.appendChild(favicon);
+      }
+    }
   };
 
   const handleSave = async () => {

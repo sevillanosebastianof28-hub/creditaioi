@@ -70,6 +70,9 @@ function AppRouter() {
     if (isWhiteLabeled && config) {
       console.log('Applying white label config for subdomain:', subdomain);
       applyWhiteLabelConfig(config);
+      
+      // Show a subtle notification that white-label is active
+      console.log(`🎨 White-label branding active for: ${config.company_name}`);
     }
   }, [isWhiteLabeled, config, subdomain]);
 

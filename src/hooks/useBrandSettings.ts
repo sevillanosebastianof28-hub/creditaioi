@@ -288,6 +288,10 @@ export function useBrandSettings() {
       }
 
       setBrandSettings(updatedSettings);
+      
+      // Apply changes immediately to the current page
+      applyBrandingImmediately(updatedSettings);
+      
       toast.success('Brand settings saved successfully');
       return true;
     } catch (error: any) {
@@ -364,7 +368,13 @@ export function useBrandSettings() {
               };
 
               setBrandSettings(updatedSettings);
-              toast.info('Brand settings updated in real-time');
+              
+              // Apply changes immediately
+              applyBrandingImmediately(updatedSettings);
+              
+              toast.info('Brand settings updated in real-time ✨', {
+                duration: 3000,
+              });
             }
             
             // Handle DELETE events
@@ -390,4 +400,58 @@ export function useBrandSettings() {
     saveBrandSettings,
     refreshBrandSettings: fetchBrandSettings,
   };
+}
+
+// Helper function to apply branding changes immediately
+function applyBrandingImmediately(settings: BrandSettings) {
+  const root = document.documentElement;
+  
+  // Apply colors
+  if (settings.primary_color) {
+    root.style.setProperty('--primary', settings.primary_color);
+  }
+  if (settings.secondary_color) {
+    root.style.setProperty('--secondary', settings.secondary_color);
+  }
+  if (settings.accent_color) {
+    root.style.setProperty('--accent', settings.accent_color);
+  }
+  
+  // Apply custom CSS
+  const existingStyle = document.getElementById('brand-custom-css');
+  if (existingStyle) {
+    existingStyle.remove();
+  }
+  if (settings.custom_css) {
+    const style = document.createElement('style');
+    style.id = 'brand-custom-css';
+    style.textContent = settings.custom_css;
+    document.head.appendChild(style);
+  }
+  
+  // Apply favicon
+  if (settings.favicon_url) {
+    const existingFavicon = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
+    if (existingFavicon) {
+      existingFavicon.href = settings.favicon_url;
+    } else {
+      const favicon = document.createElement('link');
+      favicon.rel = 'icon';
+      favicon.href = settings.favicon_url;
+      document.head.appendChild(favicon);
+    }
+  }
+  
+  // Apply document title
+  if (settings.company_name) {
+    document.title = settings.company_name;
+  }
+  
+  // Apply button style
+  if (settings.button_style) {
+    root.classList.remove('button-rounded', 'button-square', 'button-pill');
+    root.classList.add(`button-${settings.button_style}`);
+  }
+  
+  console.log('Applied branding immediately:', settings);
 }

@@ -162,24 +162,34 @@ export function useSubdomainDetection(): SubdomainDetectionResult {
   useEffect(() => {
     fetchWhiteLabelConfig();
 
-    // Set up real-time subscription for subdomain white-label updates
-    if (subdomain) {
-      const channel = supabase
-        .channel(`subdomain_${subdomain}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'brand_settings',
-            filter: `subdomain=eq.${subdomain}`,
-          },
-          (payload) => {
-            console.log('Subdomain white-label config changed:', payload);
+    // Set up real-time subscription for white-label updates
+    // We subscribe to ALL brand_settings changes, not just the current subdomain
+    // This allows us to detect when a subdomain is being set or changed
+    const channel = supabase
+      .channel('whitelabel_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'brand_settings',
+        },
+        (payload) => {
+          console.log('Brand settings changed (white-label):', payload);
+          
+          // Handle UPDATE and INSERT events
+          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+            const configData = payload.new as any;
             
-            // Handle UPDATE and INSERT events
-            if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-              const configData = payload.new as any;
+            // Check if this change is for the current subdomain
+            const isCurrentSubdomain = subdomain && configData.subdomain === subdomain;
+            
+            // Or if we're watching a specific subdomain that was just set
+            const subdomainJustSet = configData.subdomain && 
+                                     !subdomain && 
+                                     window.location.search.includes(`subdomain=${configData.subdomain}`);
+            
+            if (isCurrentSubdomain || subdomainJustSet) {
               const updatedConfig: WhiteLabelConfig = {
                 id: configData.id,
                 company_name: configData.company_name,
@@ -209,24 +219,28 @@ export function useSubdomainDetection(): SubdomainDetectionResult {
               }
 
               // Apply the updated config immediately
+              console.log('Applying white-label config in real-time:', updatedConfig);
               applyWhiteLabelConfig(updatedConfig);
             }
-            
-            // Handle DELETE events
-            if (payload.eventType === 'DELETE') {
+          }
+          
+          // Handle DELETE events
+          if (payload.eventType === 'DELETE') {
+            const oldData = payload.old as any;
+            if (subdomain && oldData.subdomain === subdomain) {
               setConfig(null);
               setAgencyId(null);
               setError('White-label configuration removed');
             }
           }
-        )
-        .subscribe();
+        }
+      )
+      .subscribe();
 
-      // Cleanup subscription on unmount
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchWhiteLabelConfig, subdomain]);
   
   return {

@@ -77,7 +77,27 @@ export function SubdomainSettings({ formData, onChange, onPublish }: SubdomainSe
         const result = await onPublish();
         console.log('Publish result:', result);
         if (result !== false) {
-          toast.success('White-label portal published successfully!');
+          const publishedUrl = getWhiteLabelUrl();
+          toast.success(
+            <div className="space-y-2">
+              <p className="font-semibold">White-label portal published successfully! 🎉</p>
+              <p className="text-xs">Your portal is now live at:</p>
+              <code className="text-xs bg-white/10 px-2 py-1 rounded block">{publishedUrl}</code>
+            </div>,
+            {
+              duration: 8000,
+            }
+          );
+          
+          // Show option to view the portal
+          setTimeout(() => {
+            const viewNow = window.confirm(
+              `Your white-label portal is now live!\\n\\nURL: ${publishedUrl}\\n\\nWould you like to open it in a new tab?`
+            );
+            if (viewNow) {
+              window.open(publishedUrl, '_blank');
+            }
+          }, 1000);
         }
       } else {
         toast.error('Save function not available');

@@ -132,7 +132,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
             filter: `agency_id=eq.${profile.agency_id}`,
           },
           (payload) => {
-            console.log('Brand settings changed:', payload);
+            console.log('Brand settings changed (real-time):', payload);
             
             // Handle UPDATE and INSERT events
             if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
