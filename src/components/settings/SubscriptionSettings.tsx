@@ -157,7 +157,7 @@ export function SubscriptionSettings({ formData, onChange }: SubscriptionSetting
                     <Input
                       id={setting.id}
                       type="number"
-                      value={value || ''}
+                      value={typeof value === 'number' ? value : ''}
                       onChange={(e) => updateSetting(setting.id as keyof SubscriptionFeatures, e.target.value ? parseInt(e.target.value, 10) : null)}
                       placeholder={setting.placeholder}
                       className="bg-muted/30"

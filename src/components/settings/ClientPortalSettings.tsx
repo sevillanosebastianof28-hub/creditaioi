@@ -136,7 +136,7 @@ export function ClientPortalSettings({ formData, onChange }: ClientPortalSetting
     return acc;
   }, {} as Record<string, PortalOption[]>);
 
-  const visibleCount = portalOptions.filter(o => o.category === 'visibility' && isEnabled(o.id)).length;
+  const visibleCount = portalOptions.filter(o => o.category === 'visibility' && isEnabled(o.id as keyof ClientPortalConfig)).length;
   const totalVisibility = portalOptions.filter(o => o.category === 'visibility').length;
 
   return (

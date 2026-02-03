@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { Json } from '@/integrations/supabase/types';
 
 export interface CachedPrediction<T = unknown> {
   id: string;
@@ -33,8 +34,12 @@ export function useAIPredictions<T = unknown>() {
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPredictions((data || []) as Array<CachedPrediction<T>>);
-      return data as Array<CachedPrediction<T>>;
+      const mapped = (data || []).map(item => ({
+        ...item,
+        prediction_data: item.prediction_data as unknown as T
+      }));
+      setPredictions(mapped);
+      return mapped;
     } catch (error) {
       console.error('Error fetching predictions:', error);
       return [];
@@ -46,7 +51,7 @@ export function useAIPredictions<T = unknown>() {
   const getCachedPrediction = useCallback(async (
     type: string,
     itemId?: string
-  ): Promise<CachedPrediction | null> => {
+  ): Promise<CachedPrediction<T> | null> => {
     if (!user) return null;
     try {
       let query = supabase
@@ -63,7 +68,11 @@ export function useAIPredictions<T = unknown>() {
       const { data, error } = await query.maybeSingle();
 
       if (error) throw error;
-      return data as CachedPrediction<T> | null;
+      if (!data) return null;
+      return {
+        ...data,
+        prediction_data: data.prediction_data as unknown as T
+      };
     } catch (error) {
       console.error('Error getting cached prediction:', error);
       return null;
@@ -75,7 +84,7 @@ export function useAIPredictions<T = unknown>() {
     predictionData: T,
     itemId?: string,
     expiresInHours: number = 24
-  ): Promise<CachedPrediction | null> => {
+  ): Promise<CachedPrediction<T> | null> => {
     if (!user) return null;
     try {
       const expiresAt = new Date();
@@ -89,7 +98,7 @@ export function useAIPredictions<T = unknown>() {
         const { data, error } = await supabase
           .from('ai_predictions')
           .update({
-            prediction_data: predictionData,
+            prediction_data: predictionData as unknown as Json,
             expires_at: expiresAt.toISOString()
           })
           .eq('id', existing.id)
@@ -97,7 +106,10 @@ export function useAIPredictions<T = unknown>() {
           .single();
 
         if (error) throw error;
-        return data as CachedPrediction<T>;
+        return {
+          ...data,
+          prediction_data: data.prediction_data as unknown as T
+        };
       }
 
       // Insert new
@@ -107,14 +119,17 @@ export function useAIPredictions<T = unknown>() {
           user_id: user.id,
           prediction_type: type,
           item_id: itemId,
-          prediction_data: predictionData,
+          prediction_data: predictionData as unknown as Json,
           expires_at: expiresAt.toISOString()
         })
         .select()
         .single();
 
       if (error) throw error;
-      return data as CachedPrediction<T>;
+      return {
+        ...data,
+        prediction_data: data.prediction_data as unknown as T
+      };
     } catch (error) {
       console.error('Error caching prediction:', error);
       return null;

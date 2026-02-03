@@ -42,7 +42,7 @@ export function AISmartPrioritization() {
     const loadCached = async () => {
       const cached = await getCachedPrediction('smart_priority');
       if (cached) {
-        setResult(cached.prediction_data);
+        setResult(cached.prediction_data as PrioritizationResult);
       }
     };
     loadCached();
