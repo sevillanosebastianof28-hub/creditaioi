@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { DNSStatus } from './DNSStatus';
 import { 
   Globe,
   Link2,
@@ -198,20 +199,15 @@ export function SubdomainSettings({ formData, onChange, onPublish }: SubdomainSe
             <Alert>
               <Eye className="w-4 h-4" />
               <AlertDescription>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div>
-                    <strong>Testing Your Portal:</strong>
+                    <strong>Preview Your White Label Portal</strong>
                   </div>
-                  <div className="text-sm">
-                    • <strong>Local Testing:</strong> Add <code className="bg-muted px-1 rounded">?subdomain={subdomain}</code> to your current URL
-                  </div>
-                  <div className="text-sm">
-                    • <strong>Production URL:</strong> <code className="bg-muted px-1 rounded">{getWhiteLabelUrl()}</code> will work once DNS is configured
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Note: The production subdomain URL requires DNS setup. Contact support for DNS configuration instructions.
-                  </div>
-                  <div className="mt-3">
+                  
+                  <div className="space-y-2">
+                    <div className="text-sm">
+                      <strong>1. Instant Test (Works Now):</strong>
+                    </div>
                     <Button
                       variant="outline"
                       size="sm"
@@ -219,16 +215,51 @@ export function SubdomainSettings({ formData, onChange, onPublish }: SubdomainSe
                         const testUrl = `${window.location.origin}/?subdomain=${subdomain}`;
                         console.log('Opening test URL:', testUrl);
                         window.open(testUrl, '_blank');
-                        toast.info(`Testing portal at: ${testUrl}`);
+                        toast.success(`Opening preview with your white label settings`);
                       }}
+                      disabled={!subdomain}
+                      className="w-full"
                     >
                       <Eye className="w-4 h-4 mr-2" />
-                      Test Portal Now
+                      Preview Portal Now
                     </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Opens a preview window with your custom branding applied
+                    </p>
                   </div>
+
+                  {isPublished && (
+                    <div className="space-y-2">
+                      <div className="text-sm">
+                        <strong>2. Production URL:</strong>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 bg-muted px-2 py-1 rounded text-xs overflow-x-auto">
+                          {getWhiteLabelUrl()}
+                        </code>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            window.open(getWhiteLabelUrl(), '_blank');
+                          }}
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Your clients can access their portal at this URL once DNS is configured
+                      </p>
+                    </div>
+                  )}
                 </div>
               </AlertDescription>
             </Alert>
+            
+            {/* DNS Configuration Status */}
+            {subdomain && isPublished && (
+              <DNSStatus subdomain={subdomain} />
+            )}
             
             <Separator />
             

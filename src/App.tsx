@@ -7,6 +7,8 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { BrandProvider } from "@/contexts/BrandContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { useSubdomainDetection, applyWhiteLabelConfig } from "@/hooks/useSubdomainDetection";
+import { useEffect } from "react";
 
 // Pages
 import Landing from "./pages/Landing";
@@ -61,8 +63,17 @@ const queryClient = new QueryClient();
 // Router component that handles role-based redirects
 function AppRouter() {
   const { user, role, loading } = useAuth();
+  const { isWhiteLabeled, subdomain, config, isLoading: subdomainLoading } = useSubdomainDetection();
 
-  if (loading) {
+  // Apply white label config when detected
+  useEffect(() => {
+    if (isWhiteLabeled && config) {
+      console.log('Applying white label config for subdomain:', subdomain);
+      applyWhiteLabelConfig(config);
+    }
+  }, [isWhiteLabeled, config, subdomain]);
+
+  if (loading || subdomainLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

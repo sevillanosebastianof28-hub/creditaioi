@@ -53,7 +53,7 @@ export function DomainSettings({ formData, onChange }: DomainSettingsProps) {
             <AlertDescription className="text-sm">
               <strong>Domain Setup Instructions:</strong>
               <ol className="list-decimal list-inside mt-2 space-y-1 text-muted-foreground">
-                <li>Add a CNAME record pointing to <code className="bg-muted px-1 rounded">app.lovable.dev</code></li>
+                <li>Add a CNAME record pointing to <code className="bg-muted px-1 rounded">credit-ai.online</code></li>
                 <li>Add a TXT record for domain verification</li>
                 <li>Wait for DNS propagation (up to 48 hours)</li>
                 <li>Contact support to complete the SSL certificate setup</li>
@@ -71,7 +71,7 @@ export function DomainSettings({ formData, onChange }: DomainSettingsProps) {
           <div className="grid gap-2 text-sm">
             <div className="flex justify-between items-center p-2 bg-background rounded">
               <span className="font-mono text-xs">CNAME</span>
-              <span className="text-muted-foreground">→ app.lovable.dev</span>
+              <span className="text-muted-foreground">→ credit-ai.online</span>
             </div>
             <div className="flex justify-between items-center p-2 bg-background rounded">
               <span className="font-mono text-xs">TXT</span>
