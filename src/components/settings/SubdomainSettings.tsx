@@ -23,7 +23,7 @@ import { toast } from 'sonner';
 interface SubdomainSettingsProps {
   formData: Partial<BrandSettings>;
   onChange: (field: keyof BrandSettings, value: BrandSettings[keyof BrandSettings]) => void;
-  onPublish?: () => Promise<void>;
+  onPublish?: () => Promise<boolean>;
 }
 
 export function SubdomainSettings({ formData, onChange, onPublish }: SubdomainSettingsProps) {

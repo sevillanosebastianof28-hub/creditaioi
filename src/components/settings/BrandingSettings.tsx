@@ -50,15 +50,21 @@ export function BrandingSettings() {
   useEffect(() => {
     if (!isLoading) {
       console.log('Updating formData from brandSettings:', brandSettings);
-      setFormData(prevData => ({
-        ...brandSettings,
-        // Preserve any unsaved changes from the form
-        ...(hasChanges ? {
-          subdomain: prevData.subdomain,
-          company_name: prevData.company_name,
-          // Add other fields that might be edited
-        } : {})
-      }));
+      // If no unsaved changes, sync completely with real-time data
+      if (!hasChanges) {
+        setFormData(brandSettings);
+      } else {
+        // Only update fields that are not currently being edited
+        // This allows real-time updates for non-edited fields while preserving user input
+        setFormData(prevData => ({
+          ...prevData,
+          // Always sync these real-time critical fields
+          is_published: brandSettings.is_published,
+          published_at: brandSettings.published_at,
+          id: brandSettings.id,
+          agency_id: brandSettings.agency_id,
+        }));
+      }
     }
   }, [brandSettings, isLoading, hasChanges]);
 
