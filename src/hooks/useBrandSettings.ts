@@ -197,7 +197,10 @@ export function useBrandSettings() {
   }, [user, profile?.agency_id]);
 
   const saveBrandSettings = async (settings: Partial<BrandSettings>) => {
+    console.log('saveBrandSettings called with:', { settings, user, profile });
+    
     if (!user || !profile?.agency_id) {
+      console.error('Auth check failed:', { hasUser: !!user, hasProfile: !!profile, agencyId: profile?.agency_id });
       toast.error('You must be logged in as a business owner');
       return false;
     }
@@ -240,14 +243,27 @@ export function useBrandSettings() {
         published_at: updatedSettings.published_at,
       };
 
+      console.log('Saving brand settings...', {
+        hasExisting: !!brandSettings.id,
+        payload,
+        agencyId: profile.agency_id
+      });
+
       if (brandSettings.id) {
         // Update existing
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('brand_settings')
           .update(payload as any)
-          .eq('id', brandSettings.id);
+          .eq('id', brandSettings.id)
+          .select()
+          .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Update error:', error);
+          throw error;
+        }
+        
+        console.log('Update successful:', data);
       } else {
         // Insert new
         const { data, error } = await supabase
@@ -259,7 +275,13 @@ export function useBrandSettings() {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Insert error:', error);
+          throw error;
+        }
+        
+        console.log('Insert successful:', data);
+        
         if (data) {
           updatedSettings.id = data.id;
         }
@@ -268,9 +290,15 @@ export function useBrandSettings() {
       setBrandSettings(updatedSettings);
       toast.success('Brand settings saved successfully');
       return true;
-    } catch (error) {
-      console.error('Error saving brand settings:', error);
-      toast.error('Failed to save brand settings');
+    } catch (error: any) {
+      console.error('Error saving brand settings:', {
+        error,
+        message: error?.message,
+        details: error?.details,
+        hint: error?.hint,
+        code: error?.code
+      });
+      toast.error(`Failed to save brand settings: ${error?.message || 'Unknown error'}`);
       return false;
     } finally {
       setIsSaving(false);

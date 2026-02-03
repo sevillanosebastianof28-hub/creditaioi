@@ -197,7 +197,33 @@ export function SubdomainSettings({ formData, onChange, onPublish }: SubdomainSe
             <Alert>
               <Eye className="w-4 h-4" />
               <AlertDescription>
-                <strong>Preview Mode:</strong> You can test your white-label portal by adding <code className="bg-muted px-1 rounded">?subdomain={subdomain}</code> to any URL in this platform.
+                <div className="space-y-2">
+                  <div>
+                    <strong>Testing Your Portal:</strong>
+                  </div>
+                  <div className="text-sm">
+                    • <strong>Local Testing:</strong> Add <code className="bg-muted px-1 rounded">?subdomain={subdomain}</code> to your current URL
+                  </div>
+                  <div className="text-sm">
+                    • <strong>Production URL:</strong> <code className="bg-muted px-1 rounded">{getWhiteLabelUrl()}</code> will work once DNS is configured
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Note: The production subdomain URL requires DNS setup. Contact support for DNS configuration instructions.
+                  </div>
+                  <div className="mt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const testUrl = `${window.location.origin}${window.location.pathname}?subdomain=${subdomain}`;
+                        window.open(testUrl, '_blank');
+                      }}
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      Test Portal Now (Localhost)
+                    </Button>
+                  </div>
+                </div>
               </AlertDescription>
             </Alert>
             
