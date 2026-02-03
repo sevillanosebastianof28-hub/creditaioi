@@ -118,6 +118,71 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
     };
 
     fetchBrand();
+
+    // Set up real-time subscription for brand settings updates
+    if (profile?.agency_id) {
+      const channel = supabase
+        .channel(`brand_settings_${profile.agency_id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'brand_settings',
+            filter: `agency_id=eq.${profile.agency_id}`,
+          },
+          (payload) => {
+            console.log('Brand settings changed:', payload);
+            
+            // Handle UPDATE and INSERT events
+            if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+              const data = payload.new as any;
+              const brandData: BrandSettings = {
+                company_name: data.company_name || 'Credit AI',
+                logo_url: data.logo_url || undefined,
+                favicon_url: data.favicon_url || undefined,
+                primary_color: data.primary_color || '142 76% 36%',
+                secondary_color: data.secondary_color || '215 28% 17%',
+                accent_color: data.accent_color || '142 71% 45%',
+                support_email: data.support_email || undefined,
+                support_phone: data.support_phone || undefined,
+                footer_text: data.footer_text || undefined,
+                login_background_url: data.login_background_url || undefined,
+                login_tagline: data.login_tagline || undefined,
+                terms_url: data.terms_url || undefined,
+                privacy_url: data.privacy_url || undefined,
+                hide_powered_by: data.hide_powered_by || false,
+                custom_css: data.custom_css || undefined,
+                welcome_message: data.welcome_message || undefined,
+                sidebar_style: data.sidebar_style || 'default',
+                button_style: data.button_style || 'rounded',
+              };
+
+              setBrand(brandData);
+
+              // Apply changes in real-time
+              applyBrandColors(data.primary_color, data.secondary_color, data.accent_color);
+              applyCustomCSS(brandData.custom_css);
+              
+              if (data.favicon_url) {
+                updateFavicon(data.favicon_url);
+              }
+              
+              if (data.company_name) {
+                document.title = data.company_name;
+              }
+              
+              applyButtonStyle(brandData.button_style);
+            }
+          }
+        )
+        .subscribe();
+
+      // Cleanup subscription on unmount
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [profile?.agency_id]);
 
   return (

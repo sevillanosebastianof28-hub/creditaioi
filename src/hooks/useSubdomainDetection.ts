@@ -129,7 +129,73 @@ export function useSubdomainDetection(): SubdomainDetectionResult {
   
   useEffect(() => {
     fetchWhiteLabelConfig();
-  }, [fetchWhiteLabelConfig]);
+
+    // Set up real-time subscription for subdomain white-label updates
+    if (subdomain) {
+      const channel = supabase
+        .channel(`subdomain_${subdomain}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'brand_settings',
+            filter: `subdomain=eq.${subdomain}`,
+          },
+          (payload) => {
+            console.log('Subdomain white-label config changed:', payload);
+            
+            // Handle UPDATE and INSERT events
+            if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+              const configData = payload.new as any;
+              const updatedConfig: WhiteLabelConfig = {
+                id: configData.id,
+                company_name: configData.company_name,
+                logo_url: configData.logo_url || undefined,
+                favicon_url: configData.favicon_url || undefined,
+                primary_color: configData.primary_color || undefined,
+                secondary_color: configData.secondary_color || undefined,
+                accent_color: configData.accent_color || undefined,
+                support_email: configData.support_email || undefined,
+                support_phone: configData.support_phone || undefined,
+                footer_text: configData.footer_text || undefined,
+                login_background_url: configData.login_background_url || undefined,
+                login_tagline: configData.login_tagline || undefined,
+                terms_url: configData.terms_url || undefined,
+                privacy_url: configData.privacy_url || undefined,
+                hide_powered_by: configData.hide_powered_by || false,
+                welcome_message: configData.welcome_message || undefined,
+                button_style: configData.button_style || undefined,
+                enabled_features: configData.enabled_features as Record<string, boolean> || undefined,
+                client_portal_config: configData.client_portal_config as Record<string, boolean> || undefined,
+              };
+
+              setConfig(updatedConfig);
+              
+              if (configData.agency_id) {
+                setAgencyId(configData.agency_id);
+              }
+
+              // Apply the updated config immediately
+              applyWhiteLabelConfig(updatedConfig);
+            }
+            
+            // Handle DELETE events
+            if (payload.eventType === 'DELETE') {
+              setConfig(null);
+              setAgencyId(null);
+              setError('White-label configuration removed');
+            }
+          }
+        )
+        .subscribe();
+
+      // Cleanup subscription on unmount
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [fetchWhiteLabelConfig, subdomain]);
   
   return {
     isWhiteLabeled: !!subdomain && !!config,

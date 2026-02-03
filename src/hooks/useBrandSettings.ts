@@ -279,7 +279,81 @@ export function useBrandSettings() {
 
   useEffect(() => {
     fetchBrandSettings();
-  }, [fetchBrandSettings]);
+
+    // Set up real-time subscription for brand settings updates
+    if (user && profile?.agency_id) {
+      const channel = supabase
+        .channel(`brand_settings_hook_${profile.agency_id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'brand_settings',
+            filter: `agency_id=eq.${profile.agency_id}`,
+          },
+          (payload) => {
+            console.log('Brand settings changed (hook):', payload);
+            
+            // Handle UPDATE and INSERT events
+            if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+              const data = payload.new as any;
+              const updatedSettings: BrandSettings = {
+                id: data.id,
+                agency_id: data.agency_id || undefined,
+                company_name: data.company_name,
+                logo_url: data.logo_url || undefined,
+                favicon_url: data.favicon_url || undefined,
+                primary_color: data.primary_color || '142 76% 36%',
+                secondary_color: data.secondary_color || '215 28% 17%',
+                accent_color: data.accent_color || '142 71% 45%',
+                custom_domain: data.custom_domain || undefined,
+                support_email: data.support_email || undefined,
+                support_phone: data.support_phone || undefined,
+                footer_text: data.footer_text || undefined,
+                // White-label fields
+                login_background_url: data.login_background_url || undefined,
+                login_tagline: data.login_tagline || undefined,
+                email_header_logo_url: data.email_header_logo_url || undefined,
+                email_footer_text: data.email_footer_text || undefined,
+                terms_url: data.terms_url || undefined,
+                privacy_url: data.privacy_url || undefined,
+                hide_powered_by: data.hide_powered_by || false,
+                custom_css: data.custom_css || undefined,
+                welcome_message: data.welcome_message || undefined,
+                sidebar_style: data.sidebar_style || 'default',
+                button_style: data.button_style || 'rounded',
+                // Platform configuration
+                enabled_features: data.enabled_features || undefined,
+                integrations: data.integrations || undefined,
+                client_portal_config: data.client_portal_config || undefined,
+                notification_settings: data.notification_settings || undefined,
+                subscription_features: data.subscription_features || undefined,
+                // Subdomain / multi-tenant
+                subdomain: data.subdomain || undefined,
+                is_published: data.is_published || false,
+                published_at: data.published_at || undefined,
+              };
+
+              setBrandSettings(updatedSettings);
+              toast.info('Brand settings updated in real-time');
+            }
+            
+            // Handle DELETE events
+            if (payload.eventType === 'DELETE') {
+              setBrandSettings(defaultBrandSettings);
+              toast.info('Brand settings reset');
+            }
+          }
+        )
+        .subscribe();
+
+      // Cleanup subscription on unmount
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [fetchBrandSettings, user, profile?.agency_id]);
 
   return {
     brandSettings,

@@ -49,9 +49,13 @@ export function BrandingSettings() {
 
   useEffect(() => {
     if (!isLoading) {
-      setFormData(brandSettings);
+      // Only update formData if there are no unsaved changes
+      // This prevents overwriting user input when real-time updates come in
+      if (!hasChanges) {
+        setFormData(brandSettings);
+      }
     }
-  }, [brandSettings, isLoading]);
+  }, [brandSettings, isLoading, hasChanges]);
 
   const handleChange = (field: keyof BrandSettings, value: BrandSettings[keyof BrandSettings]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
