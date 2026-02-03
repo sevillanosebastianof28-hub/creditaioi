@@ -43,12 +43,38 @@ function extractSubdomain(): string | null {
     return urlParams.get('subdomain');
   }
   
-  // Handle production subdomains
+  // Check URL params for preview testing (works on any domain including Lovable previews)
+  const urlParams = new URLSearchParams(window.location.search);
+  const subdomainParam = urlParams.get('subdomain');
+  if (subdomainParam) {
+    return subdomainParam;
+  }
+  
+  // Handle credit-ai.online subdomains
   // Expected format: subdomain.credit-ai.online
+  if (hostname.endsWith('.credit-ai.online')) {
+    const parts = hostname.split('.');
+    // parts would be ['subdomain', 'credit-ai', 'online']
+    if (parts.length >= 3) {
+      const firstPart = parts[0];
+      // Skip common non-white-label subdomains
+      if (['www', 'app', 'api', 'admin', 'dashboard'].includes(firstPart)) {
+        return null;
+      }
+      return firstPart;
+    }
+  }
+  
+  // Handle other production subdomains (generic pattern)
   const parts = hostname.split('.');
   
-  // Skip if it's a direct domain (no subdomain)
+  // Skip if it's a direct domain (no subdomain) or Lovable preview domains
   if (parts.length < 3) {
+    return null;
+  }
+  
+  // Skip Lovable preview/staging domains - these should NOT auto-detect subdomains
+  if (hostname.includes('lovable.app') || hostname.includes('lovable.dev')) {
     return null;
   }
   
