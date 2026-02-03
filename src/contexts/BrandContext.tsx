@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubdomainDetection } from '@/hooks/useSubdomainDetection';
 
 interface BrandSettings {
   company_name: string;
@@ -49,9 +50,49 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
   const [brand, setBrand] = useState<BrandSettings>(defaultBrand);
   const [isLoading, setIsLoading] = useState(true);
   const { profile } = useAuth();
+  const { isWhiteLabeled, config: whiteLabelConfig, isLoading: subdomainLoading } = useSubdomainDetection();
 
   useEffect(() => {
     const fetchBrand = async () => {
+      // Prioritize white-label config if viewing via subdomain parameter
+      if (isWhiteLabeled && whiteLabelConfig && !subdomainLoading) {
+        const brandData: BrandSettings = {
+          company_name: whiteLabelConfig.company_name || 'Credit AI',
+          logo_url: whiteLabelConfig.logo_url,
+          favicon_url: whiteLabelConfig.favicon_url,
+          primary_color: whiteLabelConfig.primary_color || '142 76% 36%',
+          secondary_color: whiteLabelConfig.secondary_color || '215 28% 17%',
+          accent_color: whiteLabelConfig.accent_color || '142 71% 45%',
+          support_email: whiteLabelConfig.support_email,
+          support_phone: whiteLabelConfig.support_phone,
+          footer_text: whiteLabelConfig.footer_text,
+          login_background_url: whiteLabelConfig.login_background_url,
+          login_tagline: whiteLabelConfig.login_tagline,
+          terms_url: whiteLabelConfig.terms_url,
+          privacy_url: whiteLabelConfig.privacy_url,
+          hide_powered_by: whiteLabelConfig.hide_powered_by || false,
+          custom_css: undefined,
+          welcome_message: whiteLabelConfig.welcome_message,
+          sidebar_style: 'default',
+          button_style: whiteLabelConfig.button_style || 'rounded',
+        };
+        
+        setBrand(brandData);
+        applyBrandColors(brandData.primary_color, brandData.secondary_color, brandData.accent_color);
+        
+        if (brandData.favicon_url) {
+          updateFavicon(brandData.favicon_url);
+        }
+        
+        if (brandData.company_name) {
+          document.title = brandData.company_name;
+        }
+        
+        applyButtonStyle(brandData.button_style);
+        setIsLoading(false);
+        return;
+      }
+      
       if (!profile?.agency_id) {
         setBrand(defaultBrand);
         setIsLoading(false);
@@ -118,7 +159,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
     };
 
     fetchBrand();
-  }, [profile?.agency_id]);
+  }, [profile?.agency_id, isWhiteLabeled, whiteLabelConfig, subdomainLoading]);
   
   useEffect(() => {
     // Set up real-time subscription for brand settings updates

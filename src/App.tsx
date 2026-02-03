@@ -100,10 +100,13 @@ function AppRouter() {
 
   return (
     <Routes>
-      {/* Public Landing Page */}
+      {/* Public Landing Page - redirect to auth if white-labeled */}
       <Route 
         path="/" 
-        element={user ? <Navigate to={getDefaultRoute()} replace /> : <Landing />} 
+        element={
+          user ? <Navigate to={getDefaultRoute()} replace /> : 
+          (isWhiteLabeled ? <Navigate to="/auth" replace /> : <Landing />)
+        } 
       />
 
       {/* Auth */}
