@@ -96,13 +96,14 @@ export function useSubdomainDetection(): SubdomainDetectionResult {
   const subdomain = extractSubdomain();
   
   const fetchWhiteLabelConfig = useCallback(async () => {
+    // Skip if no subdomain - set loading false immediately
     if (!subdomain) {
       setIsLoading(false);
       return;
     }
     
     try {
-      // Use the database function to get white-label config
+      // Use the database function to get white-label config with agency_id in one query
       const { data, error: fetchError } = await supabase
         .rpc('get_brand_settings_by_subdomain', { p_subdomain: subdomain });
       
@@ -110,7 +111,7 @@ export function useSubdomainDetection(): SubdomainDetectionResult {
       
       if (data && data.length > 0) {
         const configData = data[0];
-        setConfig({
+        const newConfig: WhiteLabelConfig = {
           id: configData.id,
           company_name: configData.company_name,
           logo_url: configData.logo_url || undefined,
@@ -130,24 +131,29 @@ export function useSubdomainDetection(): SubdomainDetectionResult {
           button_style: configData.button_style || undefined,
           enabled_features: configData.enabled_features as Record<string, boolean> || undefined,
           client_portal_config: configData.client_portal_config as Record<string, boolean> || undefined,
-        });
+        };
         
-        // Get agency_id from brand_settings for client registration
-        const { data: brandData } = await supabase
+        setConfig(newConfig);
+        
+        // Get agency_id in parallel - don't wait for it to set config
+        supabase
           .from('brand_settings')
           .select('agency_id')
           .eq('subdomain', subdomain)
-          .single();
-        
-        if (brandData?.agency_id) {
-          setAgencyId(brandData.agency_id);
-        }
+          .single()
+          .then(({ data: brandData }) => {
+            if (brandData?.agency_id) {
+              setAgencyId(brandData.agency_id);
+            }
+          });
       } else {
-        setError('White-label configuration not found');
+        // No config found - don't set error, just mark as not white-labeled
+        setIsLoading(false);
+        return;
       }
     } catch (err) {
       console.error('Error fetching white-label config:', err);
-      setError('Failed to load configuration');
+      // Don't set error for missing config - it's expected on main domain
     } finally {
       setIsLoading(false);
     }

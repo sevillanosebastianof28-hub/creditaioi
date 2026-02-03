@@ -34,12 +34,13 @@ const Dashboard = () => {
   const { user, profile } = useAuth();
   const { tasks, pendingTasks, inProgressTasks, isLoading: tasksLoading } = useTasks();
 
-  // Fetch real clients from database
+  // Fetch real clients from database - optimized with batch queries
   const { data: clients = [], isLoading: clientsLoading } = useQuery({
     queryKey: ['agency-clients', profile?.agency_id],
     queryFn: async () => {
       if (!profile?.agency_id) return [];
       
+      // Fetch all clients with roles in one query
       const { data: profiles, error } = await supabase
         .from('profiles')
         .select(`
@@ -50,56 +51,72 @@ const Dashboard = () => {
         .eq('user_roles.role', 'client');
 
       if (error) throw error;
+      if (!profiles || profiles.length === 0) return [];
 
-      // Enrich with score and dispute data
-      const enrichedClients = await Promise.all(
-        (profiles || []).map(async (client) => {
-          const [scoreRes, disputeRes] = await Promise.all([
-            supabase
-              .from('score_history')
-              .select('*')
-              .eq('user_id', client.user_id)
-              .order('recorded_at', { ascending: false })
-              .limit(2),
-            supabase
-              .from('dispute_items')
-              .select('outcome')
-              .eq('client_id', client.user_id)
-          ]);
+      const clientIds = profiles.map(p => p.user_id);
 
-          const scores = scoreRes.data || [];
-          const disputes = disputeRes.data || [];
-          
-          const currentScore = scores[0];
-          const previousScore = scores[1];
-          
-          const avgScore = currentScore 
-            ? Math.round(((currentScore.experian || 0) + (currentScore.equifax || 0) + (currentScore.transunion || 0)) / 3)
-            : 0;
-          
-          const prevAvg = previousScore
-            ? Math.round(((previousScore.experian || 0) + (previousScore.equifax || 0) + (previousScore.transunion || 0)) / 3)
-            : avgScore;
+      // Batch fetch all scores and disputes in parallel (2 queries instead of 2N)
+      const [allScoresRes, allDisputesRes] = await Promise.all([
+        supabase
+          .from('score_history')
+          .select('user_id, experian, equifax, transunion, recorded_at')
+          .in('user_id', clientIds)
+          .order('recorded_at', { ascending: false }),
+        supabase
+          .from('dispute_items')
+          .select('client_id, outcome')
+          .in('client_id', clientIds)
+      ]);
 
-          return {
-            id: client.user_id,
-            name: `${client.first_name || ''} ${client.last_name || ''}`.trim() || 'Unnamed Client',
-            email: client.email || '',
-            phone: client.phone || '',
-            status: 'active' as const,
-            score: avgScore,
-            scoreChange: avgScore - prevAvg,
-            activeDisputes: disputes.filter(d => d.outcome === 'pending' || d.outcome === 'in_progress').length,
-            totalDisputes: disputes.length,
-            deletedItems: disputes.filter(d => d.outcome === 'deleted').length,
-            joinDate: new Date(client.created_at).toLocaleDateString(),
-          };
-        })
-      );
+      // Group scores by user_id
+      const scoresByUser = new Map<string, typeof allScoresRes.data>();
+      (allScoresRes.data || []).forEach(score => {
+        const existing = scoresByUser.get(score.user_id) || [];
+        existing.push(score);
+        scoresByUser.set(score.user_id, existing);
+      });
 
-      return enrichedClients;
+      // Group disputes by client_id
+      const disputesByClient = new Map<string, typeof allDisputesRes.data>();
+      (allDisputesRes.data || []).forEach(dispute => {
+        const existing = disputesByClient.get(dispute.client_id) || [];
+        existing.push(dispute);
+        disputesByClient.set(dispute.client_id, existing);
+      });
+
+      // Map clients with pre-fetched data
+      return profiles.map(client => {
+        const scores = scoresByUser.get(client.user_id) || [];
+        const disputes = disputesByClient.get(client.user_id) || [];
+        
+        const currentScore = scores[0];
+        const previousScore = scores[1];
+        
+        const avgScore = currentScore 
+          ? Math.round(((currentScore.experian || 0) + (currentScore.equifax || 0) + (currentScore.transunion || 0)) / 3)
+          : 0;
+        
+        const prevAvg = previousScore
+          ? Math.round(((previousScore.experian || 0) + (previousScore.equifax || 0) + (previousScore.transunion || 0)) / 3)
+          : avgScore;
+
+        return {
+          id: client.user_id,
+          name: `${client.first_name || ''} ${client.last_name || ''}`.trim() || 'Unnamed Client',
+          email: client.email || '',
+          phone: client.phone || '',
+          status: 'active' as const,
+          score: avgScore,
+          scoreChange: avgScore - prevAvg,
+          activeDisputes: disputes.filter(d => d.outcome === 'pending' || d.outcome === 'in_progress').length,
+          totalDisputes: disputes.length,
+          deletedItems: disputes.filter(d => d.outcome === 'deleted').length,
+          joinDate: new Date(client.created_at).toLocaleDateString(),
+        };
+      });
     },
     enabled: !!profile?.agency_id,
+    staleTime: 30000, // Cache for 30 seconds
   });
 
   // Fetch metrics
