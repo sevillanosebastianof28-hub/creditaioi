@@ -49,12 +49,16 @@ export function BrandingSettings() {
 
   useEffect(() => {
     if (!isLoading) {
-      // Only update formData if there are no unsaved changes
-      // This prevents overwriting user input when real-time updates come in
-      if (!hasChanges) {
-        console.log('Updating formData from brandSettings:', brandSettings);
-        setFormData(brandSettings);
-      }
+      console.log('Updating formData from brandSettings:', brandSettings);
+      setFormData(prevData => ({
+        ...brandSettings,
+        // Preserve any unsaved changes from the form
+        ...(hasChanges ? {
+          subdomain: prevData.subdomain,
+          company_name: prevData.company_name,
+          // Add other fields that might be edited
+        } : {})
+      }));
     }
   }, [brandSettings, isLoading, hasChanges]);
 
@@ -71,6 +75,10 @@ export function BrandingSettings() {
       applyCustomCSS();
       // Refresh brand settings to get the latest data including published state
       await refreshBrandSettings();
+      // Force formData update after refresh
+      setTimeout(() => {
+        setFormData(brandSettings);
+      }, 100);
     }
     return success;
   };

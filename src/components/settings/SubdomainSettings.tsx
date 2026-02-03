@@ -32,6 +32,8 @@ export function SubdomainSettings({ formData, onChange, onPublish }: SubdomainSe
   const subdomain = formData.subdomain || '';
   const isPublished = formData.is_published || false;
   
+  console.log('SubdomainSettings render:', { subdomain, isPublished, formData });
+  
   // Generate the full white-label URL
   const getWhiteLabelUrl = () => {
     // In production, this would be your actual domain
@@ -174,6 +176,7 @@ export function SubdomainSettings({ formData, onChange, onPublish }: SubdomainSe
                   size="sm"
                   onClick={handleCopyUrl}
                   className="shrink-0"
+                  title="Copy URL"
                 >
                   {copied ? (
                     <Check className="w-4 h-4 text-green-500" />
@@ -181,16 +184,14 @@ export function SubdomainSettings({ formData, onChange, onPublish }: SubdomainSe
                     <Copy className="w-4 h-4" />
                   )}
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => window.open(getWhiteLabelUrl(), '_blank')}
-                  className="shrink-0"
-                  disabled={!isPublished}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
               </div>
+              
+              {/* Debug info */}
+              {window.location.hostname.includes('localhost') && (
+                <div className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950 p-2 rounded">
+                  <strong>Debug:</strong> Published: {isPublished ? 'Yes ✅' : 'No ❌'} | Subdomain: {subdomain || 'none'}
+                </div>
+              )}
             </div>
             
             {/* Preview Mode Info */}
@@ -215,12 +216,14 @@ export function SubdomainSettings({ formData, onChange, onPublish }: SubdomainSe
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        const testUrl = `${window.location.origin}${window.location.pathname}?subdomain=${subdomain}`;
+                        const testUrl = `${window.location.origin}/?subdomain=${subdomain}`;
+                        console.log('Opening test URL:', testUrl);
                         window.open(testUrl, '_blank');
+                        toast.info(`Testing portal at: ${testUrl}`);
                       }}
                     >
                       <Eye className="w-4 h-4 mr-2" />
-                      Test Portal Now (Localhost)
+                      Test Portal Now
                     </Button>
                   </div>
                 </div>
