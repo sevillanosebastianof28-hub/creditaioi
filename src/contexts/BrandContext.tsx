@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSubdomainDetection } from '@/hooks/useSubdomainDetection';
 
 interface BrandSettings {
   company_name: string;
@@ -50,47 +49,96 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
   const [brand, setBrand] = useState<BrandSettings>(defaultBrand);
   const [isLoading, setIsLoading] = useState(true);
   const { profile } = useAuth();
-  const { isWhiteLabeled, config: whiteLabelConfig, isLoading: subdomainLoading } = useSubdomainDetection();
 
   useEffect(() => {
     const fetchBrand = async () => {
-      // Prioritize white-label config if viewing via subdomain parameter
-      if (isWhiteLabeled && whiteLabelConfig && !subdomainLoading) {
-        const brandData: BrandSettings = {
-          company_name: whiteLabelConfig.company_name || 'Credit AI',
-          logo_url: whiteLabelConfig.logo_url,
-          favicon_url: whiteLabelConfig.favicon_url,
-          primary_color: whiteLabelConfig.primary_color || '142 76% 36%',
-          secondary_color: whiteLabelConfig.secondary_color || '215 28% 17%',
-          accent_color: whiteLabelConfig.accent_color || '142 71% 45%',
-          support_email: whiteLabelConfig.support_email,
-          support_phone: whiteLabelConfig.support_phone,
-          footer_text: whiteLabelConfig.footer_text,
-          login_background_url: whiteLabelConfig.login_background_url,
-          login_tagline: whiteLabelConfig.login_tagline,
-          terms_url: whiteLabelConfig.terms_url,
-          privacy_url: whiteLabelConfig.privacy_url,
-          hide_powered_by: whiteLabelConfig.hide_powered_by || false,
-          custom_css: undefined,
-          welcome_message: whiteLabelConfig.welcome_message,
-          sidebar_style: 'default',
-          button_style: whiteLabelConfig.button_style || 'rounded',
-        };
-        
-        setBrand(brandData);
-        applyBrandColors(brandData.primary_color, brandData.secondary_color, brandData.accent_color);
-        
-        if (brandData.favicon_url) {
-          updateFavicon(brandData.favicon_url);
+      // First check if there's a subdomain parameter for white-labeling
+      const urlParams = new URLSearchParams(window.location.search);
+      const subdomainParam = urlParams.get('subdomain');
+      
+      console.log('🎨 BrandProvider: Checking for subdomain...', { subdomainParam, url: window.location.href });
+      
+      if (subdomainParam) {
+        // Fetch white-label config from subdomain
+        console.log('🔍 BrandProvider: Fetching white-label config for subdomain:', subdomainParam);
+        try {
+          const { data, error } = await supabase
+            .rpc('get_brand_settings_by_subdomain', { p_subdomain: subdomainParam });
+          
+          console.log('📦 BrandProvider: Got white-label data:', { data, error });
+          
+          if (!error && data && data.length > 0) {
+            const configData = data[0];
+            const brandData: BrandSettings = {
+              company_name: configData.company_name || 'Credit AI',
+              logo_url: configData.logo_url || undefined,
+              favicon_url: configData.favicon_url || undefined,
+              primary_color: configData.primary_color || '142 76% 36%',
+              secondary_color: configData.secondary_color || '215 28% 17%',
+              accent_color: configData.accent_color || '142 71% 45%',
+              support_email: configData.support_email || undefined,
+              support_phone: configData.support_phone || undefined,
+              footer_text: configData.footer_text || undefined,
+              login_background_url: configData.login_background_url || undefined,
+              login_tagline: configData.login_tagline || undefined,
+              terms_url: configData.terms_url || undefined,
+              privacy_url: configData.privacy_url || undefined,
+              hide_powered_by: configData.hide_powered_by || false,
+              custom_css: configData.custom_css || undefined,
+              welcome_message: configData.welcome_message || undefined,
+              sidebar_style: configData.sidebar_style || 'default',
+              button_style: configData.button_style || 'rounded',
+            };
+            
+            console.log('✅ BrandProvider: Applying white-label branding:', brandData);
+            setBrand(brandData);
+            applyBrandColors(brandData.primary_color, brandData.secondary_color, brandData.accent_color);
+            applyCustomCSS(brandData.custom_css);
+            
+            if (brandData.favicon_url) {
+              updateFavicon(brandData.favicon_url);
+            }
+            
+            if (brandData.company_name) {
+              document.title = brandData.company_name;
+            }
+            
+            applyButtonStyle(brandData.button_style);
+            setIsLoading(false);
+            return;
+          } else {
+            console.warn('⚠️ BrandProvider: No white-label config found for subdomain:', subdomainParam);
+          }
+        } catch (error) {
+          console.error('❌ BrandProvider: Error fetching white-label config:', error);
         }
-        
-        if (brandData.company_name) {
-          document.title = brandData.company_name;
+      }
+              hide_powered_by: configData.hide_powered_by || false,
+              custom_css: configData.custom_css || undefined,
+              welcome_message: configData.welcome_message || undefined,
+              sidebar_style: configData.sidebar_style || 'default',
+              button_style: configData.button_style || 'rounded',
+            };
+            
+            setBrand(brandData);
+            applyBrandColors(brandData.primary_color, brandData.secondary_color, brandData.accent_color);
+            applyCustomCSS(brandData.custom_css);
+            
+            if (brandData.favicon_url) {
+              updateFavicon(brandData.favicon_url);
+            }
+            
+            if (brandData.company_name) {
+              document.title = brandData.company_name;
+            }
+            
+            applyButtonStyle(brandData.button_style);
+            setIsLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.error('Error fetching white-label config:', error);
         }
-        
-        applyButtonStyle(brandData.button_style);
-        setIsLoading(false);
-        return;
       }
       
       if (!profile?.agency_id) {
@@ -159,7 +207,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
     };
 
     fetchBrand();
-  }, [profile?.agency_id, isWhiteLabeled, whiteLabelConfig, subdomainLoading]);
+  }, [profile?.agency_id]);
   
   useEffect(() => {
     // Set up real-time subscription for brand settings updates
