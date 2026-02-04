@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Target, Sparkles, CheckCircle2, Clock, AlertTriangle, TrendingUp } from 'lucide-react';
 import { useCreditData } from '@/hooks/useCreditData';
+import { useAIPredictionsRealtime } from '@/hooks/useAIPredictions';
 import { readAiStream } from '@/lib/aiStream';
 import { toast } from 'sonner';
 
@@ -36,11 +37,24 @@ interface Roadmap {
 
 export function AIGoalRoadmap() {
   const { averageScore, creditData } = useCreditData();
+  const { getCachedPrediction, cachePrediction } = useAIPredictionsRealtime<{ roadmap: Roadmap }>();
   const [targetScore, setTargetScore] = useState('700');
   const [goalType, setGoalType] = useState('general');
   const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  // Load cached roadmap on mount or when goal changes
+  useEffect(() => {
+    const loadCached = async () => {
+      const cacheKey = `${goalType}_${targetScore}`;
+      const cached = await getCachedPrediction('goal_roadmap', cacheKey);
+      if (cached) {
+        setRoadmap(cached.prediction_data.roadmap);
+      }
+    };
+    loadCached();
+  }, [getCachedPrediction, goalType, targetScore]);
 
   const generateRoadmap = async () => {
     if (!targetScore) return;
@@ -76,6 +90,11 @@ export function AIGoalRoadmap() {
       });
 
       setRoadmap(result.roadmap);
+      
+      // Cache the roadmap for 24 hours with goal type and target as itemId
+      const cacheKey = `${goalType}_${targetScore}`;
+      await cachePrediction('goal_roadmap', result, cacheKey, 24);
+      
       toast.success('Roadmap generated successfully!');
     } catch (error) {
       console.error('Roadmap error:', error);

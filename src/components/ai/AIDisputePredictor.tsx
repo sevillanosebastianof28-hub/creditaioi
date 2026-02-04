@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Target, Sparkles, TrendingUp, AlertTriangle, CheckCircle2, FileText } from 'lucide-react';
 import { useCreditData } from '@/hooks/useCreditData';
+import { useAIPredictionsRealtime } from '@/hooks/useAIPredictions';
 import { readAiStream } from '@/lib/aiStream';
 import { toast } from 'sonner';
 
@@ -19,11 +20,27 @@ interface Prediction {
   recommendedLetterType: string;
 }
 
+interface PredictionsResult {
+  predictions: Prediction[];
+}
+
 export function AIDisputePredictor() {
   const { creditData } = useCreditData();
+  const { getCachedPrediction, cachePrediction } = useAIPredictionsRealtime<PredictionsResult>();
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  // Load cached predictions on mount
+  useEffect(() => {
+    const loadCached = async () => {
+      const cached = await getCachedPrediction('dispute_success_prediction');
+      if (cached) {
+        setPredictions(cached.prediction_data.predictions || []);
+      }
+    };
+    loadCached();
+  }, [getCachedPrediction]);
 
   const getPredictions = async () => {
     if (!creditData?.negativeItems?.length) {
@@ -67,7 +84,11 @@ export function AIDisputePredictor() {
         }
       });
 
-      setPredictions(result.predictions || []);
+      const resultPredictions = result.predictions || [];
+      setPredictions(resultPredictions);
+      
+      // Cache the predictions for 12 hours
+      await cachePrediction('dispute_success_prediction', { predictions: resultPredictions }, undefined, 12);
     } catch (error) {
       console.error('Prediction error:', error);
       toast.error('Failed to generate predictions');

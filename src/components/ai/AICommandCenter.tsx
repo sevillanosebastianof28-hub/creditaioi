@@ -12,6 +12,7 @@ import {
   AlertTriangle, Lightbulb, RefreshCw, ChevronRight
 } from 'lucide-react';
 import { useCreditData } from '@/hooks/useCreditData';
+import { useAIPredictionsRealtime } from '@/hooks/useAIPredictions';
 import { readAiStream } from '@/lib/aiStream';
 import { toast } from 'sonner';
 
@@ -33,13 +34,31 @@ interface AIAnalytics {
   pendingOpportunities: number;
 }
 
+interface CommandCenterData {
+  insights: AIInsight[];
+  analytics: AIAnalytics | null;
+}
+
 export function AICommandCenter() {
   const { creditData, averageScore, disputeProgress } = useCreditData();
+  const { getCachedPrediction, cachePrediction } = useAIPredictionsRealtime<CommandCenterData>();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [insights, setInsights] = useState<AIInsight[]>([]);
   const [analytics, setAnalytics] = useState<AIAnalytics | null>(null);
   const [activeTab, setActiveTab] = useState('insights');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  // Load cached insights on mount
+  useEffect(() => {
+    const loadCached = async () => {
+      const cached = await getCachedPrediction('ai_insights');
+      if (cached) {
+        setInsights(cached.prediction_data.insights || []);
+        setAnalytics(cached.prediction_data.analytics || null);
+      }
+    };
+    loadCached();
+  }, [getCachedPrediction]);
 
   const generateInsights = async () => {
     if (!creditData) {
@@ -78,6 +97,10 @@ export function AICommandCenter() {
       
       setInsights(data.insights || []);
       setAnalytics(data.analytics || null);
+      
+      // Cache insights for 6 hours
+      await cachePrediction('ai_insights', data, undefined, 6);
+      
       toast.success('AI analysis complete!');
     } catch (error) {
       console.error('AI analysis error:', error);

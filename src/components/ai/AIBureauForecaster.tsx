@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, Sparkles, Clock, CheckCircle2, AlertCircle, FileSearch } from 'lucide-react';
 import { useCreditData } from '@/hooks/useCreditData';
+import { useAIPredictionsRealtime } from '@/hooks/useAIPredictions';
 import { readAiStream } from '@/lib/aiStream';
 import { toast } from 'sonner';
 
@@ -31,10 +32,22 @@ interface ForecastResult {
 
 export function AIBureauForecaster() {
   const { creditData } = useCreditData();
+  const { getCachedPrediction, cachePrediction } = useAIPredictionsRealtime<ForecastResult>();
   const [selectedBureau, setSelectedBureau] = useState<string>('experian');
   const [result, setResult] = useState<ForecastResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  // Load cached forecast on mount or when bureau changes
+  useEffect(() => {
+    const loadCached = async () => {
+      const cached = await getCachedPrediction('bureau_forecast', selectedBureau);
+      if (cached) {
+        setResult(cached.prediction_data as ForecastResult);
+      }
+    };
+    loadCached();
+  }, [getCachedPrediction, selectedBureau]);
 
   const getForecast = async () => {
     if (!creditData?.negativeItems?.length) {
@@ -84,6 +97,9 @@ export function AIBureauForecaster() {
       });
 
       setResult(forecast);
+      
+      // Cache the forecast for 6 hours with bureau as itemId
+      await cachePrediction('bureau_forecast', forecast, selectedBureau, 6);
     } catch (error) {
       console.error('Forecast error:', error);
       toast.error('Failed to generate forecast');

@@ -13,8 +13,15 @@ export async function readAiStream<T>(
   const isEventStream = contentType.includes('text/event-stream');
 
   if (!response.ok && !isEventStream) {
-    const errorText = await response.text();
-    throw new Error(errorText || 'AI request failed');
+    let errorText = 'AI request failed';
+    try {
+      const text = await response.text();
+      const parsed = JSON.parse(text);
+      errorText = parsed.error || text || errorText;
+    } catch {
+      // If parsing fails, use default error
+    }
+    throw new Error(errorText);
   }
 
   if (!isEventStream) {
@@ -35,36 +42,58 @@ export async function readAiStream<T>(
 
   const decoder = new TextDecoder();
   let buffer = '';
+  let lastResult: T | null = null;
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-    buffer += decoder.decode(value, { stream: true });
+      buffer += decoder.decode(value, { stream: true });
 
-    let newlineIndex: number;
-    while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
-      let line = buffer.slice(0, newlineIndex);
-      buffer = buffer.slice(newlineIndex + 1);
+      let newlineIndex: number;
+      while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+        let line = buffer.slice(0, newlineIndex);
+        buffer = buffer.slice(newlineIndex + 1);
 
-      if (line.endsWith('\r')) line = line.slice(0, -1);
-      if (line.startsWith(':') || line.trim() === '') continue;
-      if (!line.startsWith('data: ')) continue;
+        if (line.endsWith('\r')) line = line.slice(0, -1);
+        if (line.startsWith(':') || line.trim() === '') continue;
+        
+        // Handle both 'data:' and 'event:' prefixes
+        if (line.startsWith('event: ')) {
+          continue; // Skip event type lines
+        }
+        
+        if (!line.startsWith('data: ')) continue;
 
-      const jsonStr = line.slice(6).trim();
-      if (!jsonStr) continue;
+        const jsonStr = line.slice(6).trim();
+        if (!jsonStr) continue;
 
-      const event = JSON.parse(jsonStr) as AiStreamEvent<T>;
-      onEvent?.(event);
+        try {
+          const event = JSON.parse(jsonStr) as AiStreamEvent<T>;
+          onEvent?.(event);
 
-      if (event.type === 'error') {
-        throw new Error(event.message || 'Stream error');
-      }
+          if (event.type === 'error') {
+            throw new Error(event.message || 'Stream error');
+          }
 
-      if (event.type === 'result') {
-        return event.result as T;
+          if (event.type === 'result') {
+            lastResult = event.result as T;
+          }
+        } catch (parseError) {
+          console.warn('Failed to parse stream event:', jsonStr, parseError);
+          // Continue processing other events
+        }
       }
     }
+  } catch (error) {
+    // Ensure reader is cancelled on error
+    await reader.cancel();
+    throw error;
+  }
+
+  if (lastResult !== null) {
+    return lastResult;
   }
 
   throw new Error('Stream ended without result');

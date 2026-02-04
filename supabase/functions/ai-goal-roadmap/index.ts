@@ -88,7 +88,7 @@ Be realistic and conservative with estimates. Consider typical credit bureau tim
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           system: "You are an expert credit analyst. Always respond with valid JSON only, no markdown.",
-          user: `${prompt}\n\nReturn JSON only for: ${JSON.stringify(toolSchema.parameters)}`,
+          user: prompt,
           max_new_tokens: 700,
           temperature: 0.2
         })
