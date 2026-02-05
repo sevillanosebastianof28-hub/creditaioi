@@ -139,6 +139,9 @@ serve(async (req) => {
     if (!LOCAL_AI_BASE_URL && !LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
+    
+    // Ensure we have an API key for AI calls
+    const apiKey = LOVABLE_API_KEY || '';
 
     // Create Supabase client for logging
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
@@ -325,10 +328,10 @@ serve(async (req) => {
       let classification: ClassificationResult | undefined;
       if (action === 'classify_dispute' || action === 'full_orchestration') {
         await sendEvent('status', { type: 'status', message: 'Classifying request...' });
-        classification = await runClassifier(LOVABLE_API_KEY, sanitizedInput, context, retrievedContext);
+        classification = await runClassifier(apiKey, sanitizedInput, context, retrievedContext);
       }
 
-      const disputeHistory = await getDisputeHistory(supabase, context, userId);
+      const disputeHistory = await getDisputeHistory(supabase as any, context, userId);
       if (disputeHistory.suppressRecommendation) {
         const classification: ClassificationResult = {
           eligibility: 'not_eligible',
@@ -378,7 +381,7 @@ serve(async (req) => {
 
       // Step 4: Generate response using explainer model (Model 1 equivalent)
       await sendEvent('status', { type: 'status', message: 'Generating response...' });
-      const response = await runExplainer(LOVABLE_API_KEY, sanitizedInput, context, retrievedContext, classification);
+      const response = await runExplainer(apiKey, sanitizedInput, context, retrievedContext, classification);
 
       // Step 5: Validate response for compliance
       await sendEvent('status', { type: 'status', message: 'Checking compliance...' });
@@ -589,10 +592,10 @@ serve(async (req) => {
     // Step 3: For dispute-related requests, run classifier first (Model 2 equivalent)
     let classification: ClassificationResult | undefined;
     if (action === 'classify_dispute' || action === 'full_orchestration') {
-      classification = await runClassifier(LOVABLE_API_KEY, sanitizedInput, context, retrievedContext);
+      classification = await runClassifier(apiKey, sanitizedInput, context, retrievedContext);
     }
 
-    const disputeHistory = await getDisputeHistory(supabase, context, userId);
+    const disputeHistory = await getDisputeHistory(supabase as any, context, userId);
     if (disputeHistory.suppressRecommendation) {
       const classification: ClassificationResult = {
         eligibility: 'not_eligible',
@@ -633,7 +636,7 @@ serve(async (req) => {
     }
 
     // Step 4: Generate response using explainer model (Model 1 equivalent)
-    const response = await runExplainer(LOVABLE_API_KEY, sanitizedInput, context, retrievedContext, classification);
+    const response = await runExplainer(apiKey, sanitizedInput, context, retrievedContext, classification);
 
     // Step 5: Validate response for compliance
     const validation = validateOutput(response, classification);

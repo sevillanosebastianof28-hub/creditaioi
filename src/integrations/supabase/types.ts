@@ -1101,11 +1101,9 @@ export type Database = {
         Args: { p_subdomain: string }
         Returns: {
           accent_color: string
-          agency_id: string
           button_style: string
           client_portal_config: Json
           company_name: string
-          custom_css: string
           enabled_features: Json
           favicon_url: string
           footer_text: string
@@ -1117,7 +1115,6 @@ export type Database = {
           primary_color: string
           privacy_url: string
           secondary_color: string
-          sidebar_style: string
           support_email: string
           support_phone: string
           terms_url: string

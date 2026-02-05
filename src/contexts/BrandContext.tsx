@@ -84,9 +84,9 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
               terms_url: configData.terms_url || undefined,
               privacy_url: configData.privacy_url || undefined,
               hide_powered_by: configData.hide_powered_by || false,
-              custom_css: configData.custom_css || undefined,
+              custom_css: (configData as any).custom_css || undefined,
               welcome_message: configData.welcome_message || undefined,
-              sidebar_style: configData.sidebar_style || 'default',
+              sidebar_style: (configData as any).sidebar_style || 'default',
               button_style: configData.button_style || 'rounded',
             };
             
@@ -111,33 +111,6 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
           }
         } catch (error) {
           console.error('❌ BrandProvider: Error fetching white-label config:', error);
-        }
-      }
-              hide_powered_by: configData.hide_powered_by || false,
-              custom_css: configData.custom_css || undefined,
-              welcome_message: configData.welcome_message || undefined,
-              sidebar_style: configData.sidebar_style || 'default',
-              button_style: configData.button_style || 'rounded',
-            };
-            
-            setBrand(brandData);
-            applyBrandColors(brandData.primary_color, brandData.secondary_color, brandData.accent_color);
-            applyCustomCSS(brandData.custom_css);
-            
-            if (brandData.favicon_url) {
-              updateFavicon(brandData.favicon_url);
-            }
-            
-            if (brandData.company_name) {
-              document.title = brandData.company_name;
-            }
-            
-            applyButtonStyle(brandData.button_style);
-            setIsLoading(false);
-            return;
-          }
-        } catch (error) {
-          console.error('Error fetching white-label config:', error);
         }
       }
       
