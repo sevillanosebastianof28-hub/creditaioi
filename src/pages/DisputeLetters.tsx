@@ -7,10 +7,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useDisputeLetter, letterTemplates, LetterType } from '@/hooks/useDisputeLetter';
 import { useLetterTracking } from '@/hooks/useLetterTracking';
+import { useAgencyClients } from '@/hooks/useAgencyClients';
 import { DisputableItem } from '@/hooks/useCreditAnalysis';
-import { mockClients, mockTradelines } from '@/data/mockData';
 import { cn } from '@/lib/utils';
 import LetterDocumentEditor from '@/components/disputes/LetterDocumentEditor';
 import {
@@ -38,27 +39,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-
-// Convert mock tradelines to disputable items for a client
-const getClientDisputableItems = (clientId: string): DisputableItem[] => {
-  // In production, this would fetch from credit_report_analyses table
-  return mockTradelines
-    .filter((t) => t.disputable)
-    .map((t) => ({
-      id: t.id,
-      creditor: t.creditor,
-      accountType: t.accountType,
-      issueType: t.status === 'collection' ? 'collection' : t.paymentStatus?.includes('late') ? 'late_payment' : 'inaccuracy',
-      balance: t.balance,
-      disputeReason: t.disputeReason || 'Data inaccuracy identified',
-      deletionProbability: t.deletionProbability || 50,
-      expectedScoreImpact: t.expectedScoreImpact || 20,
-      applicableLaw: t.accountType === 'collection' ? 'FDCPA' : 'FCRA 611',
-      strategy: t.disputeReason || 'Standard dispute process',
-      priority: (t.deletionProbability || 50) > 75 ? 'high' : (t.deletionProbability || 50) > 50 ? 'medium' : 'low',
-      bureaus: t.bureaus,
-    }));
-};
+import { supabase } from '@/integrations/supabase/client';
 
 const DisputeLetters = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,7 +50,11 @@ const DisputeLetters = () => {
   const [showLetterDialog, setShowLetterDialog] = useState(false);
   const [letterContent, setLetterContent] = useState('');
   const [isEditingLetter, setIsEditingLetter] = useState(false);
-  
+  const [clientDisputableItems, setClientDisputableItems] = useState<DisputableItem[]>([]);
+  const [loadingItems, setLoadingItems] = useState(false);
+
+  const { clients, isLoading: isLoadingClients } = useAgencyClients();
+
   const { 
     isGenerating, 
     generatedLetter, 
@@ -85,22 +70,91 @@ const DisputeLetters = () => {
   // Filter clients based on search
   const filteredClients = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    return mockClients.filter((c) => 
-      c.firstName.toLowerCase().includes(query) ||
-      c.lastName.toLowerCase().includes(query) ||
-      c.email.toLowerCase().includes(query)
+    return clients.filter((c) => 
+      c.first_name.toLowerCase().includes(query) ||
+      c.last_name.toLowerCase().includes(query) ||
+      (c.email || '').toLowerCase().includes(query)
     );
-  }, [searchQuery]);
+  }, [searchQuery, clients]);
 
   const selectedClient = useMemo(() => 
-    mockClients.find((c) => c.id === selectedClientId),
-    [selectedClientId]
+    clients.find((c) => c.user_id === selectedClientId),
+    [selectedClientId, clients]
   );
 
-  const clientDisputableItems = useMemo(() => 
-    selectedClientId ? getClientDisputableItems(selectedClientId) : [],
-    [selectedClientId]
-  );
+  // Fetch disputable items from credit_report_analyses when a client is selected
+  useEffect(() => {
+    if (!selectedClientId) {
+      setClientDisputableItems([]);
+      return;
+    }
+
+    const fetchItems = async () => {
+      setLoadingItems(true);
+      try {
+        const { data, error } = await supabase
+          .from('credit_report_analyses')
+          .select('disputable_items')
+          .eq('user_id', selectedClientId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (data?.disputable_items && Array.isArray(data.disputable_items)) {
+          const items: DisputableItem[] = (data.disputable_items as any[]).map((item: any, idx: number) => ({
+            id: item.id || `item-${idx}`,
+            creditor: item.creditor || 'Unknown',
+            accountType: item.accountType || 'unknown',
+            issueType: item.issueType || 'inaccuracy',
+            balance: item.balance || 0,
+            disputeReason: item.disputeReason || 'Data inaccuracy identified',
+            deletionProbability: item.deletionProbability || 50,
+            expectedScoreImpact: item.expectedScoreImpact || 20,
+            applicableLaw: item.applicableLaw || 'FCRA 611',
+            strategy: item.strategy || 'Standard dispute process',
+            priority: item.priority || 'medium',
+            bureaus: item.bureaus || ['experian'],
+          }));
+          setClientDisputableItems(items);
+        } else {
+          // If no credit analysis, check dispute_items table directly
+          const { data: disputes } = await supabase
+            .from('dispute_items')
+            .select('*')
+            .eq('client_id', selectedClientId);
+
+          if (disputes?.length) {
+            const items: DisputableItem[] = disputes.map(d => ({
+              id: d.id,
+              creditor: d.creditor_name,
+              accountType: 'unknown',
+              issueType: 'inaccuracy',
+              balance: 0,
+              disputeReason: d.dispute_reason,
+              deletionProbability: 50,
+              expectedScoreImpact: 20,
+              applicableLaw: 'FCRA 611',
+              strategy: d.dispute_reason,
+              priority: 'medium',
+              bureaus: [d.bureau],
+            }));
+            setClientDisputableItems(items);
+          } else {
+            setClientDisputableItems([]);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching disputable items:', err);
+        setClientDisputableItems([]);
+      } finally {
+        setLoadingItems(false);
+      }
+    };
+
+    fetchItems();
+  }, [selectedClientId]);
 
   useEffect(() => {
     if (isEditingLetter) return;
@@ -216,55 +270,55 @@ const DisputeLetters = () => {
                   {/* Client List */}
                   <ScrollArea className="h-[500px] pr-2">
                     <div className="space-y-2">
-                      {filteredClients.map((client) => {
-                        const avgScore = Math.round(
-                          client.currentScores.reduce((a, b) => a + b.score, 0) / client.currentScores.length
-                        );
-                        
-                        return (
+                      {isLoadingClients ? (
+                        [1, 2, 3, 4].map(i => <Skeleton key={i} className="h-20 rounded-lg" />)
+                      ) : filteredClients.length === 0 ? (
+                        <div className="text-center py-12 text-muted-foreground">
+                          <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                          <p className="font-medium">No clients found</p>
+                          <p className="text-sm mt-1">
+                            {searchQuery ? 'Try a different search term.' : 'Add clients to your agency first.'}
+                          </p>
+                        </div>
+                      ) : (
+                        filteredClients.map((client) => (
                           <div
-                            key={client.id}
+                            key={client.user_id}
                             className="p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer"
-                            onClick={() => handleSelectClient(client.id)}
+                            onClick={() => handleSelectClient(client.user_id)}
                           >
                             <div className="flex items-center gap-3">
                               <Avatar className="h-10 w-10">
                                 <AvatarFallback className="bg-primary/10 text-primary">
-                                  {client.firstName[0]}{client.lastName[0]}
+                                  {client.first_name?.[0] || ''}{client.last_name?.[0] || ''}
                                 </AvatarFallback>
                               </Avatar>
                               <div className="flex-1 min-w-0">
                                 <p className="font-medium">
-                                  {client.firstName} {client.lastName}
+                                  {client.first_name} {client.last_name}
                                 </p>
                                 <p className="text-sm text-muted-foreground truncate">
-                                  {client.email}
+                                  {client.email || 'No email'}
                                 </p>
                               </div>
                               <div className="text-right">
-                                <p className="font-semibold text-lg">{avgScore}</p>
-                                <p className="text-xs text-muted-foreground">Avg Score</p>
-                              </div>
-                              <Badge 
-                                variant="outline"
-                                className={cn(
-                                  client.status === 'active' && 'bg-success/10 text-success border-success/30',
-                                  client.status === 'lead' && 'bg-warning/10 text-warning border-warning/30',
-                                  client.status === 'completed' && 'bg-primary/10 text-primary border-primary/30'
+                                {client.latestScore ? (
+                                  <>
+                                    <p className="font-semibold text-lg">{client.latestScore}</p>
+                                    <p className="text-xs text-muted-foreground">Avg Score</p>
+                                  </>
+                                ) : (
+                                  <p className="text-xs text-muted-foreground">No scores</p>
                                 )}
-                              >
-                                {client.status}
+                              </div>
+                              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+                                {client.disputeCount} disputes
                               </Badge>
                               <ArrowRight className="w-5 h-5 text-muted-foreground" />
                             </div>
-                            <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
-                              <span>Round {client.currentRound}</span>
-                              <span>{client.itemsDeleted}/{client.totalItemsDisputed} deleted</span>
-                              {client.assignedVA && <span>VA: {client.assignedVA}</span>}
-                            </div>
                           </div>
-                        );
-                      })}
+                        ))
+                      )}
                     </div>
                   </ScrollArea>
                 </CardContent>
@@ -286,12 +340,12 @@ const DisputeLetters = () => {
                       </Button>
                       <Avatar className="h-10 w-10">
                         <AvatarFallback className="bg-primary/10 text-primary">
-                          {selectedClient?.firstName[0]}{selectedClient?.lastName[0]}
+                          {selectedClient?.first_name?.[0] || ''}{selectedClient?.last_name?.[0] || ''}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <CardTitle>
-                          {selectedClient?.firstName} {selectedClient?.lastName}
+                          {selectedClient?.first_name} {selectedClient?.last_name}
                         </CardTitle>
                         <CardDescription>{selectedClient?.email}</CardDescription>
                       </div>
@@ -300,7 +354,9 @@ const DisputeLetters = () => {
                   <CardContent>
                     <ScrollArea className="max-h-[60vh] pr-2">
                       <div className="space-y-3">
-                        {clientDisputableItems.length === 0 ? (
+                        {loadingItems ? (
+                          [1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-lg" />)
+                        ) : clientDisputableItems.length === 0 ? (
                           <div className="text-center py-8 text-muted-foreground">
                             <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
                             <p>No disputable items found for this client.</p>
@@ -347,7 +403,7 @@ const DisputeLetters = () => {
                                       <Shield className="w-3 h-3" />
                                       {item.applicableLaw}
                                     </span>
-                                    <span>${item.balance.toLocaleString()}</span>
+                                    {item.balance > 0 && <span>${item.balance.toLocaleString()}</span>}
                                     <span>{item.bureaus.join(', ')}</span>
                                   </div>
                                 </div>
