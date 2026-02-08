@@ -1,4 +1,4 @@
- import { useState } from 'react';
+ import { useState, useEffect, useRef } from 'react';
  import { useNavigate, Link } from 'react-router-dom';
  import { useAuth, AppRole } from '@/contexts/AuthContext';
  import { useBrand } from '@/contexts/BrandContext';
@@ -88,12 +88,13 @@
    const [agencyName, setAgencyName] = useState('');
    const [selectedRole, setSelectedRole] = useState<AppRole | null>(null);
    const [showPassword, setShowPassword] = useState(false);
-   const [isLoading, setIsLoading] = useState(false);
-   const [step, setStep] = useState<'role' | 'details'>('role');
-   const [showForgotPassword, setShowForgotPassword] = useState(false);
-   const [forgotEmail, setForgotEmail] = useState('');
-   const [forgotEmailSent, setForgotEmailSent] = useState(false);
-   const [hoveredRole, setHoveredRole] = useState<AppRole | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [step, setStep] = useState<'role' | 'details'>('role');
+    const [showForgotPassword, setShowForgotPassword] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState('');
+    const [forgotEmailSent, setForgotEmailSent] = useState(false);
+    const [hoveredRole, setHoveredRole] = useState<AppRole | null>(null);
+    const [cooldown, setCooldown] = useState(0);
    
    const { signIn, signUp } = useAuth();
    const { brand } = useBrand();
@@ -122,29 +123,55 @@
      setIsLoading(false);
    };
  
-   const handleForgotPassword = async (e: React.FormEvent) => {
-     e.preventDefault();
-     setIsLoading(true);
-     
-     const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-       redirectTo: `${window.location.origin}/reset-password`,
-     });
-     
-     if (error) {
-       toast({
-         title: 'Error',
-         description: error.message,
-         variant: 'destructive',
-       });
-     } else {
-       setForgotEmailSent(true);
-       toast({
-         title: 'Email sent!',
-         description: 'Check your inbox for the password reset link.',
-       });
-     }
-     setIsLoading(false);
-   };
+    // Cooldown timer effect
+    useEffect(() => {
+      if (cooldown <= 0) return;
+      const timer = setInterval(() => {
+        setCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }, [cooldown]);
+
+    const handleForgotPassword = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (cooldown > 0) return;
+      setIsLoading(true);
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) {
+        if (error.message?.toLowerCase().includes('rate') || error.status === 429) {
+          setCooldown(60);
+          toast({
+            title: 'Please wait',
+            description: 'Too many requests. Please wait 60 seconds before trying again.',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Error',
+            description: error.message,
+            variant: 'destructive',
+          });
+        }
+      } else {
+        setForgotEmailSent(true);
+        setCooldown(60);
+        toast({
+          title: 'Email sent!',
+          description: 'Check your inbox for the password reset link.',
+        });
+      }
+      setIsLoading(false);
+    };
  
    const handleSignUp = async (e: React.FormEvent) => {
      e.preventDefault();
@@ -347,22 +374,24 @@
                                />
                              </div>
                            </div>
-                           <Button 
-                             type="submit" 
-                             className="w-full h-12 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 transition-opacity text-base font-semibold shadow-lg shadow-primary/25"
-                             disabled={isLoading}
-                           >
-                             {isLoading ? (
-                               <span className="flex items-center gap-2">
-                                 <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                                 Sending...
-                               </span>
-                             ) : (
-                               <>
-                                 Send Reset Link
-                                 <ArrowRight className="w-5 h-5 ml-2" />
-                               </>
-                             )}
+                            <Button 
+                              type="submit" 
+                              className="w-full h-12 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 transition-opacity text-base font-semibold shadow-lg shadow-primary/25"
+                              disabled={isLoading || cooldown > 0}
+                            >
+                              {isLoading ? (
+                                <span className="flex items-center gap-2">
+                                  <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                                  Sending...
+                                </span>
+                              ) : cooldown > 0 ? (
+                                <span>Wait {cooldown}s before retrying</span>
+                              ) : (
+                                <>
+                                  Send Reset Link
+                                  <ArrowRight className="w-5 h-5 ml-2" />
+                                </>
+                              )}
                            </Button>
                          </motion.form>
                        )
