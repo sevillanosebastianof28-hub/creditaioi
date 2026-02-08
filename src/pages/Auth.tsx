@@ -161,19 +161,26 @@
        selectedRole === 'agency_owner' ? agencyName : undefined
      );
      
-     if (error) {
-       toast({
-         title: 'Sign up failed',
-         description: error.message,
-         variant: 'destructive',
-       });
-     } else {
-       toast({
-         title: 'Account created!',
-         description: `Welcome to ${brand.company_name}. Your account has been set up.`,
-       });
-       navigate('/');
-     }
+      if (error) {
+        toast({
+          title: 'Sign up failed',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Check your email!',
+          description: 'We sent you a confirmation link. Please verify your email to sign in.',
+        });
+        // Don't navigate — user must confirm email first
+        setStep('role');
+        setEmail('');
+        setPassword('');
+        setFirstName('');
+        setLastName('');
+        setAgencyName('');
+        setSelectedRole(null);
+      }
      setIsLoading(false);
    };
  
