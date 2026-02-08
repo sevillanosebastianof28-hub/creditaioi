@@ -7,8 +7,10 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { BrandProvider } from "@/contexts/BrandContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useSubdomainDetection, applyWhiteLabelConfig } from "@/hooks/useSubdomainDetection";
 import { useEffect } from "react";
+import { logger } from "@/lib/logger";
 
 // Pages
 import Landing from "./pages/Landing";
@@ -68,11 +70,8 @@ function AppRouter() {
   // Apply white label config when detected
   useEffect(() => {
     if (isWhiteLabeled && config) {
-      console.log('Applying white label config for subdomain:', subdomain);
+      logger.info('Applying white label config for subdomain', { subdomain, companyName: config.company_name });
       applyWhiteLabelConfig(config);
-      
-      // Show a subtle notification that white-label is active
-      console.log(`🎨 White-label branding active for: ${config.company_name}`);
     }
   }, [isWhiteLabeled, config, subdomain]);
 
@@ -247,19 +246,21 @@ function AppRouter() {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <BrandProvider>
-        <SidebarProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AppRouter />
-            </BrowserRouter>
-          </TooltipProvider>
-        </SidebarProvider>
-      </BrandProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <BrandProvider>
+          <SidebarProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <AppRouter />
+              </BrowserRouter>
+            </TooltipProvider>
+          </SidebarProvider>
+        </BrandProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   </QueryClientProvider>
 );
 

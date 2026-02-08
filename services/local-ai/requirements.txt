@@ -1,13 +1,26 @@
+# Core Framework
 fastapi==0.115.5
-uvicorn==0.30.6
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+
+# Machine Learning Models
 transformers==4.48.0
 sentence-transformers==3.4.0
-torch>=2.2.0
-numpy==1.26.4
-pydantic==2.9.2
-datasets==2.20.0
+torch==2.5.1
 accelerate==0.34.2
 peft==0.12.0
 trl==0.12.2
+
+# Data Processing
+numpy==1.26.4
+datasets==2.20.0
 sentencepiece==0.2.0
+
+# Database
 pymongo==4.8.0
+
+# Production Dependencies
+python-multipart==0.0.20
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+

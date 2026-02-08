@@ -3,7 +3,9 @@ credit_ai:
     name: Credit AI RAG Intelligence
     domain: credit_repair
     mode: compliance_first
-    hallucination_policy: zero_tolerance
+    hallucination_policy: strict
+    fallback_enabled: true
+    graceful_degradation: true
 
   knowledge_priority:
     - system_rules
@@ -137,13 +139,24 @@ credit_ai:
         - conditionally_eligible
         - not_eligible
         - insufficient_information
+      fallback:
+        enabled: true
+        method: rule_based
+        confidence_threshold: 0.7
 
     llm:
       role: explanation_only
       enforce_structure: true
+      fallback:
+        enabled: true
+        method: template_based
+        timeout_ms: 5000
 
     embeddings:
       role: retrieval_support
+      fallback:
+        enabled: true
+        method: keyword_search
 
   output:
     required_sections:

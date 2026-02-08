@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -389,7 +390,12 @@ const LetterDocumentEditor = ({
                   }
                 : {}),
             }}
-            dangerouslySetInnerHTML={{ __html: content.replace(/\n/g, '<br>') }}
+            dangerouslySetInnerHTML={{ 
+              __html: DOMPurify.sanitize(content.replace(/\n/g, '<br>'), {
+                ALLOWED_TAGS: ['br', 'b', 'i', 'u', 'strong', 'em', 'p', 'div', 'span'],
+                ALLOWED_ATTR: ['style', 'class']
+              })
+            }}
           />
         </div>
       </ScrollArea>

@@ -3,6 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://storage.googleapis.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+    <!-- Permissions Policy -->
+    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()" />
+    <!-- X-Frame-Options -->
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    
     <title>Credit AI - First AI-Driven Credit Repair Platform</title>
     <meta name="description" content="Transform your credit repair agency with AI-powered automation. Analyze credit reports, generate dispute letters, and predict outcomes in seconds. The first AI-driven credit repair platform in the industry.">
     <meta name="author" content="Credit AI" />
