@@ -168,11 +168,12 @@
           variant: 'destructive',
         });
       } else {
+        // Sign out immediately — user must confirm email before they can log in
+        await supabase.auth.signOut();
         toast({
           title: 'Check your email!',
           description: 'We sent you a confirmation link. Please verify your email to sign in.',
         });
-        // Don't navigate — user must confirm email first
         setStep('role');
         setEmail('');
         setPassword('');
