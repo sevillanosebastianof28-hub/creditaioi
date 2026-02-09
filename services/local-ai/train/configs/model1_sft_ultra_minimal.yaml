@@ -1,0 +1,16 @@
+model_id: Qwen/Qwen2.5-0.5B-Instruct
+output_dir: models/finetuned/qwen-credit-sft
+train_files:
+  - data/finetune/model1_sft.train.jsonl
+valid_files:
+  - data/finetune/model1_sft.valid.jsonl
+max_length: 256
+batch_size: 1
+eval_batch_size: 1
+learning_rate: 2e-5
+epochs: 1
+gradient_accumulation_steps: 2
+seed: 42
+use_8bit: false
+lora_r: 4
+lora_alpha: 8

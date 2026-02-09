@@ -1,0 +1,21 @@
+{
+  "classifier": {
+    "total_examples": 150,
+    "correct_predictions": 150,
+    "accuracy": 1.0,
+    "per_class_accuracy": {
+      "eligible": 1.0,
+      "conditionally_eligible": 1.0,
+      "not_eligible": 1.0,
+      "insufficient_information": 1.0
+    }
+  },
+  "embeddings": {
+    "total_pairs": 0,
+    "correctly_similar": 0,
+    "similarity_accuracy": 0
+  },
+  "sft": {
+    "error": "Model not found"
+  }
+}
