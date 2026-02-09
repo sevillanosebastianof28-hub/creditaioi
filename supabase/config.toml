@@ -1,7 +1,3 @@
-[project]
-organization_id = "sevillanosebastianof28-hub"
-project_id = "ctzckttucdjlysiohlwh"
-
 [api]
 enabled = true
 port = 54321
