@@ -1,233 +1,177 @@
-# Credit AI - White-Label Credit Repair Platform
+# Supabase CLI
 
-## 🚀 Overview
+[![Coverage Status](https://coveralls.io/repos/github/supabase/cli/badge.svg?branch=main)](https://coveralls.io/github/supabase/cli?branch=main) [![Bitbucket Pipelines](https://img.shields.io/bitbucket/pipelines/supabase-cli/setup-cli/master?style=flat-square&label=Bitbucket%20Canary)](https://bitbucket.org/supabase-cli/setup-cli/pipelines) [![Gitlab Pipeline Status](https://img.shields.io/gitlab/pipeline-status/sweatybridge%2Fsetup-cli?label=Gitlab%20Canary)
+](https://gitlab.com/sweatybridge/setup-cli/-/pipelines)
 
-A comprehensive credit repair SaaS platform with **real-time white-label subdomain support**. Agencies can create unlimited branded client portals with automatic subdomain provisioning - no manual DNS configuration needed per client!
+[Supabase](https://supabase.io) is an open source Firebase alternative. We're building the features of Firebase using enterprise-grade open source tools.
 
-## ✨ Key Features
+This repository contains all the functionality for Supabase CLI.
 
-### White-Label System
-- **Automatic Subdomain Generation**: Users just enter a subdomain name (e.g., "mycreditpro")
-- **Instant Preview**: Test portal with `?subdomain=name` parameter
-- **Production URLs**: `https://subdomain.credit-ai.online` (after one-time DNS setup)
-- **Real-time Updates**: Changes to branding reflect instantly across all sessions
-- **Custom Branding**: Logo, colors, company name, support info, custom CSS
-- **DNS Status Checker**: Visual indicator showing if production URL is ready
+- [x] Running Supabase locally
+- [x] Managing database migrations
+- [x] Creating and deploying Supabase Functions
+- [x] Generating types directly from your database schema
+- [x] Making authenticated HTTP requests to [Management API](https://supabase.com/docs/reference/api/introduction)
 
-### Credit Repair Tools
-- AI-powered dispute letter generation
-- Credit score tracking and simulation
-- Document parsing and analysis
-- Multi-bureau support (Equifax, Experian, TransUnion)
-- Round-based dispute management
-- Outcome tracking and analytics
+## Getting started
 
-### User Roles
-- **Agency Owners**: Full platform access, white-label configuration
-- **Virtual Assistants**: Client management, task execution
-- **Clients**: Personal dashboard, dispute tracking, document uploads
+### Install the CLI
 
-## 🏗️ Project Structure
+Available via [NPM](https://www.npmjs.com) as dev dependency. To install:
 
-```
-src/
-├── components/
-│   ├── settings/
-│   │   ├── SubdomainSettings.tsx    # White-label subdomain configuration
-│   │   ├── BrandingSettings.tsx     # Logo, colors, company info
-│   │   └── DNSStatus.tsx            # DNS configuration checker
-│   └── ...
-├── hooks/
-│   ├── useSubdomainDetection.ts     # Automatic subdomain detection
-│   ├── useBrandSettings.ts          # Real-time brand settings
-│   └── ...
-├── contexts/
-│   └── BrandContext.tsx             # Global white-label state
-└── pages/
-    └── Settings.tsx                 # White-label management UI
-
-docs/
-├── DEPLOYMENT_GUIDE.md              # Production deployment steps
-├── SUBDOMAIN_SETUP.md               # Subdomain system documentation
-└── DNS_CONFIGURATION.md             # DNS setup instructions
-
-supabase/
-└── migrations/
-    ├── 20260203000001_*.sql         # Enable realtime on brand_settings
-    ├── 20260203000002_*.sql         # Real-time policies
-    ├── 20260203000003_*.sql         # Fix RLS policies
-    └── 20260203000004_*.sql         # Auto-apply policy fixes
+```bash
+npm i supabase --save-dev
 ```
 
-## 🚦 Quick Start
+When installing with yarn 4, you need to disable experimental fetch with the following nodejs config.
 
-### Development
+```
+NODE_OPTIONS=--no-experimental-fetch yarn add supabase
+```
+
+> **Note**
+For Bun versions below v1.0.17, you must add `supabase` as a [trusted dependency](https://bun.sh/guides/install/trusted) before running `bun add -D supabase`.
+
+<details>
+  <summary><b>macOS</b></summary>
+
+  Available via [Homebrew](https://brew.sh). To install:
+
+  ```sh
+  brew install supabase/tap/supabase
+  ```
+
+  To install the beta release channel:
+  
+  ```sh
+  brew install supabase/tap/supabase-beta
+  brew link --overwrite supabase-beta
+  ```
+  
+  To upgrade:
+
+  ```sh
+  brew upgrade supabase
+  ```
+</details>
+
+<details>
+  <summary><b>Windows</b></summary>
+
+  Available via [Scoop](https://scoop.sh). To install:
+
+  ```powershell
+  scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+  scoop install supabase
+  ```
+
+  To upgrade:
+
+  ```powershell
+  scoop update supabase
+  ```
+</details>
+
+<details>
+  <summary><b>Linux</b></summary>
+
+  Available via [Homebrew](https://brew.sh) and Linux packages.
+
+  #### via Homebrew
+
+  To install:
+
+  ```sh
+  brew install supabase/tap/supabase
+  ```
+
+  To upgrade:
+
+  ```sh
+  brew upgrade supabase
+  ```
+
+  #### via Linux packages
+
+  Linux packages are provided in [Releases](https://github.com/supabase/cli/releases). To install, download the `.apk`/`.deb`/`.rpm`/`.pkg.tar.zst` file depending on your package manager and run the respective commands.
+
+  ```sh
+  sudo apk add --allow-untrusted <...>.apk
+  ```
+
+  ```sh
+  sudo dpkg -i <...>.deb
+  ```
+
+  ```sh
+  sudo rpm -i <...>.rpm
+  ```
+
+  ```sh
+  sudo pacman -U <...>.pkg.tar.zst
+  ```
+</details>
+
+<details>
+  <summary><b>Other Platforms</b></summary>
+
+  You can also install the CLI via [go modules](https://go.dev/ref/mod#go-install) without the help of package managers.
+
+  ```sh
+  go install github.com/supabase/cli@latest
+  ```
+
+  Add a symlink to the binary in `$PATH` for easier access:
+
+  ```sh
+  ln -s "$(go env GOPATH)/bin/cli" /usr/bin/supabase
+  ```
+
+  This works on other non-standard Linux distros.
+</details>
+
+<details>
+  <summary><b>Community Maintained Packages</b></summary>
+
+  Available via [pkgx](https://pkgx.sh/). Package script [here](https://github.com/pkgxdev/pantry/blob/main/projects/supabase.com/cli/package.yml).
+  To install in your working directory:
+
+  ```bash
+  pkgx install supabase
+  ```
+
+  Available via [Nixpkgs](https://nixos.org/). Package script [here](https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/supabase-cli/default.nix).
+</details>
+
+### Run the CLI
+
+```bash
+supabase bootstrap
+```
+
+Or using npx:
+
+```bash
+npx supabase bootstrap
+```
+
+The bootstrap command will guide you through the process of setting up a Supabase project using one of the [starter](https://github.com/supabase-community/supabase-samples/blob/main/samples.json) templates.
+
+## Docs
+
+Command & config reference can be found [here](https://supabase.com/docs/reference/cli/about).
+
+## Breaking changes
+
+We follow semantic versioning for changes that directly impact CLI commands, flags, and configurations.
+
+However, due to dependencies on other service images, we cannot guarantee that schema migrations, seed.sql, and generated types will always work for the same CLI major version. If you need such guarantees, we encourage you to pin a specific version of CLI in package.json.
+
+## Developing
+
+To run from source:
+
 ```sh
-# Clone repository
-git clone <YOUR_GIT_URL>
-cd <YOUR_PROJECT_NAME>
-
-# Install dependencies
-npm install
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your Supabase credentials
-
-# Start dev server
-npm run dev
+# Go >= 1.22
+go run . help
 ```
-
-### Test White-Label Locally
-1. Navigate to Settings → White Label
-2. Enter subdomain: `testclient`
-3. Configure branding (logo, colors, company name)
-4. Click "Preview Portal Now"
-5. New tab opens: `http://localhost:8080/?subdomain=testclient`
-6. See your custom branding applied! 🎨
-
-## 🌐 Production Deployment
-
-### One-Time DNS Setup (Platform Admin)
-See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for complete instructions.
-
-**TL;DR:**
-1. Deploy to Vercel/Netlify
-2. Add custom domain: `credit-ai.online`
-3. Add wildcard DNS: `CNAME * → your-app.vercel.app`
-4. Done! All user subdomains work automatically ✅
-
-### User Experience (No DNS Required)
-Users creating white-label portals:
-1. Go to Settings → White Label
-2. Enter subdomain name
-3. Click "Publish Portal"
-4. **Instant preview** with `?subdomain` parameter
-5. **Production URL** works automatically: `https://their-name.credit-ai.online`
-
-No DNS configuration needed per user!
-
-## 🔧 Technologies
-
-- **Frontend**: React, TypeScript, Vite
-- **UI**: shadcn-ui, Tailwind CSS
-- **Database**: Supabase (PostgreSQL with real-time)
-- **AI**: OpenAI GPT-4 integration
-- **Hosting**: Vercel (recommended), Netlify, or custom
-- **Domain**: Wildcard DNS for automatic subdomains
-
-## 📖 Documentation
-
-- **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)**: Complete production deployment
-- **[SUBDOMAIN_SETUP.md](./SUBDOMAIN_SETUP.md)**: Subdomain system architecture
-- **[DNS_CONFIGURATION.md](./DNS_CONFIGURATION.md)**: Platform-specific DNS setup
-- **[REALTIME_WHITELABEL_IMPLEMENTATION.md](./REALTIME_WHITELABEL_IMPLEMENTATION.md)**: Real-time system details
-
-## 🔐 Security
-
-- Row-Level Security (RLS) policies on all tables
-- Agency isolation (users only see their own data)
-- Secure authentication via Supabase Auth
-- Environment variables for sensitive data
-- HTTPS enforced on all subdomains
-
-## 🎯 White-Label Features
-
-### For Agency Owners
-- Unlimited white-label portals
-- Custom branding per portal
-- Real-time preview before publishing
-- DNS status checking
-- Client isolation and management
-
-### For Clients
-- Branded login experience
-- Custom company branding
-- Personalized support info
-- Seamless experience across all pages
-
-## 📊 Database Schema
-
-Key tables:
-- `brand_settings`: White-label configurations (subdomain, colors, logos)
-- `profiles`: User accounts and roles
-- `clients`: Credit repair clients
-- `disputes`: Dispute tracking
-- `credit_reports`: Credit data storage
-
-Real-time enabled on: `brand_settings` (instant updates across sessions)
-
-## 🧪 Testing
-
-### Local White-Label Testing
-```bash
-# Start dev server
-npm run dev
-
-# Test with subdomain parameter
-http://localhost:8080/?subdomain=test
-
-# Create brand settings in UI first!
-```
-
-### Production Testing
-```bash
-# Check DNS propagation
-dig random.credit-ai.online
-
-# Test subdomain
-curl -I https://testclient.credit-ai.online
-
-# Check SSL
-openssl s_client -connect testclient.credit-ai.online:443
-```
-
-## 🤝 Contributing
-
-1. Create feature branch
-2. Make changes
-3. Test locally with `?subdomain=test`
-4. Push changes (auto-deploys to production)
-5. Verify in production
-
-## 📝 Environment Variables
-
-Required in `.env`:
-```env
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-```
-
-## 🆘 Troubleshooting
-
-### Subdomain Not Working
-1. Check DNS propagation: https://dnschecker.org
-2. Verify wildcard DNS record exists
-3. Check Supabase realtime is enabled
-4. View browser console for errors
-
-### Real-time Updates Not Working
-1. Check `brand_settings` table has realtime enabled
-2. Verify RLS policies allow SELECT
-3. Check WebSocket connection in browser devtools
-4. Ensure `REPLICA IDENTITY FULL` is set
-
-### "Site Can't Be Reached"
-1. Try preview mode: `?subdomain=name` (always works)
-2. Check if DNS wildcard is configured
-3. Wait for DNS propagation (5-60 minutes)
-4. Verify hosting platform has wildcard domain added
-
-## 📞 Support
-
-- **Documentation**: See `/docs` folder
-- **Issues**: GitHub Issues
-- **DNS Help**: Check [DNS_CONFIGURATION.md](./DNS_CONFIGURATION.md)
-
-## 📄 License
-
-Proprietary - All rights reserved
-
----
-
-**Built with ❤️ using React, Supabase, and modern web technologies**

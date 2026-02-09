@@ -1,37 +1,42 @@
+[project]
+organization_id = "sevillanosebastianof28-hub"
 project_id = "ctzckttucdjlysiohlwh"
 
-[functions.analyze-credit-report]
-verify_jwt = true
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public"]
+max_rows = 1000
 
-[functions.generate-dispute-letter]
-verify_jwt = true
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
 
-[functions.ai-round-manager]
-verify_jwt = true
+[studio]
+enabled = true
+port = 54323
+api_url = "http://localhost"
 
-[functions.ai-outcome-tracker]
-verify_jwt = true
+[inbucket]
+enabled = true
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
 
-[functions.ai-progress-explainer]
-verify_jwt = true
+[storage]
+enabled = true
+file_size_limit = "50MiB"
 
-[functions.ai-score-simulator]
-verify_jwt = true
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+jwt_expiry = 3600
+enable_signup = true
 
-[functions.ocr-document-parser]
-verify_jwt = true
-
-[functions.smartcredit-sync]
-verify_jwt = true
-
-[functions.ai-credit-coach]
-verify_jwt = true
-
-[functions.ai-goal-roadmap]
-verify_jwt = true
-
-[functions.ai-orchestrator]
-verify_jwt = true
-
-[functions.ai-smart-analyzer]
-verify_jwt = true
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
