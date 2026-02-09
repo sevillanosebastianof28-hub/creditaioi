@@ -28,3 +28,8 @@ Override counts with env vars:
 - CLASSIFIER_COUNT
 - SFT_COUNT
 - EMBEDDING_COUNT
+
+Custom datasets:
+- Place additional datasets under datasets/ (see datasets/README.md).
+- Build derived JSONL files: python scripts/prepare_custom_datasets.py
+- Use the *_plus.yaml configs in services/local-ai/train/configs to include them.

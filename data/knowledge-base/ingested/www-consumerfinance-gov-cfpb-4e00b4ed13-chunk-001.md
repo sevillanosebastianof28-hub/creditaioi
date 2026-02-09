@@ -1,0 +1,8 @@
+---
+source_url: https://www.consumerfinance.gov/static/apps/regulations3k/regulations3k-manifest.1c10bc8ec5c2.json
+authority_level: primary
+jurisdiction: US
+retrieved_at: 2026-02-09T07:52:49.505505+00:00
+last_updated: Wed, 04 Feb 2026 22:16:20 GMT
+---
+{ "short_name": "Regulations", "name": "Interactive Bureau Regulations", "display": "standalone", "theme_color": "#20aa3f", "background_color": "#fff", "icons": [ { "src": "/static/apps/regulations3k/img/regulations-icon-48.png", "type": "image/png", "sizes": "48x48" }, { "src": "/static/apps/regulations3k/img/regulations-icon-76.png", "type": "image/png", "sizes": "76x76" }, { "src": "/static/apps/regulations3k/img/regulations-icon-120.png", "type": "image/png", "sizes": "120x120" }, { "src": "/static/apps/regulations3k/img/regulations-icon-144.png", "type": "image/png", "sizes": "144x144" }, { "src": "/static/apps/regulations3k/img/regulations-icon-152.png", "type": "image/png", "sizes": "152x152" }, { "src": "/static/apps/regulations3k/img/regulations-icon-172.png", "type": "image/png", "sizes": "172x172" }, { "src": "/static/apps/regulations3k/img/regulations-icon-196.png", "type": "image/png", "sizes": "196x196" }, { "src": "/static/apps/regulations3k/img/regulations-icon-256.png", "type": "image/png", "sizes": "256x256" }, { "src": "/static/apps/regulations3k/img/regulations-icon-512.png", "type": "image/png", "sizes": "512x512" } ], "start_url": "/policy-compliance/rulemaking/regulations/?utm_source=homescreen" }

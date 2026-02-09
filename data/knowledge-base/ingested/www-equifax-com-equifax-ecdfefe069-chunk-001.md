@@ -1,0 +1,8 @@
+---
+source_url: https://www.equifax.com/business/data-furnishers/
+authority_level: secondary
+jurisdiction: US
+retrieved_at: 2026-02-09T08:05:19.776750+00:00
+last_updated: unknown
+---
+Furnishing Data to Equifax Become an Equifax Data Furnisher Your customer data is your most prized possession, and we understand. By furnishing your customer account data to Equifax for inclusion in our industry-leading consumer or commercial credit files, your data can create big benefits to your business, your customers and other credit-grantors. Help your customers improve their credit By reporting your data to Equifax, you are uniquely able to reward your good-paying customers by further strengthening their credit file, and at the same time, motivate slow-paying customers to pay in a timely manner in order to protect or improve their current credit score. Reduce the potential for overextending credit If other creditors are making lending decisions on your customers, the presence of your trade line on their credit report will ensure the lenders get an accurate assessment of your customer’s current credit obligations and payment behavior, which can reduce the possible overextension of credit. Advance your reputation By contributing your account data to Equifax, a trusted, industry-leading credit reporting agency, you are demonstrating your commitment to quality, and to providing added value and support to your customers and the broader credit-granting community. Let’s do this, together If you’re ready to take the next step, we have a dedicated team to help you every step of the way. Just complete the contact form on the right and our team will answer any questions you may have about the data contribution process. Get started today.

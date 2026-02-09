@@ -1,0 +1,8 @@
+---
+source_url: https://www.experian.com/blogs/ask-experian/what-to-do-if-information-is-found-on-dark-web/
+authority_level: secondary
+jurisdiction: US
+retrieved_at: 2026-02-09T08:03:10.770367+00:00
+last_updated: Sun, 08 Feb 2026 15:20:30 GMT
+---
+be able to figure out who your family members are and where you have accounts. They can use this information when they pretend to be an employee at a company or government agency. One rule of thumb: Never share personal information or security codes with someone who contacts you out of the blue, even if it looks like they're calling, texting, emailing or messaging from a legitimate company. It's best to ignore these messages, look up the organization's information and then initiate the conversation. Find Out What Personal Information May be Accessible Online You can use several tools to find out if your information is on the dark web, was compromised in a data breach or is easily accessible on the open internet. Two free options are Experian's dark web scan, which can look for your email address, phone number and Social Security number, and Experian's personal privacy scan, which searches for your information on people finder sites. Monitor your credit for free Credit monitoring can help you detect possible identity fraud, and can prevent surprises when you apply for credit. Get daily notifications when changes are detected. Get free monitoringAbout the author Louis DeNicola is freelance personal finance and credit writer who works with Fortune 500 financial services firms, FinTech startups, and non-profits to teach people about money and credit. His clients include BlueVine, Discover, LendingTree, Money Management International, U.S News and Wirecutter. Read more from Louis

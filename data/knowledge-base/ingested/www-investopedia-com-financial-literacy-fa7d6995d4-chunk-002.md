@@ -1,0 +1,8 @@
+---
+source_url: https://www.investopedia.com/credit-card-4689721
+authority_level: secondary
+jurisdiction: US
+retrieved_at: 2026-02-09T08:07:56.177637+00:00
+last_updated: unknown
+---
+credit score. Credit card debt is the unsecured liability that is incurred by a consumer when they carry balances forward past the due date. Revolving credit card debt is subject to minimum payments of approximately 3-5% of the total balance each month and is subject to the regular interest rate on the account unless promotional or penalty rates are in effect. The minimum monthly payment on a credit card account is the greater of either a stated percentage of outstanding balances (typically 3-5%, depending on the issuer) or a fixed dollar amount (typically $5 - $10). Cardholders must make at least the minimum payment due each month on their account in order to keep it in good standing. Balances that remain after making the minimum monthly payment are subject to interest rate charges. A credit card grace period is the amount of time in days between the statement closing date and the due date for the charges made in the current billing cycle. Interest is not assessed on balances accrued during the current billing cycle if payment is made in full on or before the due date. The interest-free grace period only applies to current balances if no previous balances were carried forward from the previous billing period. A Schumer box is a set of credit card terms and conditions disclosure in table form that are mandated to be displayed within credit card advertising material. The Schumer box displays such details as annual percentage rates for new credit card purchases, balance transfers, balance transfer fees, annual fees and other potential costs to consumers.

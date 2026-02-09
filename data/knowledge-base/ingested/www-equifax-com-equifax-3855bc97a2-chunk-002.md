@@ -1,0 +1,8 @@
+---
+source_url: https://www.equifax.com/personal/credit-report-services/credit-dispute/
+authority_level: secondary
+jurisdiction: US
+retrieved_at: 2026-02-09T08:04:27.230852+00:00
+last_updated: unknown
+---
+or the nationwide credit bureau that issued the credit report. - You can also receive free credit reports with a myEquifax account. When you file a dispute, you’ll need to provide some documentation. What you’ll need depends on what information you may be disputing. Here are some examples of the types of documents we may need copies of during our investigation: Personal Information Valid driver's license - Birth certificate - Copy of a utility bill - Account Information Current bank statements with account information - Letters from a lender showing an account has been corrected - Proof that an account was the result of identity theft - Other information Bankruptcy schedules or other court documents - Student loan disability letters - Cancelled checks - Once you've successfully filed your credit dispute, you should expect the following to happen: 1. Confirmation Code You'll receive a 10-digit confirmation code for future reference. You may check your status anytime within your myEquifax account. 2. Investigating Your Dispute When reviewing your dispute, if we are able to make changes to your credit report based on the information you provided, we will do so. Otherwise, we contact the reporting company to verify the accuracy of the information you’re disputing. 3. Results in 30 Days Within 30 days of your dispute request, we will notify you of the results of our dispute investigation.

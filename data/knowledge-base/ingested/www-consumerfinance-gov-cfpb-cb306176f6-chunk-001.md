@@ -1,0 +1,8 @@
+---
+source_url: https://www.consumerfinance.gov/rules-policy/
+authority_level: primary
+jurisdiction: US
+retrieved_at: 2026-02-09T07:52:38.637743+00:00
+last_updated: unknown
+---
+Rulemaking The CFPB aims to makes rules governing consumer finance markets more effective and to create new rules when warranted. Explore the CFPB’s regulatory agenda, rules currently in development, and final rules. You can also learn about how the CFPB works with the Small Business Review Panel on rules that could have significant economic impacts on small entities. Notices and opportunities to comment The CFPB publishes notices requesting public comment on a variety of documents, including proposed rules and requests for information. You don’t have to be an expert or a lawyer to give comments. We invite everyone to share their views. Competition and Innovation Encouraging consumer-beneficial competition is one of our key priorities. Our mission is to promote competition in financial services. Petitions for rulemaking The CFPB responds to petitions from interested persons for the issuance, amendment, or repeal of a CFPB rule, as required by the Administrative Procedure Act. Advisory committees The CFPB convenes four independent groups for formal input on everything from consumer engagement, to policy development, to research. Community banks and credit unions We work with community banks and credit unions to ensure consumers can choose among a variety of products, services, and financial relationships. We especially consider how our rules affect community banks and credit unions. Page last modified @

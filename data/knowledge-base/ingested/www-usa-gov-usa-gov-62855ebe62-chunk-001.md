@@ -1,0 +1,8 @@
+---
+source_url: https://www.usa.gov/taxes
+authority_level: secondary
+jurisdiction: US
+retrieved_at: 2026-02-09T08:06:03.936033+00:00
+last_updated: Sat, 07 Feb 2026 01:13:54 GMT
+---
+Taxes Learn about filing federal income tax. Find out how to pay, how to check your refund, and more. File federal taxes Find out if you need to file a federal tax return and how to file if you are a U.S. citizen or noncitizen. Verify if your tax return was received. - Get help filing taxes Learn how to get assistance filing your taxes and explore the IRS' free online tools. - How to pay and get help with state and local taxes Most states require income and other types of taxes. Learn about and get help with taxes in your state. - Tax refunds Check your tax refund status. Find unclaimed refunds. Learn what to do if your refund seems too low. - Federal tax forms Learn how to get tax forms and what to do if you do not get a W-2 form from your employer on time. - Federal tax return extensions See how to get a six month extension on filing taxes. You must still estimate and pay on time. - Tax credits and disaster relief Learn about tax credits and deductions for children and dependents and after disasters. - Get transcripts and copies of tax returns Learn the difference between copies of tax returns and tax transcripts and how to get them. - Resolve tax disputes Find out how to resolve tax disputes with the IRS. - How to check and change your tax withholding Learn about tax withholding and make sure you are having the correct amount withheld. - Looking for something else? Explore all topics and services

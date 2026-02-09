@@ -1,0 +1,8 @@
+---
+source_url: https://www.ftc.gov/business-guidance/competition-business-guidance
+authority_level: primary
+jurisdiction: US
+retrieved_at: 2026-02-09T07:55:49.521898+00:00
+last_updated: Mon, 09 Feb 2026 07:53:50 GMT
+---
+When you buy a franchise, you may be able to sell goods and services that have instant name recognition, and get training and support that can help you succeed. But purchasing a franchise is like any... The Federal Trade Commission’s (FTC’s) Jewelry Guides describe how to accurately mark and advertise the platinum content of the jewelry you market or sell. Platinum jewelry can be alloyed with other... For years, the Federal Trade Commission’s Nursery Guides offered insights to industry members into how the FTC Act’s prohibition on deceptive and unfair practices applied to their business. The Guides... If you're looking for a home-based business that can help you pull in $20,000 to $45,000 a year using your computer, a work-at-home opportunity doing medical billing may sound like the perfect choice... The Federal Trade Commission (FTC) has developed these FAQs to help automobile dealers comply with the Gramm-Leach-Bliley Act and the FTC’s Safeguards Rule. The following questions and answers discuss... Maybe you've seen ads for stuffing envelopes or assembling crafts at home. Perhaps a company says it can help you set up a vending business. Before you sign on the dotted line or send money to buy a... Multi-level marketing is a diverse industry, employing many different structures and methods of selling. Although there may be significant differences in how multi-level marketers sell their products...

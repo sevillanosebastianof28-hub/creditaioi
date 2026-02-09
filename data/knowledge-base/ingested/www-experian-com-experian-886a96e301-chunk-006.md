@@ -1,0 +1,8 @@
+---
+source_url: https://www.experian.com/blogs/ask-experian/credit-education/bankruptcy-how-it-works-types-and-consequences/
+authority_level: secondary
+jurisdiction: US
+retrieved_at: 2026-02-09T08:03:24.695237+00:00
+last_updated: Sun, 08 Feb 2026 15:19:11 GMT
+---
+settlement for less than what you owe. Before you pursue any of these options, however, do a free consultation with a credit counselor to get expert advice for your situation. The Bottom Line Before you make any decision about bankruptcy or any other form of debt relief, it's important to research your options, get reliable advice from a qualified credit counselor and understand the impact your choices can have on your overall financial well-being. Regardless of what type of debt relief you choose, be proactive about improving your credit score now and in the future to help minimize the negative consequences of certain relief options. Additionally, consider registering for Experian's free credit monitoring service, which provides access to your FICOÂ® ScoreÎ and Experian credit report, along with real-time alerts when changes are made to your report. With this information, you'll have a better handle on how your actions impact your credit and which steps you can take. You'll also be able to track your progress throughout the rebuilding process. Instantly raise your FICOÂ® Score for free Use Experian BoostÂ® to get credit for the bills you already pay like utilities, mobile phone, video streaming services and now rent. No credit card required About the author Ben Luthi has worked in financial planning, banking and auto finance, and writes about all aspects of money. His work has appeared in Time, Success, USA Today, Credit Karma, NerdWallet, Wirecutter and more. Read more from Ben

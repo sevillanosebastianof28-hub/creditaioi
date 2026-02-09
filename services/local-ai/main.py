@@ -1,4 +1,5 @@
 import os
+import re
 from typing import List, Optional
 
 import numpy as np
@@ -121,37 +122,74 @@ class EmbedResponse(BaseModel):
 
 class RetrieveResponse(BaseModel):
     contexts: List[str]
+    citations: List[dict] = []
 
 
-documents = []
+documents: List[str] = []
+doc_sources: List[str] = []
+doc_tokens: List[set] = []
 doc_embeddings = None
 mongo_client = None
 mongo_db = None
 
 
-def load_knowledge_base():
-    global documents, doc_embeddings
-    docs = []
+def tokenize(text: str) -> set:
+    return set(re.findall(r"[a-z0-9]+", text.lower()))
 
-    if not os.path.isdir(KNOWLEDGE_BASE_DIR):
+
+def resolve_knowledge_dirs() -> List[str]:
+    explicit = os.getenv("KNOWLEDGE_BASE_DIRS")
+    if explicit:
+        entries = [entry.strip() for entry in explicit.split(os.pathsep) if entry.strip()]
+        return [os.path.abspath(entry) for entry in entries]
+
+    default_dirs = [
+        os.path.abspath(os.path.join(BASE_DIR, "../../data/knowledge-base")),
+        os.path.abspath(os.path.join(BASE_DIR, "../../src/data/knowledge-base")),
+    ]
+    return default_dirs
+
+
+def strip_front_matter(content: str) -> str:
+    if not content.startswith("---"):
+        return content
+    end = content.find("\n---", 3)
+    if end == -1:
+        return content
+    return content[end + 4 :].lstrip()
+
+
+def load_knowledge_base():
+    global documents, doc_sources, doc_tokens, doc_embeddings
+    docs = []
+    sources = []
+    tokens = []
+
+    knowledge_dirs = [path for path in resolve_knowledge_dirs() if os.path.isdir(path)]
+    if not knowledge_dirs:
         documents = []
         doc_embeddings = None
         return
 
-    for root, _, files in os.walk(KNOWLEDGE_BASE_DIR):
-        for name in files:
-            if not name.endswith(".md"):
-                continue
-            path = os.path.join(root, name)
-            with open(path, "r", encoding="utf-8") as f:
-                content = f.read()
-            for chunk in content.split("\n\n"):
-                text = chunk.strip()
-                if len(text) < 40:
+    for base_dir in knowledge_dirs:
+        for root, _, files in os.walk(base_dir):
+            for name in files:
+                if not name.endswith(".md"):
                     continue
-                docs.append(f"[{name}] {text}")
+                path = os.path.join(root, name)
+                with open(path, "r", encoding="utf-8") as f:
+                    content = strip_front_matter(f.read())
+                for chunk in content.split("\n\n"):
+                    text = chunk.strip()
+                    if len(text) < 40:
+                        continue
+                    docs.append(text)
+                    sources.append(os.path.relpath(path, base_dir))
+                    tokens.append(tokenize(text))
 
     documents = docs
+    doc_sources = sources
+    doc_tokens = tokens
     if documents:
         doc_embeddings = minilm_model.encode(documents, normalize_embeddings=True)
     else:
@@ -231,10 +269,34 @@ def embed(req: EmbedRequest):
 @app.post("/retrieve", response_model=RetrieveResponse)
 def retrieve(req: RetrieveRequest):
     if not documents or doc_embeddings is None:
-        return RetrieveResponse(contexts=[])
+        return RetrieveResponse(contexts=[], citations=[])
 
     query_embedding = minilm_model.encode([req.query], normalize_embeddings=True)[0]
     scores = np.dot(doc_embeddings, query_embedding)
-    top_indices = np.argsort(scores)[-req.top_k:][::-1]
-    contexts = [documents[i] for i in top_indices]
-    return RetrieveResponse(contexts=contexts)
+
+    candidate_k = max(req.top_k * 2, req.top_k)
+    initial_indices = np.argsort(scores)[-candidate_k:][::-1]
+
+    query_tokens = tokenize(req.query)
+    reranked = []
+    for idx in initial_indices:
+        overlap = 0.0
+        if query_tokens and doc_tokens[idx]:
+            overlap = len(query_tokens & doc_tokens[idx]) / (len(query_tokens) ** 0.5)
+        combined = (0.7 * float(scores[idx])) + (0.3 * overlap)
+        reranked.append((idx, combined, float(scores[idx]), overlap))
+
+    reranked.sort(key=lambda item: item[1], reverse=True)
+    top_items = reranked[:req.top_k]
+
+    contexts = [f"[{doc_sources[i]}] {documents[i]}" for i, _, _, _ in top_items]
+    citations = [
+        {
+            "source": doc_sources[i],
+            "score": round(combined, 6),
+            "semantic": round(semantic, 6),
+            "overlap": round(overlap, 6),
+        }
+        for i, combined, semantic, overlap in top_items
+    ]
+    return RetrieveResponse(contexts=contexts, citations=citations)

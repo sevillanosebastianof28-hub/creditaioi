@@ -1,0 +1,8 @@
+---
+source_url: https://www.consumerfinance.gov/ask-cfpb/what-are-specialty-consumer-reporting-agencies-and-what-kind-of-information-do-they-collect-en-1813/
+authority_level: primary
+jurisdiction: US
+retrieved_at: 2026-02-09T07:53:11.600991+00:00
+last_updated: unknown
+---
+What are specialty consumer reporting agencies and what types of information do they collect? English - Español - Specialty consumer reporting companies collect and share information about your employment history, transaction history with a business, or repayment history for a specific product or service. The information specialty consumer reporting companies collect depends on the reporting company and its industry. Reports may be compiled from your history of: Opening or using bank accounts (including bounced checks or overdrafts) - Apartment rental history, including evictions and unpaid billing - Car insurance claims - Homeowners and renters insurance claims - Employment - Medical records or payments - You might not know these reports exist unless you run into a problem, such as not getting a job, lease, insurance, or checking account, or when a utility or cell phone company asks you to put down a deposit before starting service with you. The CFPB publishes a list of common consumer reporting companies. The list includes the three nationwide consumer reporting companies—Equifax, TransUnion, and Experian—and several other reporting companies that have identified themselves as “consumer reporting companies." You can decide which companies in the list might be important to you and request your data from them. Page last modified @

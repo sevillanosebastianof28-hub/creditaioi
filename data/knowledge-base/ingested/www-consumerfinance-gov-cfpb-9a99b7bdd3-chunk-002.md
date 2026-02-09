@@ -1,0 +1,8 @@
+---
+source_url: https://www.consumerfinance.gov/ask-cfpb/how-do-i-dispute-an-error-on-my-credit-report-en-314/
+authority_level: primary
+jurisdiction: US
+retrieved_at: 2026-02-09T07:53:02.838582+00:00
+last_updated: unknown
+---
+reporting companies gather information about you from other companies called furnishers. Examples of furnishers include your bank, your landlord, and your credit card company. To dispute the information a furnisher provided to the credit reporting company, you can use our sample letter as a guide. Send disputes to furnishers in writing, using certified mail. Disputes can be sent to the furnisher’s address included on your consumer report or to an address specified by the furnisher for receiving credit reporting disputes. Furnishers generally must investigate and respond to your dispute within 30 days of when they receive the dispute. If the investigation shows the furnisher provided wrong information about you, or the information cannot be verified, the furnisher must update or remove the information and notify all the credit reporting companies after correcting it. Then, the credit reporting companies must update your credit reports. The furnisher might determine that the information about you is accurate and should not be updated or removed. In that case, you can contact the credit reporting companies again and ask them to include a statement explaining the dispute in your credit reports. The statement is then added to your file and provided to whomever requests your credit report in the future. Submit a complaint If you have a problem with your credit report, you can also submit a complaint with the CFPB. Page last modified @

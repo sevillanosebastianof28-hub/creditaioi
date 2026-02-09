@@ -1,0 +1,8 @@
+---
+source_url: https://www.equifax.com/personal/help/article-list/-/h/c/credit-report-disputes/
+authority_level: secondary
+jurisdiction: US
+retrieved_at: 2026-02-09T08:05:33.798050+00:00
+last_updated: unknown
+---
+Hello, how can we help? I have information on my Equifax credit report that is a result of being a victim of human trafficking. What can I do? How long will it take to complete an investigation after I dispute information on my Equifax credit report? Why is one of my accounts showing up more than once on my Equifax credit report? What is a mixed credit file? What should I do if I find information I believe is inaccurate or incomplete on my credit reports? How do credit report errors happen? What steps can I take if I have been mistakenly reported as deceased on my credit reports? How secure is the information I provide to Equifax.com? Can Equifax assist consumers who are deaf or hard of hearing? Can I add a statement to my Equifax credit report? What can I do if I believe my credit file has been mixed with someone else's? What steps can I take if I do not agree with the dispute investigation results? How can I prevent errors on my credit reports? How does the dispute process work? How do I check the status of my dispute? How do I correct or dispute inaccuracies on my credit reports by mail? What information do I need to provide when submitting a dispute? I am a veteran, and I have a medical debt on my credit report that is being paid by the Department of Veterans Affairs. What can I do? What documentation should I send in to validate my ID or address? How do I correct or dispute information on my Equifax credit report?

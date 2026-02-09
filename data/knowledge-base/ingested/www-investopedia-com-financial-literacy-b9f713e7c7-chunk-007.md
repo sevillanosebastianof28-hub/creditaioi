@@ -1,0 +1,8 @@
+---
+source_url: https://www.investopedia.com/about-us-5093223
+authority_level: secondary
+jurisdiction: US
+retrieved_at: 2026-02-09T08:07:30.804674+00:00
+last_updated: unknown
+---
+joined Bloomberg, where he spent more than seven years directing digital sales, first on the West Coast and then in the Northeast. Michael holds a Bachelor of Arts in Media Studies from Fordham University. Read more Alexandra Kerr Senior Director, Brand Communications & Marketing Alexandra oversees media appearances, social media, and data journalism for earned media for the finance brands at People Inc. She previously served as Investopedia's senior video producer, overseeing all on-camera interviews and branded video series for some of the country's top financial institutions. Read more About People Inc. People Inc. is the largest digital and print publisher in America. From mobile to magazines, nearly 200 million people trust us to help them make decisions, take action, and find inspiration. People Inc.'s over 50 iconic brands include PEOPLE, Better Homes & Gardens, Verywell, FOOD & WINE, The Spruce, Allrecipes, Byrdie, REAL SIMPLE, Investopedia, Southern Living and more. Careers Investopedia is a fast-growing company and we are always looking for motivated, multi-talented, and organized people to join our team. To learn more, please see the People Inc. Careers page which will have opportunities with both Investopedia and the rest of the People Inc. publishing family. Contact Us Whether you have a comment or suggestion to share, we look forward to hearing from you. Feel free to reach out by visiting our Contact Us page. Locations Our New York City office is located at 225 Liberty Street, 4th Floor, New York, NY 10007 and is not open to the public.

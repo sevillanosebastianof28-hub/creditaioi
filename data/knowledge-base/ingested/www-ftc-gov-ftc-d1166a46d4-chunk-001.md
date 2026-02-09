@@ -1,0 +1,8 @@
+---
+source_url: https://www.ftc.gov/business-guidance
+authority_level: primary
+jurisdiction: US
+retrieved_at: 2026-02-09T07:55:34.992852+00:00
+last_updated: Mon, 09 Feb 2026 07:55:31 GMT
+---
+Business Blog Get Business Blog updates Get the information you need for your business The Business Center provides plain-language guidance to help businesses understand their responsibilities and comply with the law. Complying with the Made in USA Standard Do you promote your products as “Made in the USA”? Under the law, some products must disclose U.S. content. For others, manufacturers and marketers who choose to make claims about the amount of U.S... Selling a Work-at-Home or Other Business Opportunity? Revised Rule May Apply to You If you sell business opportunities, including work-at-home bizopps, find out how the FTC’s revised Business Opportunity Rule may apply to you. Avoid a compliance miscue by making required disclosures... The Rule on Unfair or Deceptive Fees: Frequently Asked Questions Effective May 12, 2025, the FTC’s Rule on Unfair or Deceptive Fees, 16 C.F.R. Part 464, prohibits bait-and-switch pricing and other tactics used to obscure and misrepresent total prices and fees for... Complying with COPPA: Frequently Asked Questions Do you have a question about COPPA, the Children's Online Privacy Protection Act Rule? Here are answers from FTC staff to help your business comply with COPPA. Latest in Business in the Legal Library Latest in Business in the Legal Library Search or browse the Legal Library Find legal resources and guidance to understand your business responsibilities and comply with the law. The Business Center provides plain-language guidance to help businesses understand their responsibilities and comply with the law.

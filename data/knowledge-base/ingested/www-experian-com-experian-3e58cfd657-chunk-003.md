@@ -1,0 +1,8 @@
+---
+source_url: https://www.experian.com/blogs/ask-experian/what-is-the-easiest-store-card-to-get-with-bad-credit/
+authority_level: secondary
+jurisdiction: US
+retrieved_at: 2026-02-09T07:58:15.927934+00:00
+last_updated: Sun, 08 Feb 2026 15:20:28 GMT
+---
+bureaus. - If you already have other credit cards or loans, managing them well will also be important to improving your credit. In addition to paying your bills on time and working to pay down credit card balances, this may mean bringing past-due accounts current or working with a credit counselor to get on a debt management plan. Check Your Credit Before Applying While your credit isn't the only factor that credit card issuers consider, your credit score can impact your ability to qualify for a new card as well as the interest rate and credit limit you receive. If you don't know where you currently stand, you can check your credit score for free on Experian. You can also use the free Experian BoostÂ®Ã¸ service to add your cellphone, NetflixÂ® and utility payments to your credit report. These types of bills aren't usually included on your report, but Experian Boost opens up the potential that your history paying for these services can positively impact your score. Donât apply blindly Apply for credit cards confidently with personalized offers based on your credit profile. Get started with your FICOÂ® Score for free. See your offersAbout the author Louis DeNicola is freelance personal finance and credit writer who works with Fortune 500 financial services firms, FinTech startups, and non-profits to teach people about money and credit. His clients include BlueVine, Discover, LendingTree, Money Management International, U.S News and Wirecutter. Read more from Louis

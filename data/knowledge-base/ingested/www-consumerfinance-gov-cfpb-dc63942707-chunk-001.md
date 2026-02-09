@@ -1,0 +1,8 @@
+---
+source_url: https://www.consumerfinance.gov/data-research/financial-well-being-survey-data/
+authority_level: primary
+jurisdiction: US
+retrieved_at: 2026-02-09T07:52:24.054256+00:00
+last_updated: unknown
+---
+Financial well-being survey data Explore data from our National Financial Well-Being Survey to learn more about how a wide range of factors relate to consumers’ financial well-being. Advancing financial well-being through research Understanding factors that support consumer financial well-being can help practitioners and policymakers empower more families to lead better financial lives to serve their own goals. A person’s financial well-being comes from their sense of financial security and freedom of choice—both in the present and when considering the future. We measured it using our 10-item Financial Well-Being Scale. The survey dataset includes respondents’ scores on that scale, as well as measures of individual and household characteristics that research suggests may influence adults’ financial well-being, including: Income and employment - Savings and safety nets - Past financial experiences - Financial behaviors, skills, and attitudes - Download the data Survey data file Download the complete survey data as a CSV file, published September 2017. This public use file (PUF) doesn't include personally identifying information of the respondents. About the data User’s guide Learn more about the survey and how to use the public use file. File codebook See a list of variables, data dictionary, and variable summary statistics for the public use data file. Page last modified @

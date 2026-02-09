@@ -1,0 +1,23 @@
+model_id: distilbert-base-uncased
+output_dir: ../../models/finetuned/distilbert-eligibility
+train_files:
+  - ../../data/finetune/model2_classifier.train.jsonl
+  - ../../data/finetune/custom_classifier.jsonl
+valid_files:
+  - ../../data/finetune/model2_classifier.valid.jsonl
+test_files:
+  - ../../data/finetune/model2_classifier.test.jsonl
+text_field: text
+label_field: label
+labels:
+  - eligible
+  - conditionally_eligible
+  - not_eligible
+  - insufficient_information
+max_length: 256
+batch_size: 16
+eval_batch_size: 32
+learning_rate: 2e-5
+epochs: 6
+weight_decay: 0.01
+seed: 42

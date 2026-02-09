@@ -1,0 +1,8 @@
+---
+source_url: https://www.ftc.gov/foia
+authority_level: primary
+jurisdiction: US
+retrieved_at: 2026-02-09T07:55:45.762966+00:00
+last_updated: Mon, 09 Feb 2026 07:55:43 GMT
+---
+IMPORTANT NOTICE: We will acknowledge FOIA requests received at FOIA@ftc.gov upon processing. If you do not receive an acknowledgment from a member of our FOIA staff, please contact us or please resubmit your request through PAL. The Freedom of Information Act (FOIA) and Privacy Act (PA) gives the public with the right to make a request for federal agency records. Consult the Make a FOIA request or Make a Privacy Act Request pages for details on how to request records from the Federal Trade Commission Freedom of Information Act The FOIA allows any person to make a request for Federal Trade Commission records so long as one of the nine FOIA exemptions do not apply to the record(s) or portions of the record(s). See 5 U.S.C. § 552. Consult Make a FOIA request for more information. However, if you are seeking records about yourself or a specific person, see Make a Privacy Act Request. Privacy Act (PA) The Privacy Act of 1974 requires additional identification verification to obtain Federal Trade Commission records about yourself or a specific individual. 5 U.S.C. § 552a(b). If you are requesting records about yourself, we are required to verify your identity before releasing any records. If you are a third-party requesting records about a specific individual, that individual is required to authorize the release of those records, see Make a Privacy Act Request. FOIA Contacts FOIA Requester Service Center: (202) 326-2430 FTC FOIA Public Liaison: Richard Gold, (202) 326-3355 Comments? Email your FOIA comments to FOIAcomments@ftc.gov.

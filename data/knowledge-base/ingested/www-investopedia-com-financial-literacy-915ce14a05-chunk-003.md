@@ -1,0 +1,8 @@
+---
+source_url: https://www.investopedia.com/certificates-deposit-news-7111770
+authority_level: secondary
+jurisdiction: US
+retrieved_at: 2026-02-09T08:07:31.722520+00:00
+last_updated: unknown
+---
+a Longer Rate Lock? Earn 4.28% to 4.40% for 3 to 5 Years Top CD Rates Today, July 8, 2025 — 3-Month CDs Now Pay Much Less Than These Slightly Longer Offers Top CD Rates Today, July 7, 2025 — Savers Have 2 Choices To Lock In 4.60%, for 6 or 19 Months Top CD Rates Today, July 3, 2025 — Brand-New Offer Locks In a Nation-Leading 4.60% for 19 Months CDs Are Still Smart—Paying Mid-4% Returns You Can Lock in for Months or Even Years Top CD Rates Today, July 2, 2025 — A Long-Time 3-Month Offer Sunsets, but 6-Month Term Still Locks In 4.60% Top CDs Today, July 1, 2025 — 18-Month and 4-Year Yields Rise, but Best 1-Year Rate Ticks Lower Top CD Rates Today, June 30, 2025 - Right Now, CD Shoppers Have 14 Options To Lock In 4.50% or Higher Top CDs Today, June 27, 2025 - New Leader Offers Best National Rate of 4.60% for 6 Months Top CD Rates Today, June 26, 2025 - Snag 4.55% for 1 Year or 4.50% for up to 21 Months Top CDs Today, June 25, 2025 - Earn More Than Twice the Average National Rate With This 1-Year CD Fed Cuts Coming? Lock In a 4.50% Return—Guaranteed Until 2026 or Even 2027 Top CDs Today, June 24, 2025 - The New Rate Leader Is 4.55%, Down From 4.60% Top CD Rates Today, June 23, 2025 - Right Now, Every Term Offers at Least 4.28% Top CD Rates Today, June 20, 2025 - Earn 4.50% or More on Terms Ranging From 3 to 21 Months Top CD Rates Today, June 18, 2025 - Want To Lock In 4.28% for 3 to 5 Years? Now's the Time Newsletter Sign Up Newsletter Sign Up

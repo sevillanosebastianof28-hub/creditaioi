@@ -1,0 +1,8 @@
+---
+source_url: https://www.investopedia.com/financial-literacy-resource-center-7151950
+authority_level: secondary
+jurisdiction: US
+retrieved_at: 2026-02-09T08:07:20.207335+00:00
+last_updated: unknown
+---
+may also be more secure than physical payment cards because of the technology they use to protect your account information. Simply put, compound interest is the interest you earn on interest. It is calculated on both the initial principal and the accumulated interest from previous periods. Compounding multiplies money at an accelerated rate and the greater the number of compounding periods, the greater the compound interest will be. Consumer debt includes personal debts that are owed as a result of purchasing goods that are used for individual or household consumption. Examples of consumer debt include credit card debt, student loans, auto loans, mortgages, and payday loans. These can be extended by a bank, the federal government, and credit unions. Fintech, or financial technology, is used to describe new technology that seeks to improve and simplify the delivery and use of financial services. Fintech is utilized by companies, business owners, and consumers, in an effort to better manage financial operations, processes, and lives. Examples of fintech applications include robo-advisors, payment apps, and investment apps, among others. Net worth is the value of the assets a person or corporation owns, minus the liabilities they owe. It is an important metric to gauge a company's health, providing a useful snapshot of its current financial position. Net worth has also become popular in everyday culture, with lists ranking the people with the highest net worth as well as the net worth of various celebrities.

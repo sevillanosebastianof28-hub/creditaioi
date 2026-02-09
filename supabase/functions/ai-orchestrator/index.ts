@@ -98,6 +98,7 @@ interface OrchestratorResponse {
     recommendedAction: string;
     nextSteps: string[];
   };
+  citations?: RetrievalCitation[];
   confidenceScore?: number;
   tags?: {
     dispute_type?: string | null;
@@ -287,7 +288,9 @@ serve(async (req) => {
       await sendEvent('status', { type: 'status', message: 'Retrieving knowledge context...' });
 
       // Step 2: Retrieve relevant knowledge based on action type
-      const retrievedContext = await retrieveKnowledge(action, context?.disputeType);
+      const retrieval = await retrieveKnowledge(action, context?.disputeType);
+      const retrievedContext = retrieval.context;
+      const retrievedCitations = retrieval.citations;
       if (!retrievedContext) {
         const refusal = buildRefusalResponse('rag_empty');
         const response: OrchestratorResponse = {
@@ -298,6 +301,44 @@ serve(async (req) => {
           refusalReason: refusal.refusalReason,
           confidenceScore: 0,
           tags: buildTags(context, undefined, 0, refusal.refusalReason, ['rag_empty']),
+          modelVersions,
+          validation: { missingSections: [], forbiddenPhrases: [], overrideAttempted: false },
+          processingTimeMs: Date.now() - startTime
+        };
+
+        await logInteraction(supabase, {
+          userId,
+          input,
+          action,
+          response,
+          context
+        });
+
+        await sendEvent('result', { type: 'result', result: response });
+        await writer.close();
+
+        return new Response(streamBody.readable, {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive"
+          }
+        });
+      }
+
+      const allowNoCitations = (Deno.env.get("ALLOW_RAG_NO_CITATIONS") || "false").toLowerCase() === "true";
+      if (!retrievedCitations.length && !allowNoCitations) {
+        const refusal = buildRefusalResponse('rag_no_citations');
+        const response: OrchestratorResponse = {
+          success: false,
+          response: refusal.response,
+          complianceFlags: ['rag_no_citations'],
+          wasRefused: true,
+          refusalReason: refusal.refusalReason,
+          citations: [],
+          confidenceScore: 0,
+          tags: buildTags(context, undefined, 0, refusal.refusalReason, ['rag_no_citations']),
           modelVersions,
           validation: { missingSections: [], forbiddenPhrases: [], overrideAttempted: false },
           processingTimeMs: Date.now() - startTime
@@ -381,7 +422,14 @@ serve(async (req) => {
 
       // Step 4: Generate response using explainer model (Model 1 equivalent)
       await sendEvent('status', { type: 'status', message: 'Generating response...' });
-      const response = await runExplainer(apiKey, sanitizedInput, context, retrievedContext, classification);
+      const response = await runExplainer(
+        apiKey,
+        sanitizedInput,
+        context,
+        retrievedContext,
+        retrievedCitations,
+        classification
+      );
 
       // Step 5: Validate response for compliance
       await sendEvent('status', { type: 'status', message: 'Checking compliance...' });
@@ -422,6 +470,7 @@ serve(async (req) => {
         success: true,
         classification,
         response: finalResponseContent,
+        citations: retrievedCitations,
         complianceFlags,
         wasRefused,
         refusalReason,
@@ -560,7 +609,9 @@ serve(async (req) => {
     }
 
     // Step 2: Retrieve relevant knowledge based on action type
-    const retrievedContext = await retrieveKnowledge(action, context?.disputeType);
+    const retrieval = await retrieveKnowledge(action, context?.disputeType);
+    const retrievedContext = retrieval.context;
+    const retrievedCitations = retrieval.citations;
     if (!retrievedContext) {
       const refusal = buildRefusalResponse('rag_empty');
       const response: OrchestratorResponse = {
@@ -571,6 +622,36 @@ serve(async (req) => {
         refusalReason: refusal.refusalReason,
         confidenceScore: 0,
         tags: buildTags(context, undefined, 0, refusal.refusalReason, ['rag_empty']),
+        modelVersions,
+        validation: { missingSections: [], forbiddenPhrases: [], overrideAttempted: false },
+        processingTimeMs: Date.now() - startTime
+      };
+
+      await logInteraction(supabase, {
+        userId,
+        input,
+        action,
+        response,
+        context
+      });
+
+      return new Response(JSON.stringify(response), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    const allowNoCitations = (Deno.env.get("ALLOW_RAG_NO_CITATIONS") || "false").toLowerCase() === "true";
+    if (!retrievedCitations.length && !allowNoCitations) {
+      const refusal = buildRefusalResponse('rag_no_citations');
+      const response: OrchestratorResponse = {
+        success: false,
+        response: refusal.response,
+        complianceFlags: ['rag_no_citations'],
+        wasRefused: true,
+        refusalReason: refusal.refusalReason,
+        citations: [],
+        confidenceScore: 0,
+        tags: buildTags(context, undefined, 0, refusal.refusalReason, ['rag_no_citations']),
         modelVersions,
         validation: { missingSections: [], forbiddenPhrases: [], overrideAttempted: false },
         processingTimeMs: Date.now() - startTime
@@ -636,7 +717,14 @@ serve(async (req) => {
     }
 
     // Step 4: Generate response using explainer model (Model 1 equivalent)
-    const response = await runExplainer(apiKey, sanitizedInput, context, retrievedContext, classification);
+    const response = await runExplainer(
+      apiKey,
+      sanitizedInput,
+      context,
+      retrievedContext,
+      retrievedCitations,
+      classification
+    );
 
     // Step 5: Validate response for compliance
     const validation = validateOutput(response, classification);
@@ -676,6 +764,7 @@ serve(async (req) => {
       success: true,
       classification,
       response: finalResponseContent,
+      citations: retrievedCitations,
       complianceFlags,
       wasRefused,
       refusalReason,
@@ -742,7 +831,19 @@ function validateScope(input: string): { valid: boolean; reason?: string } {
   return { valid: true };
 }
 
-async function retrieveKnowledge(action: string, disputeType?: string): Promise<string> {
+type RetrievalCitation = {
+  source: string;
+  score: number;
+  semantic?: number;
+  overlap?: number;
+};
+
+type RetrievalResult = {
+  context: string;
+  citations: RetrievalCitation[];
+};
+
+async function retrieveKnowledge(action: string, disputeType?: string): Promise<RetrievalResult> {
   let relevantDocs: string[] = [];
   
   // Always include compliance docs
@@ -789,7 +890,10 @@ async function retrieveKnowledge(action: string, disputeType?: string): Promise<
       if (response.ok) {
         const data = await response.json();
         if (data?.contexts?.length) {
-          return truncateContext(data.contexts.join("\n\n"));
+          return {
+            context: truncateContext(data.contexts.join("\n\n")),
+            citations: Array.isArray(data.citations) ? data.citations : []
+          };
         }
       }
     } catch (error) {
@@ -797,7 +901,7 @@ async function retrieveKnowledge(action: string, disputeType?: string): Promise<
     }
 
     if ((Deno.env.get("REQUIRE_RAG") || "true").toLowerCase() === "true") {
-      return "";
+      return { context: "", citations: [] };
     }
   }
 
@@ -814,10 +918,18 @@ KEY COMPLIANCE RULES:
 FORBIDDEN PHRASES: ${FORBIDDEN_PHRASES.join(', ')}`;
 
   if ((Deno.env.get("REQUIRE_RAG") || "true").toLowerCase() === "true") {
-    return "";
+    return { context: "", citations: [] };
   }
 
-  return truncateContext(fallbackContext);
+  return {
+    context: truncateContext(fallbackContext),
+    citations: relevantDocs.map((source) => ({
+      source,
+      score: 0,
+      semantic: 0,
+      overlap: 0
+    }))
+  };
 }
 
 async function runClassifier(
@@ -956,6 +1068,7 @@ async function runExplainer(
   input: string,
   context: OrchestratorRequest['context'],
   retrievedKnowledge: string,
+  citations: RetrievalCitation[],
   classification?: ClassificationResult
 ): Promise<{
   summary: string;
@@ -991,6 +1104,13 @@ Required Evidence: ${classification.reasoning.requiredEvidence.join(', ')}
 
 KNOWLEDGE CONTEXT:
 ${retrievedKnowledge}
+
+CITATIONS (highest relevance first):
+${citations.length
+  ? citations
+    .map((item, index) => `${index + 1}. ${item.source} (score: ${item.score})`)
+    .join('\n')
+  : 'none'}
 
 ACCOUNT CONTEXT:
 ${context ? JSON.stringify(context, null, 2) : 'No additional context'}

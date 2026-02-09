@@ -1,0 +1,8 @@
+---
+source_url: https://www.investopedia.com/ask/answers/072815/what-difference-between-cost-and-freight-cfr-and-cost-insurance-and-freight-cif.asp
+authority_level: secondary
+jurisdiction: US
+retrieved_at: 2026-02-09T08:08:00.110861+00:00
+last_updated: unknown
+---
+The Bottom Line CFR and CIF are similar terms related to transporting goods by sea when the cost of shipping the freight lies with the seller. The difference between the two is that CIF requires marine insurance to be included, paid by the seller, which provides protection against any damages to the goods. Article Sources Investopedia requires writers to use primary sources to support their work. These include white papers, government data, original reporting, and interviews with industry experts. We also reference original research from other reputable publishers where appropriate. You can learn more about the standards we follow in producing accurate, unbiased content in our editorial policy. International Trade Administration. "Basic Guide to Exporting." International Chamber of Commerce. "Incoterms Rules History." International Chamber of Commerce. "Incoterms® 2020." International Trade Administration. "Basic Guide to Exporting: Cost and Freight (CFR)." Compare Accounts Advertiser Disclosure × The offers that appear in this table are from partnerships from which Investopedia receives compensation. This compensation may impact how and where listings appear. Investopedia does not include all offers available in the marketplace. Read more Personal Finance Insurance Business Insurance Corporate Insurance Partner Links

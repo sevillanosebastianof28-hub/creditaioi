@@ -1,0 +1,8 @@
+---
+source_url: https://www.ftc.gov/core/assets/vendor/jquery.ui/themes/base/core.css?t9uj6c
+authority_level: primary
+jurisdiction: US
+retrieved_at: 2026-02-09T07:54:40.367353+00:00
+last_updated: Tue, 27 Jan 2026 23:18:02 GMT
+---
+/*! * jQuery UI CSS Framework 1.14.1 * https://jqueryui.com * * Copyright OpenJS Foundation and other contributors * Released under the MIT license. * https://jquery.org/license * * https://api.jqueryui.com/category/theming/ */ /* Layout helpers ----------------------------------*/ .ui-helper-hidden { display: none; } .ui-helper-hidden-accessible { border: 0; clip: rect(0 0 0 0); height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; width: 1px; } .ui-helper-reset { margin: 0; padding: 0; border: 0; outline: 0; line-height: 1.3; text-decoration: none; font-size: 100%; list-style: none; } .ui-helper-clearfix:before, .ui-helper-clearfix:after { content: ""; display: table; border-collapse: collapse; } .ui-helper-clearfix:after { clear: both; } .ui-helper-zfix { width: 100%; height: 100%; top: 0; left: 0; position: absolute; opacity: 0; } .ui-front { z-index: 100; } /* Interaction Cues ----------------------------------*/ .ui-state-disabled { cursor: default !important; pointer-events: none; } /* Icons ----------------------------------*/ .ui-icon { display: inline-block; vertical-align: middle; margin-top: -.25em; position: relative; text-indent: -99999px; overflow: hidden; background-repeat: no-repeat; } .ui-widget-icon-block { left: 50%; margin-left: -8px; display: block; } /* Misc visuals ----------------------------------*/ /* Overlays */ .ui-widget-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }

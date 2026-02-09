@@ -1,0 +1,8 @@
+---
+source_url: https://www.investopedia.com/cryptocurrency-4427699
+authority_level: secondary
+jurisdiction: US
+retrieved_at: 2026-02-09T08:07:24.391157+00:00
+last_updated: unknown
+---
+a physical form such as paper cash or metal coins. Altcoins generally speaking are cryptocurrencies other than Bitcoin. They share characteristics with Bitcoin but are also different in terms of how they are created and verified. According to CoinMarketCap, Bitcoin and Ether alone accounted for nearly two thirds of the total cryptocurrency market, with altcoins making up the rest. A hot wallet is a cryptocurrency storage application that is always connected to your computer and cryptocurrency network, and as such they tend to be more vulnerable to cybersecurity breaches and theft than so-called cold storage methods. Hot wallets are used to send and receive cryptocurrency, and manage tokens you possess. Hot wallets are linked with public and private keys that serve as security measures. Decentralized finance, also known as DeFi, uses new technology to remove third parties such as banks and other traditional financial institutions in financial transactions. By removing centralized control by banks and other institutions over money, financial products, and financial services, the new financial applications may lower related maintenance costs and fees charged by banks—and also increase the speed of such services. A virtual currency is a digital representation of value only available in electronic form, and is also known as digital currency. Such cryptocurrencies can be issued by private organizations or companies and its benefits over hard currencies include fast transaction speeds and ease of use.

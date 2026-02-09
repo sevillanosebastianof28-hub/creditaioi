@@ -1,0 +1,8 @@
+---
+source_url: https://www.law.cornell.edu/ptoa
+authority_level: secondary
+jurisdiction: US
+retrieved_at: 2026-02-09T08:10:56.373040+00:00
+last_updated: Mon, 08 Jul 2024 13:58:14 GMT
+---
+PTOA: Parallel Table of Authorities and Rules | Table of Contents This list is taken from the Parallel Table of Authorities and Rules provided by GPO [Government Printing Office] It is not guaranteed to be accurate or up-to-date. More limitations on accuracy are described at the GPO site. The following table lists rulemaking authority (except 5 U.S.C. 301) for regulations codified in the Code of Federal Regulations. Also included are statutory citations which are noted as being interpreted or applied by those regulations. The table is divided into four segments: United States Code citations, United States Statutes at Large citations, public law citations, and Presidential document citations. Within each segment the citations are arranged in numerical order: For the United States Code, by title and section; - For the United States Statutes at Large, by volume and page number; - For Public Laws, by number; and - For Presidential documents (Proclamations, Executive orders, and Reorganization plans), by document number. - Entries in the table are taken directly from the rulemaking authority citation provided by Federal agencies in their regulations. Federal agencies are responsible for keeping these citations current and accurate. Because Federal agencies sometimes present these citations in an inconsistent manner, the table cannot be considered all-inclusive. United States Statutes at Large and public law citations are carried in the table only when there are no corresponding United States Code citations given. This table is revised as of January 1, 2018.

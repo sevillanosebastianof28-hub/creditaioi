@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -15,16 +15,22 @@ from torch.utils.data import DataLoader
 class Config:
     model_id: str
     output_dir: str
-    train_file: str
-    valid_file: str
     batch_size: int
     epochs: int
     seed: int
+    train_file: Optional[str] = None
+    valid_file: Optional[str] = None
+    train_files: Optional[List[str]] = None
+    valid_files: Optional[List[str]] = None
 
 
 def load_config(path: str) -> Config:
     with open(path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
+    if "train_files" not in data:
+        data["train_files"] = [data["train_file"]] if data.get("train_file") else None
+    if "valid_files" not in data:
+        data["valid_files"] = [data["valid_file"]] if data.get("valid_file") else None
     return Config(**data)
 
 
@@ -51,9 +57,12 @@ def main():
     np.random.seed(cfg.seed)
     torch.manual_seed(cfg.seed)
 
+    if not cfg.train_files or not cfg.valid_files:
+        raise ValueError("Config must specify train_files and valid_files")
+
     dataset = load_dataset("json", data_files={
-        "train": cfg.train_file,
-        "validation": cfg.valid_file,
+        "train": cfg.train_files,
+        "validation": cfg.valid_files,
     })
 
     train_examples = []

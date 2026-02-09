@@ -30,4 +30,12 @@ This service runs the requested models locally and exposes a small HTTP API for 
 
 ## Notes
 - DistilBERT is used as a semantic similarity classifier for dispute eligibility. For production-grade accuracy, replace with a fine-tuned classifier checkpoint.
-- Retrieval uses the knowledge-base markdown files under data/knowledge-base.
+- Retrieval uses markdown files under data/knowledge-base and src/data/knowledge-base. You can override with KNOWLEDGE_BASE_DIRS.
+
+## RAG Ingestion (Approved Sources)
+1. Configure sources and chunking in ai/config/rag_sources.yaml.
+2. Run: python scripts/ingest_rag.py --config ai/config/rag_sources.yaml
+3. The ingested chunks are saved to data/knowledge-base/ingested.
+
+Environment overrides:
+- KNOWLEDGE_BASE_DIRS: colon-separated list of knowledge base directories.

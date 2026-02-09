@@ -1,0 +1,96 @@
+version: 1
+output_dir: data/knowledge-base/ingested
+chunk_size_tokens: 640
+chunk_overlap_tokens: 120
+crawl_depth: 1
+max_pages_per_domain: 200
+request_delay_seconds: 0.5
+user_agent: CreditAI-RAG-Ingest/1.0
+jurisdiction_default: US
+exclude_url_patterns:
+  - login
+  - signin
+  - signup
+  - account
+  - billing
+  - payment
+  - checkout
+  - subscribe
+  - privacy
+  - terms
+  - careers
+  - press
+  - newsroom
+  - sitemap
+  - xml
+  - rss
+  - pdf?download
+sources:
+  - name: cfpb
+    authority_level: primary
+    jurisdiction: US
+    urls:
+      - https://www.consumerfinance.gov
+      - https://www.consumerfinance.gov/rules-policy/regulations/
+      - https://www.consumerfinance.gov/consumer-tools/credit-reports-and-scores/
+  - name: ftc
+    authority_level: primary
+    jurisdiction: US
+    urls:
+      - https://www.ftc.gov
+      - https://www.ftc.gov/consumer-protection/credit-loans-debt
+      - https://www.identitytheft.gov
+      - https://www.ftc.gov/legal-library/browse/statutes/fair-credit-reporting-act
+  - name: ecfr
+    authority_level: primary
+    jurisdiction: US
+    urls:
+      - https://www.ecfr.gov/current/title-15/subtitle-B/chapter-I/subchapter-F
+  - name: experian
+    authority_level: secondary
+    jurisdiction: US
+    urls:
+      - https://www.experian.com/consumer-education
+      - https://www.experian.com/blogs/ask-experian/
+  - name: equifax
+    authority_level: secondary
+    jurisdiction: US
+    urls:
+      - https://www.equifax.com/personal/education/
+      - https://consumer.equifax.com/personal/education/
+  - name: transunion
+    authority_level: secondary
+    jurisdiction: US
+    urls:
+      - https://www.transunion.com/consumer-education
+  - name: usa-gov
+    authority_level: secondary
+    jurisdiction: US
+    urls:
+      - https://www.usa.gov/credit-reports
+      - https://www.usa.gov/credit-score
+  - name: legal-edu
+    authority_level: secondary
+    jurisdiction: US
+    urls:
+      - https://www.nolo.com/legal-encyclopedia/credit-repair
+      - https://www.law.cornell.edu/wex/credit_reporting
+  - name: financial-literacy
+    authority_level: secondary
+    jurisdiction: US
+    urls:
+      - https://www.myfico.com/credit-education
+      - https://www.investopedia.com/credit-score-4689818
+      - https://www.investopedia.com/terms/f/fair-credit-reporting-act.asp
+  - name: templates
+    authority_level: primary
+    jurisdiction: US
+    urls:
+      - https://www.consumerfinance.gov/ask-cfpb/sample-letter-to-dispute-credit-report-errors-en-1247/
+      - https://www.ftc.gov/system/files/documents/plain-language/sample-letter-disputing-credit-report-errors.pdf
+  - name: tier2
+    authority_level: secondary
+    jurisdiction: US
+    urls:
+      - https://www.ecfr.gov
+      - https://www.law.cornell.edu

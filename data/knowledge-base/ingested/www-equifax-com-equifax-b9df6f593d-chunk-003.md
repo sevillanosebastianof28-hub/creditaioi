@@ -1,0 +1,8 @@
+---
+source_url: https://www.equifax.com/personal/education/credit-cards/articles/-/learn/what-are-pre-approved-credit-cards/
+authority_level: secondary
+jurisdiction: US
+retrieved_at: 2026-02-09T08:04:20.675146+00:00
+last_updated: unknown
+---
+offers from some credit card companies, you may also miss good deals from their competitors, so don’t hesitate to research alternatives. It’s also critical to make sure you know exactly why you want the card. Are you looking to rebuild your credit? Then keep an eye out for offers with a low annual percentage rate (APR) to save on interest. Are you on the hunt for a good rewards program? Then look for a card that offers points or cash back. A pre-approved offer may or may not meet your particular needs, so it’s important to consider your options. Thorough research and careful comparisons can help you evaluate the differences and choose the type of card that’s best for you. How can I opt out of pre-approved offers? If you find yourself overwhelmed by unsolicited offers or if you’re not in the market for a new card at all, you have a couple of options: Go to OptOutPreScreen.com, a joint venture among the three nationwide CRAs. Here, you’ll be able to submit a request to opt out of these offers for five years or download a mail-in form to opt out permanently. - You can also call 888-5-OPT-OUT (toll-free) to limit what types of offers you’ll receive or to stop pre-approval offers permanently. - With both options, you can choose to opt back in at any time. Sign up for a credit monitoring & ID theft protection product today! For $19.95 per month, you can know where you stand with access to your 3-bureau credit report. Sign up for Equifax CompleteTM Premier today!

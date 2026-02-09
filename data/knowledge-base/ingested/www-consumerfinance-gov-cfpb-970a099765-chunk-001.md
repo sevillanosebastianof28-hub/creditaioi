@@ -1,0 +1,8 @@
+---
+source_url: https://www.consumerfinance.gov/complaint/process/
+authority_level: primary
+jurisdiction: US
+retrieved_at: 2026-02-09T07:52:37.539453+00:00
+last_updated: unknown
+---
+Learn how the complaint process works Your complaint goes through several steps that help you get a response and help us identify problems in the marketplace. 1. Complaint submitted You submit a complaint, or another government agency forwards your complaint to us. You will receive email updates and can check the status of your complaint. 2. Route We'll send your complaint directly to the company so it can review the issues in your complaint. If we find that another government agency would be better able to assist, we will send your complaint to them and let you know. 3. Company response The company will communicate with you as needed and respond to the issues in your complaint. Companies generally respond in 15 days. In some cases, the company will let you know their response is in progress and provide a final response in 60 days. 4. Complaint published We publish information about your complaint (without information that directly identifies you) in our public Consumer Complaint Database. With your consent we also publish your description of what happened, after taking steps to remove personal information. Learn more about how we share complaint data. 5. Consumer review We will let you know when the company responds. You’ll be able to review the company’s response and will have 60 days to provide feedback about the company's response. Ready to start your complaint? You can submit a complaint online now. It usually takes less than 10 minutes. Page last modified @

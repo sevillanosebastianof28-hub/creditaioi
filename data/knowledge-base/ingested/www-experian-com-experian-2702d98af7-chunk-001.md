@@ -1,0 +1,8 @@
+---
+source_url: https://www.experian.com/help/credit-freeze/
+authority_level: secondary
+jurisdiction: US
+retrieved_at: 2026-02-09T08:02:50.914827+00:00
+last_updated: Fri, 06 Feb 2026 21:35:42 GMT
+---
+A security freeze limits access to your Experian credit report without your permission. Freezing your credit can help protect against identity theft and fraud. Having a freeze on your credit report will not affect your credit scores, but it may prevent your credit report from being accessed until you unfreeze your credit report or credit file. When you freeze your credit, you are still able to submit a loan or credit application to a potential lender, however the lender will be unable to pull your credit file to assess your creditworthiness and make a decision on your application. If you would like for the lender to assess your credit, simply unfreeze your credit file or schedule a thaw in advance for the dates you plan to process a credit application. Freezing or unfreezing your credit report online with Experian is done in real time. You can add or remove a freeze and schedule an unfreeze. When unfreezing your credit report, you have two options. You can permanently remove a freeze until you decide to freeze it again. Alternatively, you can schedule a thaw while your credit report is already frozen, where you can specify the start and end date. This makes it convenient when you know you will need to apply for credit, such as when you are in the market to get a new car loan. Every time you place a freeze, remove a freeze, schedule a thaw or cancel a scheduled unfreeze, you will be alerted of updates so you have the confidence that your Experian credit report is secured. Alerts can be sent via email.

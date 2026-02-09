@@ -1,7 +1,7 @@
 import json
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import torch
 import yaml
@@ -15,8 +15,6 @@ from trl import SFTTrainer
 class Config:
     model_id: str
     output_dir: str
-    train_file: str
-    valid_file: str
     max_length: int
     batch_size: int
     eval_batch_size: int
@@ -24,11 +22,19 @@ class Config:
     epochs: int
     gradient_accumulation_steps: int
     seed: int
+    train_file: Optional[str] = None
+    valid_file: Optional[str] = None
+    train_files: Optional[List[str]] = None
+    valid_files: Optional[List[str]] = None
 
 
 def load_config(path: str) -> Config:
     with open(path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
+    if "train_files" not in data:
+        data["train_files"] = [data["train_file"]] if data.get("train_file") else None
+    if "valid_files" not in data:
+        data["valid_files"] = [data["valid_file"]] if data.get("valid_file") else None
     return Config(**data)
 
 
@@ -78,9 +84,12 @@ def main():
     config_path = os.getenv("CONFIG", "configs/model1_sft.yaml")
     cfg = load_config(config_path)
 
+    if not cfg.train_files or not cfg.valid_files:
+        raise ValueError("Config must specify train_files and valid_files")
+
     dataset = load_dataset("json", data_files={
-        "train": cfg.train_file,
-        "validation": cfg.valid_file,
+        "train": cfg.train_files,
+        "validation": cfg.valid_files,
     })
 
     tokenizer = AutoTokenizer.from_pretrained(cfg.model_id)

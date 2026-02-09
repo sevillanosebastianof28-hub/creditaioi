@@ -1,0 +1,8 @@
+---
+source_url: https://www.consumerfinance.gov/consumer-tools/debt-collection/
+authority_level: primary
+jurisdiction: US
+retrieved_at: 2026-02-09T07:51:57.093939+00:00
+last_updated: unknown
+---
+Debt collection Debt collection issues can be challenging. You don't have to face them alone. Our resources, including guidance on the CFPB’s Debt Collection Rule, can help you understand how debt collection works and what your rights are. English - Español - Understand how the CFPB’s Debt Collection Rule can help you On November 30, 2021, the Debt Collection Rule became effective. The rule clarifies how debt collectors can communicate with you, including what information they’re required to provide you. Get started Basics Why a debt collector is contacting you A debt collector may be trying to contact you because a creditor believes you are past due on the payments you owe on a debt. Read more Learn what could happen if you avoid a debt collector Ignoring or avoiding a debt collector is unlikely to make the debt collector stop contacting you. If you believe you do not owe the debt, you should tell the debt collector. Read more Learn about some examples of "unfair" practices by a debt collector The Fair Debt Collection Practices Act (FDCPA) says that a debt collector is not allowed to use unfair practices in trying to collect a debt. Read more Understand your situation Take action Submit a complaint Having trouble with a financial product or service? If you've already tried reaching out to the company and still have an issue, you can submit a complaint. Tell us about your issue—we'll forward it to the company and work to get you a response, generally within 15 days. Page last modified @

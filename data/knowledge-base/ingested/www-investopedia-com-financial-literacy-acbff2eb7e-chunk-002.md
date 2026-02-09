@@ -1,0 +1,8 @@
+---
+source_url: https://www.investopedia.com/economy-4689801
+authority_level: secondary
+jurisdiction: US
+retrieved_at: 2026-02-09T08:07:27.679505+00:00
+last_updated: unknown
+---
+interaction between the sellers of a resource and the buyers of that resource. The theory defines the relationship between the price of a given good or product and the willingness of people to either buy or sell it. Generally, as the price increases, people are willing to supply more and demand less and vice versa when the price falls. A decline of the purchasing power of a specific currency over time is known as inflation. You can see the rate of decline reflected in the increase of an average price level of a basket of selected goods and services in an economy over a specified period of time. The rise in the general level of prices, often expressed as a percentage, means that a unit of currency effectively buys less than it did in prior periods. An association of workers united as a single entity, known as organized labor or a union, seek to improve the economic status and working conditions of employees through collective bargaining with management. The colloquial phrase "sluggish economy" is not an exact and quantifiable thing. It is derived from an analogy to a slug and refers to an economy in which growth is slow in macroeconomic terms. It can be used to describe an entire economy or a segment of it. Gross domestic product (GDP) is a broad measure of a country's overall domestic production and a measure of that country's overall economic health. It is calculated by the total monetary or market value of all the finished goods and services produced within a country’s borders in a specific time period.

@@ -1,7 +1,7 @@
 import json
 import os
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 import yaml
@@ -14,9 +14,6 @@ from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
 class Config:
     model_id: str
     output_dir: str
-    train_file: str
-    valid_file: str
-    test_file: str
     text_field: str
     label_field: str
     labels: List[str]
@@ -27,11 +24,23 @@ class Config:
     epochs: int
     weight_decay: float
     seed: int
+    train_file: Optional[str] = None
+    valid_file: Optional[str] = None
+    test_file: Optional[str] = None
+    train_files: Optional[List[str]] = None
+    valid_files: Optional[List[str]] = None
+    test_files: Optional[List[str]] = None
 
 
 def load_config(path: str) -> Config:
     with open(path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
+    if "train_files" not in data:
+        data["train_files"] = [data["train_file"]] if data.get("train_file") else None
+    if "valid_files" not in data:
+        data["valid_files"] = [data["valid_file"]] if data.get("valid_file") else None
+    if "test_files" not in data:
+        data["test_files"] = [data["test_file"]] if data.get("test_file") else None
     return Config(**data)
 
 
@@ -42,10 +51,13 @@ def main():
     label2id = {label: idx for idx, label in enumerate(cfg.labels)}
     id2label = {idx: label for label, idx in label2id.items()}
 
+    if not cfg.train_files or not cfg.valid_files or not cfg.test_files:
+        raise ValueError("Config must specify train_files, valid_files, and test_files")
+
     dataset = load_dataset("json", data_files={
-        "train": cfg.train_file,
-        "validation": cfg.valid_file,
-        "test": cfg.test_file,
+        "train": cfg.train_files,
+        "validation": cfg.valid_files,
+        "test": cfg.test_files,
     })
 
     tokenizer = AutoTokenizer.from_pretrained(cfg.model_id)
@@ -74,7 +86,23 @@ def main():
         logits, labels = eval_pred
         preds = np.argmax(logits, axis=-1)
         accuracy = (preds == labels).mean().item()
-        return {"accuracy": accuracy}
+
+        f1_scores = []
+        per_class = {}
+        for idx, label in enumerate(cfg.labels):
+            tp = ((preds == idx) & (labels == idx)).sum()
+            fp = ((preds == idx) & (labels != idx)).sum()
+            fn = ((preds != idx) & (labels == idx)).sum()
+            precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+            recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+            f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
+            f1_scores.append(f1)
+            per_class[f"f1_{label}"] = f1
+
+        macro_f1 = float(np.mean(f1_scores)) if f1_scores else 0.0
+        metrics = {"accuracy": accuracy, "macro_f1": macro_f1}
+        metrics.update(per_class)
+        return metrics
 
     args = TrainingArguments(
         output_dir=cfg.output_dir,
@@ -89,7 +117,7 @@ def main():
         logging_steps=50,
         seed=cfg.seed,
         load_best_model_at_end=True,
-        metric_for_best_model="accuracy",
+        metric_for_best_model="macro_f1",
         report_to=[],
     )
 
