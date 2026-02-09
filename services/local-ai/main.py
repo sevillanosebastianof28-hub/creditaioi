@@ -45,14 +45,27 @@ MONGODB_URI = os.getenv("MONGODB_URI")
 MONGODB_DB = os.getenv("MONGODB_DB", "credit_ai")
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+ENABLE_LLM = os.getenv("ENABLE_LLM", "false").lower() == "true"
 
-qwen_tokenizer = AutoTokenizer.from_pretrained(QWEN_MODEL_ID)
-qwen_model = AutoModelForCausalLM.from_pretrained(QWEN_MODEL_ID).to(DEVICE)
+# Lazy load LLM (1.5B params, requires ~6GB RAM)
+qwen_tokenizer = None
+qwen_model = None
+if ENABLE_LLM:
+    print(f"Loading LLM from {QWEN_MODEL_ID}...")
+    qwen_tokenizer = AutoTokenizer.from_pretrained(QWEN_MODEL_ID)
+    qwen_model = AutoModelForCausalLM.from_pretrained(QWEN_MODEL_ID).to(DEVICE)
+    print("LLM loaded")
 
+# Load fine-tuned classifier (~250MB)
+print(f"Loading classifier from {DISTILBERT_MODEL_ID}...")
 bert_tokenizer = AutoTokenizer.from_pretrained(DISTILBERT_MODEL_ID)
 bert_model = AutoModelForSequenceClassification.from_pretrained(DISTILBERT_MODEL_ID).to(DEVICE)
+print("Classifier loaded")
 
+# Load fine-tuned embeddings (~90MB)
+print(f"Loading embeddings from {MINILM_MODEL_ID}...")
 minilm_model = SentenceTransformer(MINILM_MODEL_ID, device=DEVICE)
+print("Embeddings loaded")
 
 LABELS = {
     "eligible": "Clear factual inaccuracy with evidence or strong basis for dispute",
@@ -64,6 +77,8 @@ LABELS = {
 
 
 def build_prompt(system: Optional[str], user: str) -> str:
+    if not ENABLE_LLM or qwen_tokenizer is None:
+        raise ValueError("LLM is disabled. Set ENABLE_LLM=true to enable chat functionality.")
     messages = []
     if system:
         messages.append({"role": "system", "content": system})
@@ -72,6 +87,8 @@ def build_prompt(system: Optional[str], user: str) -> str:
 
 
 def generate_text(system: Optional[str], user: str, max_new_tokens: int = 512, temperature: float = 0.3) -> str:
+    if not ENABLE_LLM or qwen_model is None:
+        raise ValueError("LLM is disabled. Set ENABLE_LLM=true to enable chat functionality.")
     prompt = build_prompt(system, user)
     inputs = qwen_tokenizer(prompt, return_tensors="pt").to(DEVICE)
     with torch.no_grad():
@@ -199,10 +216,16 @@ def load_knowledge_base():
 @app.on_event("startup")
 def startup_event():
     global mongo_client, mongo_db
+    print("Starting up... checking MongoDB")
     if MONGODB_URI:
+        print(f"MongoDB URI configured: {MONGODB_URI[:20]}...")
         mongo_client = MongoClient(MONGODB_URI)
         mongo_db = mongo_client[MONGODB_DB]
+    else:
+        print("MongoDB not configured")
+    print("Loading knowledge base...")
     load_knowledge_base()
+    print("Startup complete!")
 
 
 @app.get("/health")

@@ -2,6 +2,7 @@
 models/finetuned/
 *.safetensors
 *.bin
+checkpoints/
 
 # Python cache
 __pycache__/
@@ -16,4 +17,3 @@ node_modules/
 
 # Environment
 .env.local
-*.log

@@ -41,6 +41,18 @@ def load_config(path: str) -> Config:
         data["valid_files"] = [data["valid_file"]] if data.get("valid_file") else None
     if "test_files" not in data:
         data["test_files"] = [data["test_file"]] if data.get("test_file") else None
+    if "learning_rate" in data:
+        data["learning_rate"] = float(data["learning_rate"])
+    if "epochs" in data:
+        data["epochs"] = int(data["epochs"])
+    if "batch_size" in data:
+        data["batch_size"] = int(data["batch_size"])
+    if "eval_batch_size" in data:
+        data["eval_batch_size"] = int(data["eval_batch_size"])
+    if "max_length" in data:
+        data["max_length"] = int(data["max_length"])
+    if "weight_decay" in data:
+        data["weight_decay"] = float(data["weight_decay"])
     return Config(**data)
 
 

@@ -1,8 +1,8 @@
 model_id: distilbert-base-uncased
-output_dir: ../../models/finetuned/distilbert-eligibility
-train_file: ../../data/finetune/model2_classifier.train.jsonl
-valid_file: ../../data/finetune/model2_classifier.valid.jsonl
-test_file: ../../data/finetune/model2_classifier.test.jsonl
+output_dir: models/finetuned/distilbert-eligibility
+train_file: data/finetune/model2_classifier.train.jsonl
+valid_file: data/finetune/model2_classifier.valid.jsonl
+test_file: data/finetune/model2_classifier.test.jsonl
 text_field: text
 label_field: label
 labels:

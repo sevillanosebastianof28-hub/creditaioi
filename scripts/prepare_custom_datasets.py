@@ -33,8 +33,7 @@ def ensure_output_dir() -> None:
 
 
 def write_jsonl(path: Path, rows: List[Dict[str, Any]]) -> None:
-    if not rows:
-        return
+    path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as f:
         for row in rows:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
