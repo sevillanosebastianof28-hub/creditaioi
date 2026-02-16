@@ -14,6 +14,8 @@ import { logger } from "@/lib/logger";
 
 // Pages
 import Landing from "./pages/Landing";
+import HowItWorks from "./pages/HowItWorks";
+import WhyUs from "./pages/WhyUs";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Clients from "./pages/Clients";
@@ -116,6 +118,8 @@ function AppRouter() {
 
       {/* Public AI Automation Page */}
       <Route path="/ai-automation" element={<AIAutomation />} />
+      <Route path="/how-it-works" element={<HowItWorks />} />
+      <Route path="/why-us" element={<WhyUs />} />
       
       {/* Password Reset */}
       <Route path="/reset-password" element={<ResetPassword />} />

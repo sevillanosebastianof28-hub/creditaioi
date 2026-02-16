@@ -17,7 +17,7 @@ import {
   Bot,
   Lock,
   Rocket,
-  Play,
+  
   ChevronRight,
   Layers,
   Globe,
@@ -252,17 +252,28 @@ const Landing = () => {
               />
             </motion.div>
             <div className="hidden lg:flex items-center gap-6 xl:gap-8">
-              {['Features', 'How It Works', 'Pricing', 'Why Us'].map((item, i) => (
+              {[
+                { label: 'Features', href: '#features' },
+                { label: 'How It Works', href: '/how-it-works' },
+                { label: 'Pricing', href: '#pricing' },
+                { label: 'Why Us', href: '/why-us' },
+              ].map((item, i) => (
                 <motion.a 
-                  key={item}
-                  href={`#${item.toLowerCase().replace(' ', '-')}`} 
+                  key={item.label}
+                  href={item.href}
+                  onClick={(e) => {
+                    if (item.href.startsWith('/')) {
+                      e.preventDefault();
+                      navigate(item.href);
+                    }
+                  }}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors relative group"
                   whileHover={{ y: -2 }}
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 * i }}
                 >
-                  {item}
+                  {item.label}
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
                 </motion.a>
               ))}
@@ -419,22 +430,6 @@ const Landing = () => {
                     transition={{ duration: 3, repeat: Infinity }}
                   />
                 </MagneticButton>
-                
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button 
-                    size="lg" 
-                    variant="outline"
-                    className="px-8 py-6 text-lg border-border hover:bg-secondary/50 group transition-all rounded-xl"
-                  >
-                    <motion.span
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    >
-                      <Play className="w-5 h-5 mr-2" />
-                    </motion.span>
-                    Watch Demo
-                  </Button>
-                </motion.div>
               </div>
             </TextReveal>
 
