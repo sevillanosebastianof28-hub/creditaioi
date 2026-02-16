@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { readAiStream } from '@/lib/aiStream';
 
 interface ClassificationResult {
   eligibility: 'eligible' | 'conditionally_eligible' | 'not_eligible' | 'insufficient_information';
@@ -150,23 +149,15 @@ export function useAIOrchestrator() {
           input,
           context,
           userId: user.id,
-          stream: true
         })
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to process AI request');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to process AI request');
       }
 
-      const parsed = await readAiStream<OrchestratorResponse>(response, (event) => {
-        if (event.type === 'status') {
-          setStatusMessage(event.message || null);
-        }
-      });
-
-      setStatusMessage(null);
-      const responseData = parsed as OrchestratorResponse;
+      const responseData = await response.json() as OrchestratorResponse;
       setLastResponse(responseData);
 
       // Handle refused requests

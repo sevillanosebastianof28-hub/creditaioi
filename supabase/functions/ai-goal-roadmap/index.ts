@@ -20,18 +20,17 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const prompt = `Generate a detailed credit score improvement roadmap as JSON with this structure:
+    const prompt = `Generate a credit score improvement roadmap as ONLY valid JSON:
 {
-  "overview": { "currentScore", "targetScore", "pointsToGain", "difficulty", "monthlyTarget" },
-  "milestones": [{ "milestone", "targetScore", "timeframe", "actions": [], "focus" }],
-  "phases": [{ "phase", "name", "duration", "goals": [], "expectedGain", "priority" }],
+  "overview": { "currentScore": ${currentScore}, "targetScore": ${targetScore}, "pointsToGain": ${targetScore - currentScore}, "difficulty": "", "monthlyTarget": "" },
+  "milestones": [{ "milestone": "", "targetScore": 0, "timeframe": "", "actions": [], "focus": "" }],
+  "phases": [{ "phase": 1, "name": "", "duration": "", "goals": [], "expectedGain": "", "priority": "" }],
   "keyActions": [],
   "warnings": [],
   "tips": []
 }
 
-Current score: ${currentScore}, Target: ${targetScore}, Goal: ${goalType}, Timeframe: ${timeframe} months.
-Be realistic about timelines. Never guarantee outcomes. Return ONLY valid JSON.`;
+Goal: ${goalType}, Timeframe: ${timeframe} months. Be realistic. Never guarantee outcomes. Return ONLY valid JSON, no markdown.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -42,7 +41,7 @@ Be realistic about timelines. Never guarantee outcomes. Return ONLY valid JSON.`
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: "You are a credit improvement strategist. Return structured JSON roadmaps. Be realistic and compliant with FCRA guidelines. Never guarantee outcomes." },
+          { role: "system", content: "You are a credit improvement strategist. Return ONLY valid JSON. Be realistic and FCRA compliant. Never guarantee outcomes." },
           { role: "user", content: prompt },
         ],
       }),
@@ -57,7 +56,6 @@ Be realistic about timelines. Never guarantee outcomes. Return ONLY valid JSON.`
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
 
-    // Try to parse JSON from response
     let roadmap;
     try {
       const jsonMatch = content.match(/\{[\s\S]*\}/);

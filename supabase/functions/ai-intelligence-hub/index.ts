@@ -21,19 +21,19 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const prompts: Record<string, string> = {
-      generate_insights: `Provide comprehensive credit insights as JSON:
-{ "overview": { "averageScore", "category", "bureauScores", "scoreVariance", "negativeItemCount" }, "progress": { "currentCategory", "nextCategory", "pointsNeeded", "estimatedTimeframe" }, "keyInsights": [{ "type" ("success"|"warning"|"alert"|"info"), "title", "message", "action" }], "recommendations": [], "scoringFactors": {} }`,
-      score_analysis: `Analyze credit scores across bureaus as JSON:
-{ "current": { "average", "experian", "equifax", "transunion" }, "analysis": { "trend", "stability", "riskLevel" }, "breakdown": {} }`,
-      impact_assessment: `Assess impact of negative items as JSON:
-{ "currentImpact": { "negativeItems", "estimatedPointLoss", "scoreWithoutNegatives" }, "itemBreakdown": [], "recoveryPotential": { "immediate", "threeMonths", "sixMonths", "oneYear" } }`,
+      generate_insights: `Provide comprehensive credit insights as ONLY valid JSON:
+{ "overview": { "averageScore": 0, "category": "", "bureauScores": {}, "scoreVariance": 0, "negativeItemCount": 0 }, "progress": { "currentCategory": "", "nextCategory": "", "pointsNeeded": 0, "estimatedTimeframe": "" }, "keyInsights": [{ "type": "success", "title": "", "message": "", "action": "" }], "recommendations": [], "scoringFactors": {} }`,
+      score_analysis: `Analyze credit scores across bureaus as ONLY valid JSON:
+{ "current": { "average": 0, "experian": 0, "equifax": 0, "transunion": 0 }, "analysis": { "trend": "", "stability": "", "riskLevel": "" }, "breakdown": {} }`,
+      impact_assessment: `Assess impact of negative items as ONLY valid JSON:
+{ "currentImpact": { "negativeItems": 0, "estimatedPointLoss": 0, "scoreWithoutNegatives": 0 }, "itemBreakdown": [], "recoveryPotential": { "immediate": 0, "threeMonths": 0, "sixMonths": 0, "oneYear": 0 } }`,
     };
 
     const prompt = `${prompts[action] || "Analyze this credit data and return structured JSON insights."}
 
 Credit Data: ${JSON.stringify(creditData)}
 
-Return ONLY valid JSON.`;
+Return ONLY valid JSON, no markdown.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -44,7 +44,7 @@ Return ONLY valid JSON.`;
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: "You are an AI credit intelligence engine. Analyze credit data and return structured JSON insights. Be accurate, realistic, and compliant with FCRA. Never guarantee outcomes." },
+          { role: "system", content: "You are an AI credit intelligence engine. Return ONLY valid JSON. Be accurate, realistic, and FCRA compliant. Never guarantee outcomes." },
           { role: "user", content: prompt },
         ],
       }),
