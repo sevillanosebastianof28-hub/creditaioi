@@ -21,21 +21,21 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const prompts: Record<string, string> = {
-      success_prediction: `Analyze these credit report items and predict dispute success probability for each. Return JSON:
-{ "totalItems": N, "highPriority": N, "mediumPriority": N, "lowPriority": N, "predictions": [{ "itemId", "creditor", "type", "successProbability" (0-100), "recommendation", "strategy" }] }
+      success_prediction: `Analyze these credit report items and predict dispute success probability for each. Return ONLY valid JSON:
+{ "totalItems": N, "highPriority": N, "mediumPriority": N, "lowPriority": N, "predictions": [{ "itemId": "", "creditor": "", "type": "", "successProbability": 0, "recommendation": "", "strategy": "" }] }
 
 Items: ${JSON.stringify(items)}`,
-      priority_ranking: `Rank these credit report items by dispute priority (highest impact first). Return JSON:
-{ "rankedItems": [{ "rank", "id", "creditor", "type", "balance", "priorityScore", "action" }] }
+      priority_ranking: `Rank these credit report items by dispute priority. Return ONLY valid JSON:
+{ "rankedItems": [{ "rank": 1, "id": "", "creditor": "", "type": "", "balance": 0, "priorityScore": 0, "action": "" }] }
 
 Items: ${JSON.stringify(items)}`,
-      strategy_recommendation: `Recommend a phased dispute strategy for these items. Return JSON:
-{ "summary": { "totalItems", "collections", "chargeOffs", "latePayments" }, "strategy": { "phase1", "phase2", "phase3", "timeline" }, "recommendations": [] }
+      strategy_recommendation: `Recommend a phased dispute strategy. Return ONLY valid JSON:
+{ "summary": { "totalItems": 0, "collections": 0, "chargeOffs": 0, "latePayments": 0 }, "strategy": { "phase1": "", "phase2": "", "phase3": "", "timeline": "" }, "recommendations": [] }
 
 Items: ${JSON.stringify(items)}`,
     };
 
-    const prompt = prompts[analysisType] || `Analyze these credit items (type: ${analysisType}): ${JSON.stringify(items)}. Return structured JSON.`;
+    const prompt = prompts[analysisType] || `Analyze these credit items (type: ${analysisType}): ${JSON.stringify(items)}. Return ONLY valid JSON.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -46,7 +46,7 @@ Items: ${JSON.stringify(items)}`,
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: "You are a credit analysis AI. Analyze credit report items and return structured JSON. Be realistic about success probabilities based on item type, age, and balance. Never guarantee outcomes." },
+          { role: "system", content: "You are a credit analysis AI. Analyze credit report items and return structured JSON only. Be realistic about success probabilities. Never guarantee outcomes." },
           { role: "user", content: prompt },
         ],
       }),
