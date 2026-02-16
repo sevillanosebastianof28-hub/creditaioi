@@ -95,7 +95,8 @@ def main():
             show_progress_bar=True
         )
 
-    # Train the model
+    # Train the model (automatically saves to output_path)
+    os.makedirs(cfg.output_dir, exist_ok=True)
     model.fit(
         train_objectives=[(train_dataloader, train_loss)],
         epochs=cfg.epochs,
@@ -105,10 +106,6 @@ def main():
         output_path=cfg.output_dir,
         show_progress_bar=True,
     )
-
-    # Save the final model
-    os.makedirs(cfg.output_dir, exist_ok=True)
-    model.save(cfg.output_dir)
     print(f"\nModel saved to {cfg.output_dir}")
 
 
