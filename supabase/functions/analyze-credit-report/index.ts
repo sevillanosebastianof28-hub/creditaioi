@@ -20,7 +20,37 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const prompt = `Analyze this credit report and identify all disputable items. Return ONLY valid JSON with this exact structure:
+    const prompt = `You are analyzing a credit report. Follow these STRICT rules for consistency:
+
+CLASSIFICATION RULES (apply these deterministically):
+- Collection accounts → accountType: "Collection", priority: "high", applicableLaw: "FDCPA Section 809"
+- Charge-offs → accountType: "ChargeOff", priority: "high", applicableLaw: "FCRA Section 611"
+- Late payments (30-59 days) → accountType: "LatePayment", priority: "medium", applicableLaw: "FCRA Section 611"
+- Late payments (60+ days) → accountType: "LatePayment", priority: "high", applicableLaw: "FCRA Section 611"
+- Hard inquiries (>2 years) → accountType: "Inquiry", priority: "low", applicableLaw: "FCRA Section 605"
+- Hard inquiries (<2 years, unauthorized) → accountType: "Inquiry", priority: "medium", applicableLaw: "FCRA Section 604"
+- Medical debt → accountType: "MedicalDebt", priority: "high", applicableLaw: "FCRA Section 605(a)"
+- Identity errors / wrong info → accountType: "PersonalInfo", priority: "high", applicableLaw: "FCRA Section 611"
+
+DELETION PROBABILITY RULES (use these fixed ranges, do NOT vary randomly):
+- Collection with no original creditor verification: 70-85%
+- Collection older than 5 years: 75-90%
+- Charge-off with balance discrepancy: 55-70%
+- Late payment (single occurrence): 30-45%
+- Late payment (pattern): 15-25%
+- Unauthorized inquiry: 80-95%
+- Medical debt under $500: 85-95%
+- Default (if none match): 40-55%
+
+SCORE IMPACT RULES (use these fixed ranges):
+- Collection removal: 15-40 points (higher balance = higher impact)
+- Charge-off removal: 20-50 points
+- Late payment removal: 5-20 points per occurrence
+- Inquiry removal: 3-10 points
+- Balance under $1000: use lower end of range
+- Balance over $5000: use upper end of range
+
+Return ONLY valid JSON with this exact structure:
 {
   "summary": {
     "totalAccounts": 0,
@@ -34,13 +64,13 @@ serve(async (req) => {
       "id": "item_1",
       "creditor": "Name",
       "accountNumber": "XXXX1234",
-      "accountType": "Collection|ChargeOff|LatePayment|Inquiry|etc",
+      "accountType": "Collection|ChargeOff|LatePayment|Inquiry|MedicalDebt|PersonalInfo",
       "issueType": "description of the issue",
       "balance": 0,
-      "disputeReason": "specific reason under FCRA",
+      "disputeReason": "specific reason under FCRA/FDCPA",
       "deletionProbability": 75,
       "expectedScoreImpact": 15,
-      "applicableLaw": "FCRA Section 611|605b|etc",
+      "applicableLaw": "FCRA Section 611",
       "strategy": "recommended approach",
       "priority": "high|medium|low",
       "bureaus": ["experian","equifax","transunion"]
@@ -49,7 +79,7 @@ serve(async (req) => {
   "recommendations": ["actionable recommendation 1", "recommendation 2"]
 }
 
-Be realistic about deletion probabilities. Prioritize items by score impact. Never guarantee outcomes.
+IMPORTANT: Apply rules consistently. Same account type and conditions MUST produce same classification, probability range, and score impact range every time. Never guarantee outcomes. Sort items by priority (high first) then by expectedScoreImpact (descending).
 
 CREDIT REPORT:
 ${reportText.slice(0, 8000)}`;
@@ -62,8 +92,9 @@ ${reportText.slice(0, 8000)}`;
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
+        temperature: 0,
         messages: [
-          { role: "system", content: "You are an expert credit report analyst. Analyze credit reports for errors, inaccuracies, and disputable items under FCRA. Return ONLY valid JSON. Be thorough but realistic." },
+          { role: "system", content: "You are a deterministic credit report analyst. You MUST classify items using the exact rules provided. Same inputs must produce same outputs. Apply deletion probability and score impact from the fixed ranges specified. Return ONLY valid JSON. Never guarantee outcomes or make legal promises." },
           { role: "user", content: prompt },
         ],
       }),
