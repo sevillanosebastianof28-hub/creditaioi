@@ -35,7 +35,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { readAiStream } from '@/lib/aiStream';
+
 
 interface LetterDocumentEditorProps {
   content: string;
@@ -92,16 +92,16 @@ const LetterDocumentEditor = ({
         body: JSON.stringify({
           letterContent: editedContent,
           letterType,
-          creditor,
-          stream: true
+          creditor
         })
       });
 
-      const data = await readAiStream<{ optimizedLetter: string }>(response, (event) => {
-        if (event.type === 'status') {
-          setStatusMessage(event.message || null);
-        }
-      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Optimization failed');
+      }
+
+      const data = await response.json();
 
       if (data?.optimizedLetter) {
         if (editorRef.current) {

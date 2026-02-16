@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { FileText, Search, Eye, Edit, Send, CheckCircle2, Clock, AlertCircle, Brain, User, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { readAiStream } from '@/lib/aiStream';
+
 import LetterDocumentEditor from '@/components/disputes/LetterDocumentEditor';
 
 const mockLetters = [
@@ -111,16 +111,16 @@ export default function VADisputes() {
             disputeReason: letter.type,
             applicableLaw: 'FCRA',
             bureaus: [letter.bureau]
-          },
-          stream: true
+          }
         })
       });
 
-      const data = await readAiStream<{ letter: string }>(response, (event) => {
-        if (event.type === 'status') {
-          setStatusMessage(event.message || null);
-        }
-      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Letter generation failed');
+      }
+
+      const data = await response.json();
 
       setLetterContent(data.letter || 'Unable to generate letter');
     } catch (err: any) {

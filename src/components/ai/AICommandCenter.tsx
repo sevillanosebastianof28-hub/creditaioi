@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { useCreditData } from '@/hooks/useCreditData';
 import { useAIPredictionsRealtime } from '@/hooks/useAIPredictions';
-import { readAiStream } from '@/lib/aiStream';
 import { toast } from 'sonner';
 
 interface AIInsight {
@@ -84,18 +83,18 @@ export function AICommandCenter() {
             summary: creditData.summary,
             averageScore,
             disputeProgress
-          },
-          stream: true
+          }
         })
       });
 
-      const data = await readAiStream<{ insights: AIInsight[]; analytics: AIAnalytics | null }>(response, (event) => {
-        if (event.type === 'status') {
-          setStatusMessage(event.message || null);
-        }
-      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Analysis failed');
+      }
+
+      const data = await response.json();
       
-      setInsights(data.insights || []);
+      setInsights(data.insights?.keyInsights || data.insights || []);
       setAnalytics(data.analytics || null);
       
       // Cache insights for 6 hours

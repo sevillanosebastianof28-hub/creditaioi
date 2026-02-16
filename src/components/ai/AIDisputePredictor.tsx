@@ -7,7 +7,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Target, Sparkles, TrendingUp, AlertTriangle, CheckCircle2, FileText } from 'lucide-react';
 import { useCreditData } from '@/hooks/useCreditData';
 import { useAIPredictionsRealtime } from '@/hooks/useAIPredictions';
-import { readAiStream } from '@/lib/aiStream';
 import { toast } from 'sonner';
 
 interface Prediction {
@@ -73,16 +72,17 @@ export function AIDisputePredictor() {
         },
         body: JSON.stringify({
           analysisType: 'success_prediction',
-          items,
-          stream: true
+          items
         })
       });
 
-      const result = await readAiStream<{ predictions: Prediction[] }>(response, (event) => {
-        if (event.type === 'status') {
-          setStatusMessage(event.message || null);
-        }
-      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Prediction failed');
+      }
+
+      const data = await response.json();
+      const result = data.result || data;
 
       const resultPredictions = result.predictions || [];
       setPredictions(resultPredictions);

@@ -7,7 +7,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { BarChart3, Sparkles, TrendingUp, AlertTriangle, CheckCircle2, ArrowUp } from 'lucide-react';
 import { useCreditData } from '@/hooks/useCreditData';
 import { useAIPredictionsRealtime } from '@/hooks/useAIPredictions';
-import { readAiStream } from '@/lib/aiStream';
 import { toast } from 'sonner';
 
 interface PrioritizedItem {
@@ -76,16 +75,17 @@ export function AISmartPrioritization() {
         },
         body: JSON.stringify({
           analysisType: 'smart_priority',
-          items,
-          stream: true
+          items
         })
       });
 
-      const analysis = await readAiStream<PrioritizationResult>(response, (event) => {
-        if (event.type === 'status') {
-          setStatusMessage(event.message || null);
-        }
-      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Analysis failed');
+      }
+
+      const data = await response.json();
+      const analysis = data.result || data;
 
       setResult(analysis);
       
