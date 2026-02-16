@@ -26,7 +26,7 @@ import { cn } from '@/lib/utils';
 import { useDisputeWorkflow, DisputeItem, DisputeRound } from '@/hooks/useDisputeWorkflow';
 import { useLetterTracking } from '@/hooks/useLetterTracking';
 import { supabase } from '@/integrations/supabase/client';
-import { readAiStream } from '@/lib/aiStream';
+
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import LetterDocumentEditor from '@/components/disputes/LetterDocumentEditor';
@@ -159,16 +159,16 @@ const Disputes = () => {
             disputeReason: item.dispute_reason,
             applicableLaw: 'FCRA',
             bureaus: [item.bureau]
-          },
-          stream: true
+          }
         })
       });
 
-      const data = await readAiStream<{ letter: string }>(response, (event) => {
-        if (event.type === 'status') {
-          setStatusMessage(event.message || null);
-        }
-      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Letter generation failed');
+      }
+
+      const data = await response.json();
 
       setLetterContent(data.letter || 'Unable to generate letter');
     } catch (err: any) {

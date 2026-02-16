@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar, Sparkles, Clock, CheckCircle2, AlertCircle, FileSearch } from 'lucide-react';
 import { useCreditData } from '@/hooks/useCreditData';
 import { useAIPredictionsRealtime } from '@/hooks/useAIPredictions';
-import { readAiStream } from '@/lib/aiStream';
 import { toast } from 'sonner';
 
 interface Forecast {
@@ -85,16 +84,17 @@ export function AIBureauForecaster() {
         body: JSON.stringify({
           analysisType: 'bureau_forecast',
           items,
-          bureau: selectedBureau,
-          stream: true
+          bureau: selectedBureau
         })
       });
 
-      const forecast = await readAiStream<ForecastResult>(response, (event) => {
-        if (event.type === 'status') {
-          setStatusMessage(event.message || null);
-        }
-      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Forecast failed');
+      }
+
+      const data = await response.json();
+      const forecast = data.result || data;
 
       setResult(forecast);
       

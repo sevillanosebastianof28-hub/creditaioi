@@ -57,3 +57,21 @@ verify_jwt = false
 
 [functions.ocr-document-parser]
 verify_jwt = false
+
+[functions.generate-dispute-letter]
+verify_jwt = false
+
+[functions.optimize-dispute-letter]
+verify_jwt = false
+
+[functions.ai-progress-explainer]
+verify_jwt = false
+
+[functions.ai-score-simulator]
+verify_jwt = false
+
+[functions.ai-round-manager]
+verify_jwt = false
+
+[functions.ai-outcome-tracker]
+verify_jwt = false

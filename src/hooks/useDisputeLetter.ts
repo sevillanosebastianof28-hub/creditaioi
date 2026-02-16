@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { DisputableItem } from './useCreditAnalysis';
-import { readAiStream } from '@/lib/aiStream';
+
 
 export type LetterType = 
   | 'fcra_605b'
@@ -132,7 +132,6 @@ export function useDisputeLetter() {
           letterType,
           disputableItem,
           customInstructions,
-          stream: true,
           maxWaitMs,
           fastMode
         }),
@@ -141,17 +140,12 @@ export function useDisputeLetter() {
 
       let data: GeneratedLetter | null = null;
       try {
-        data = await readAiStream<GeneratedLetter>(response, (event) => {
-          if (event.type === 'status') {
-            setStatusMessage(event.message || null);
-          }
-          if (event.type === 'delta') {
-            const delta = (event as { delta?: string }).delta;
-            if (delta) {
-              setDraftLetter((prev) => prev + delta);
-            }
-          }
-        });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Letter generation failed');
+        }
+        const jsonData = await response.json();
+        data = jsonData.result || jsonData;
       } catch (streamError) {
         if (controller.signal.aborted) {
           response = await fetch(`${supabaseUrl}/functions/v1/generate-dispute-letter`, {
@@ -165,23 +159,17 @@ export function useDisputeLetter() {
               letterType,
               disputableItem,
               customInstructions,
-              stream: true,
               maxWaitMs: 2000,
               forceTemplate: true
             })
           });
 
-          data = await readAiStream<GeneratedLetter>(response, (event) => {
-            if (event.type === 'status') {
-              setStatusMessage(event.message || null);
-            }
-            if (event.type === 'delta') {
-              const delta = (event as { delta?: string }).delta;
-              if (delta) {
-                setDraftLetter((prev) => prev + delta);
-              }
-            }
-          });
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Letter generation failed');
+          }
+          const jsonData = await response.json();
+          data = jsonData.result || jsonData;
         } else {
           throw streamError;
         }

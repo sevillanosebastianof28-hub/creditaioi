@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Target, Sparkles, CheckCircle2, Clock, AlertTriangle, TrendingUp } from 'lucide-react';
 import { useCreditData } from '@/hooks/useCreditData';
 import { useAIPredictionsRealtime } from '@/hooks/useAIPredictions';
-import { readAiStream } from '@/lib/aiStream';
 import { toast } from 'sonner';
 
 interface Milestone {
@@ -78,16 +77,16 @@ export function AIGoalRoadmap() {
             collections: creditData.negativeItems?.filter(i => i.type === 'Collection').length || 0,
             latePayments: creditData.negativeItems?.filter(i => i.type === 'Late Payment').length || 0,
             utilization: creditData.summary?.creditUtilization || 30
-          } : null,
-          stream: true
+          } : null
         })
       });
 
-      const result = await readAiStream<{ roadmap: Roadmap }>(response, (event) => {
-        if (event.type === 'status') {
-          setStatusMessage(event.message || null);
-        }
-      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Roadmap generation failed');
+      }
+
+      const result = await response.json();
 
       setRoadmap(result.roadmap);
       
