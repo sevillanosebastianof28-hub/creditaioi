@@ -36,3 +36,18 @@ enable_signup = true
 enable_signup = true
 double_confirm_changes = true
 enable_confirmations = false
+
+[functions.ai-orchestrator]
+verify_jwt = false
+
+[functions.ai-credit-coach]
+verify_jwt = false
+
+[functions.ai-smart-analyzer]
+verify_jwt = false
+
+[functions.ai-intelligence-hub]
+verify_jwt = false
+
+[functions.ai-goal-roadmap]
+verify_jwt = false
