@@ -49,10 +49,11 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: msg }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
@@ -106,8 +107,8 @@ function streamInsights(action: string, creditData: CreditData): Response {
         controller.enqueue(encoder.encode(doneEvent));
 
         controller.close();
-      } catch (error) {
-        const errorEvent = `data: ${JSON.stringify({ type: 'error', error: error.message })}\n\n`;
+      } catch (error: unknown) {
+        const errorEvent = `data: ${JSON.stringify({ type: 'error', error: error instanceof Error ? error.message : 'Unknown error' })}\n\n`;
         controller.enqueue(encoder.encode(errorEvent));
         controller.close();
       }
