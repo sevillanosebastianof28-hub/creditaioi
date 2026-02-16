@@ -214,12 +214,12 @@ const Landing = () => {
     Pricing: '#pricing',
     Integrations: '#how-it-works',
     API: '#features',
-    About: '#why-us',
-    Blog: '#features',
-    Careers: '#why-us',
-    Contact: '#pricing',
-    Privacy: '#top',
-    Terms: '#top',
+    About: '/about',
+    Blog: '/blog',
+    Careers: '/careers',
+    Contact: '/contact',
+    Privacy: '/privacy',
+    Terms: '/terms',
     Security: '#why-us',
     'FCRA Compliance': '#why-us',
   };
@@ -968,16 +968,42 @@ const Landing = () => {
               </div>
             </div>
             {[
-              { title: 'Product', links: ['Features', 'Pricing', 'Integrations', 'API'] },
-              { title: 'Company', links: ['About', 'Blog', 'Careers', 'Contact'] },
-              { title: 'Legal', links: ['Privacy', 'Terms', 'Security', 'FCRA Compliance'] }
+              { title: 'Product', links: [
+                { label: 'AI Engine', href: '/products/ai-engine' },
+                { label: 'Dispute Letters', href: '/products/dispute-letters' },
+                { label: 'Score Simulator', href: '/products/score-simulator' },
+                { label: 'Round Manager', href: '/products/round-manager' },
+              ]},
+              { title: 'Company', links: [
+                { label: 'About', href: '/about' },
+                { label: 'Blog', href: '/blog' },
+                { label: 'Careers', href: '/careers' },
+                { label: 'Contact', href: '/contact' },
+              ]},
+              { title: 'Legal', links: [
+                { label: 'Privacy', href: '/privacy' },
+                { label: 'Terms', href: '/terms' },
+                { label: 'Cookie Policy', href: '/cookies' },
+                { label: 'DMCA', href: '/dmca' },
+              ]}
             ].map((section, i) => (
               <div key={i}>
                 <h4 className="font-semibold text-foreground mb-3 sm:mb-4 text-sm sm:text-base">{section.title}</h4>
                 <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm text-muted-foreground">
                   {section.links.map((link, j) => (
                     <motion.li key={j} whileHover={{ x: 3 }}>
-                      <a href={footerLinkMap[link] || '#top'} className="hover:text-primary transition-colors">{link}</a>
+                      <a
+                        href={link.href}
+                        onClick={(e) => {
+                          if (link.href.startsWith('/')) {
+                            e.preventDefault();
+                            navigate(link.href);
+                          }
+                        }}
+                        className="hover:text-primary transition-colors"
+                      >
+                        {link.label}
+                      </a>
                     </motion.li>
                   ))}
                 </ul>
@@ -1030,8 +1056,8 @@ const Landing = () => {
               © 2025 Credit AI. All rights reserved.
             </p>
             <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm text-muted-foreground">
-              <a href="#top" className="hover:text-primary transition-colors">Privacy Policy</a>
-              <a href="#top" className="hover:text-primary transition-colors">Terms of Service</a>
+              <a href="/privacy" onClick={(e) => { e.preventDefault(); navigate('/privacy'); }} className="hover:text-primary transition-colors">Privacy Policy</a>
+              <a href="/terms" onClick={(e) => { e.preventDefault(); navigate('/terms'); }} className="hover:text-primary transition-colors">Terms of Service</a>
             </div>
           </motion.div>
         </div>
