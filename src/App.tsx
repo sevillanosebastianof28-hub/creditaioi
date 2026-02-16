@@ -37,6 +37,18 @@ import RoundManager from "./pages/RoundManager";
 import OutcomeTracker from "./pages/OutcomeTracker";
 import WhiteLabel from "./pages/WhiteLabel";
 import ResetPassword from "./pages/ResetPassword";
+import About from "./pages/About";
+import Blog from "./pages/Blog";
+import Contact from "./pages/Contact";
+import Careers from "./pages/Careers";
+import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
+import TermsOfService from "./pages/legal/TermsOfService";
+import CookiePolicy from "./pages/legal/CookiePolicy";
+import DMCA from "./pages/legal/DMCA";
+import ProductAIEngine from "./pages/products/ProductAIEngine";
+import ProductDisputeLetters from "./pages/products/ProductDisputeLetters";
+import ProductScoreSimulator from "./pages/products/ProductScoreSimulator";
+import ProductRoundManager from "./pages/products/ProductRoundManager";
 
 // Role-specific pages
 import ClientDashboard from "./pages/ClientDashboard";
@@ -120,6 +132,24 @@ function AppRouter() {
       <Route path="/ai-automation" element={<AIAutomation />} />
       <Route path="/how-it-works" element={<HowItWorks />} />
       <Route path="/why-us" element={<WhyUs />} />
+      
+      {/* Public Pages */}
+      <Route path="/about" element={<About />} />
+      <Route path="/blog" element={<Blog />} />
+      <Route path="/contact" element={<Contact />} />
+      <Route path="/careers" element={<Careers />} />
+      
+      {/* Legal Pages */}
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/cookies" element={<CookiePolicy />} />
+      <Route path="/dmca" element={<DMCA />} />
+      
+      {/* Product Pages */}
+      <Route path="/products/ai-engine" element={<ProductAIEngine />} />
+      <Route path="/products/dispute-letters" element={<ProductDisputeLetters />} />
+      <Route path="/products/score-simulator" element={<ProductScoreSimulator />} />
+      <Route path="/products/round-manager" element={<ProductRoundManager />} />
       
       {/* Password Reset */}
       <Route path="/reset-password" element={<ResetPassword />} />
