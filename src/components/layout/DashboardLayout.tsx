@@ -9,17 +9,15 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { collapsed } = useSidebarContext();
+  const { collapsed, isMobile } = useSidebarContext();
 
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <div 
-        className={cn(
-          'transition-all duration-300 ease-in-out'
-        )}
+      <div
+        className="transition-all duration-300 ease-in-out"
         style={{
-          paddingLeft: collapsed ? '70px' : '260px'
+          paddingLeft: isMobile ? 0 : collapsed ? '70px' : '260px'
         }}
       >
         <Header />

@@ -1,4 +1,4 @@
-import { Bell, Search, Moon, Sun, User, LogOut, Settings, Check } from 'lucide-react';
+import { Bell, Search, Moon, Sun, User, LogOut, Settings, Check, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -16,6 +16,7 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useSidebarContext } from '@/contexts/SidebarContext';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -24,6 +25,7 @@ export function Header() {
   const { user, profile, role, signOut } = useAuth();
   const navigate = useNavigate();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { isMobile, setMobileOpen } = useSidebarContext();
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -70,12 +72,19 @@ export function Header() {
     : 'U';
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-2 md:gap-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6">
+      {/* Mobile hamburger */}
+      {isMobile && (
+        <Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)} className="flex-shrink-0">
+          <Menu className="w-5 h-5" />
+        </Button>
+      )}
+
       {/* Search */}
       <div className="relative flex-1 max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          placeholder="Search clients, disputes, tasks..."
+          placeholder={isMobile ? "Search..." : "Search clients, disputes, tasks..."}
           className="pl-9 bg-secondary border-0 focus-visible:ring-1 focus-visible:ring-primary"
         />
       </div>
