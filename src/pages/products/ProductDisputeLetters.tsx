@@ -1,19 +1,27 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Shield, Zap, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { FileText, Shield, Zap, ArrowRight, CheckCircle2, PenTool, Mail, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ScrollReveal } from '@/components/landing/ScrollReveal';
 
 const ProductDisputeLetters = () => {
   const navigate = useNavigate();
+
   const features = [
     'Bureau-specific letter generation (Experian, Equifax, TransUnion)',
-    'FCRA and FDCPA compliant templates',
-    'AI optimization to strengthen legal language',
-    'Rich text WYSIWYG editor for customization',
-    'Bulk letter generation for multiple items',
-    'Letter tracking with status updates',
+    'FCRA and FDCPA compliant templates with legal citations',
+    'AI optimization to strengthen legal language and persuasion',
+    'Rich text WYSIWYG editor for manual customization',
+    'Bulk letter generation for multiple items in one click',
+    'Letter tracking with status updates and response deadlines',
+  ];
+
+  const letterTypes = [
+    { name: 'Initial Dispute', description: 'First-round letters demanding investigation of inaccurate items.', icon: <FileText className="w-5 h-5" /> },
+    { name: 'Follow-Up', description: 'Second and third-round letters escalating unresolved disputes.', icon: <Mail className="w-5 h-5" /> },
+    { name: 'Debt Validation', description: 'Request proof of debt from collectors under FDCPA Section 809.', icon: <Shield className="w-5 h-5" /> },
+    { name: 'Goodwill Letters', description: 'Request removal of accurate-but-paid negative items as a courtesy.', icon: <PenTool className="w-5 h-5" /> },
   ];
 
   return (
@@ -35,23 +43,37 @@ const ProductDisputeLetters = () => {
             </div>
           </ScrollReveal>
 
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+          {/* Letter Types */}
+          <ScrollReveal delay={0.05}>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-16">
+              {letterTypes.map((type, i) => (
+                <Card key={i} className="border-border hover:border-primary/20 transition-colors text-center">
+                  <CardContent className="p-5">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary mx-auto mb-3">{type.icon}</div>
+                    <h3 className="font-semibold text-foreground text-sm mb-1">{type.name}</h3>
+                    <p className="text-xs text-muted-foreground">{type.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </ScrollReveal>
+
+          <div className="grid md:grid-cols-2 gap-12 items-center mb-16">
             <ScrollReveal>
-              <div>
-                <h2 className="text-2xl font-bold text-foreground mb-6">Letters That Get Results</h2>
-                <ul className="space-y-4">
-                  {features.map((f, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-muted-foreground">{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button size="lg" className="mt-8" onClick={() => navigate('/auth')}>
-                  Start Generating <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </div>
+              <h2 className="text-2xl font-bold text-foreground mb-6">Letters That Get Results</h2>
+              <ul className="space-y-4">
+                {features.map((f, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span className="text-muted-foreground">{f}</span>
+                  </li>
+                ))}
+              </ul>
+              <Button size="lg" className="mt-8" onClick={() => navigate('/auth')}>
+                Start Generating <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
             </ScrollReveal>
+
             <ScrollReveal delay={0.1}>
               <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
                 <CardContent className="p-8">
@@ -64,17 +86,29 @@ const ProductDisputeLetters = () => {
                   </div>
                   <div className="space-y-3 text-sm text-muted-foreground border-t border-border pt-4">
                     <p><strong className="text-foreground">To:</strong> Experian Consumer Relations</p>
-                    <p><strong className="text-foreground">Re:</strong> Dispute of Inaccurate Information</p>
-                    <p className="italic">Pursuant to the Fair Credit Reporting Act, Section 611(a), I am writing to dispute inaccurate information appearing on my credit report...</p>
-                    <div className="flex gap-2 pt-2">
+                    <p><strong className="text-foreground">Re:</strong> Dispute of Inaccurate Information — Account #XXXX-1234</p>
+                    <p className="italic">"Pursuant to the Fair Credit Reporting Act, Section 611(a), I am writing to dispute inaccurate information appearing on my credit report. The account listed above contains reporting errors that must be investigated and corrected..."</p>
+                    <div className="flex flex-wrap gap-2 pt-2">
                       <Badge variant="secondary"><Shield className="w-3 h-3 mr-1" />FCRA Compliant</Badge>
                       <Badge variant="secondary"><Zap className="w-3 h-3 mr-1" />AI Optimized</Badge>
+                      <Badge variant="secondary"><BarChart3 className="w-3 h-3 mr-1" />87% Deletion Rate</Badge>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </ScrollReveal>
           </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-primary to-emerald-500">
+        <div className="container mx-auto text-center max-w-2xl">
+          <h2 className="text-3xl font-bold text-primary-foreground mb-4">Generate Your First Letter</h2>
+          <p className="text-primary-foreground/80 mb-8">AI-powered dispute letters with 94% deletion rates.</p>
+          <Button size="lg" className="bg-background text-foreground hover:bg-background/90" onClick={() => navigate('/auth')}>
+            Get Started <ArrowRight className="ml-2 w-4 h-4" />
+          </Button>
         </div>
       </section>
     </div>

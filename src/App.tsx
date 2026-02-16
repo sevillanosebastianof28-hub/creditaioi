@@ -39,6 +39,7 @@ import WhiteLabel from "./pages/WhiteLabel";
 import ResetPassword from "./pages/ResetPassword";
 import About from "./pages/About";
 import Blog from "./pages/Blog";
+import BlogArticle from "./pages/BlogArticle";
 import Contact from "./pages/Contact";
 import Careers from "./pages/Careers";
 import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
@@ -136,6 +137,7 @@ function AppRouter() {
       {/* Public Pages */}
       <Route path="/about" element={<About />} />
       <Route path="/blog" element={<Blog />} />
+      <Route path="/blog/:slug" element={<BlogArticle />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/careers" element={<Careers />} />
       
