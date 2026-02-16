@@ -14,7 +14,7 @@ interface RoleBasedLayoutProps {
 
 export function RoleBasedLayout({ children }: RoleBasedLayoutProps) {
   const { role, loading, user } = useAuth();
-  const { collapsed } = useSidebarContext();
+  const { collapsed, isMobile } = useSidebarContext();
 
   // Show loading state while role is being determined
   if (loading || (user && role === null)) {
@@ -44,14 +44,9 @@ export function RoleBasedLayout({ children }: RoleBasedLayoutProps) {
     <div className="min-h-screen bg-background">
       {getSidebar()}
       <div 
-        className={cn(
-          'transition-all duration-300 ease-in-out',
-          collapsed ? 'pl-[70px]' : 'pl-[260px]',
-          'md:pl-[260px]',
-          collapsed && 'md:pl-[70px]'
-        )}
+        className="transition-all duration-300 ease-in-out"
         style={{
-          paddingLeft: collapsed ? '70px' : '260px'
+          paddingLeft: isMobile ? 0 : collapsed ? '70px' : '260px'
         }}
       >
         <Header />
