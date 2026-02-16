@@ -49,7 +49,7 @@ def main():
     dataset = load_dataset("json", data_files={
         "train": cfg.train_files,
     })
-    
+
     if cfg.valid_files:
         valid_dataset = load_dataset("json", data_files={
             "validation": cfg.valid_files,
@@ -88,7 +88,7 @@ def main():
             sentences1.append(item["text_1"])
             sentences2.append(item["text_2"])
             scores.append(float(item["label"]))
-        
+
         evaluator = evaluation.EmbeddingSimilarityEvaluator(
             sentences1, sentences2, scores,
             name="validation",
