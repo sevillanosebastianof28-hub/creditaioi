@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { readAiStream } from '@/lib/aiStream';
 
 export interface DisputableItem {
   id: string;
@@ -55,9 +54,7 @@ export function useCreditAnalysis() {
     setAnalysisResult(null);
 
     try {
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
-
       const { data: { session } } = await supabase.auth.getSession();
       const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -72,15 +69,15 @@ export function useCreditAnalysis() {
         body: JSON.stringify({
           reportText,
           userId: user?.id,
-          stream: true
         })
       });
 
-      const data = await readAiStream<AnalysisResult>(response, (event) => {
-        if (event.type === 'status') {
-          setStatusMessage(event.message || null);
-        }
-      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Analysis failed');
+      }
+
+      const data = await response.json();
 
       const normalizedItems = (data.items || []).map((item: any) => ({
         ...item,

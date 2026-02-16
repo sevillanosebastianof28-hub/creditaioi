@@ -51,3 +51,9 @@ verify_jwt = false
 
 [functions.ai-goal-roadmap]
 verify_jwt = false
+
+[functions.analyze-credit-report]
+verify_jwt = false
+
+[functions.ocr-document-parser]
+verify_jwt = false
