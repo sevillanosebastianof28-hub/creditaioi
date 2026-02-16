@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { readAiStream } from '@/lib/aiStream';
 
 interface RoundRecommendation {
   creditorName: string;
@@ -41,17 +40,15 @@ export function useRoundManager() {
         Authorization: `Bearer ${session?.access_token || publishableKey}`,
         apikey: publishableKey
       },
-      body: JSON.stringify({
-        ...payload,
-        stream: true
-      })
+      body: JSON.stringify(payload)
     });
 
-    return readAiStream<{ result: RoundAnalysis }>(response, (event) => {
-      if (event.type === 'status') {
-        setStatusMessage(event.message || null);
-      }
-    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Round manager request failed');
+    }
+
+    return response.json();
   };
 
   const analyzeRound = async (clientId: string, roundId: string, disputeItems: any[], bureauResponses: any[]) => {
