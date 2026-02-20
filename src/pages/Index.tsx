@@ -50,15 +50,21 @@ const Dashboard = () => {
     queryFn: async () => {
       if (!profile?.agency_id) return [];
       
-      // Fetch all clients with roles in one query
+      // First get client user IDs from user_roles
+      const { data: clientRoles } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'client');
+
+      if (!clientRoles || clientRoles.length === 0) return [];
+      const clientUserIds = clientRoles.map(r => r.user_id);
+
+      // Then fetch profiles for those clients in this agency
       const { data: profiles, error } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          user_roles!inner(role)
-        `)
+        .select('*')
         .eq('agency_id', profile.agency_id)
-        .eq('user_roles.role', 'client');
+        .in('user_id', clientUserIds);
 
       if (error) throw error;
       if (!profiles || profiles.length === 0) return [];
