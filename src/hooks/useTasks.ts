@@ -24,7 +24,7 @@ export interface Task {
 }
 
 export function useTasks() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
   const { user, role } = useAuth();
   const { toast } = useToast();

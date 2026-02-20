@@ -4,7 +4,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, Target, Heart, Users, Lightbulb, Shield, Brain, Zap, TrendingUp, CheckCircle2, Rocket, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import sebastianPhoto from '@/assets/sebastian-sevillano.png';
 import { ScrollReveal } from '@/components/landing/ScrollReveal';
 
 const About = () => {
@@ -102,7 +101,7 @@ const About = () => {
               <CardContent className="p-0">
                 <div className="grid md:grid-cols-2 gap-0">
                   <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-8 md:p-12 flex flex-col justify-center items-center text-center">
-                    <img src={sebastianPhoto} alt="Sebastian Sevillano" className="w-32 h-32 rounded-full object-cover object-top border-4 border-primary/30 mb-4" />
+                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary to-emerald-400 flex items-center justify-center text-4xl font-bold text-primary-foreground mb-4">SS</div>
                     <h3 className="text-2xl font-bold text-foreground">Sebastian Sevillano</h3>
                     <p className="text-primary font-medium mb-2">Founder & CEO</p>
                     <p className="text-sm text-muted-foreground max-w-xs">

@@ -50,24 +50,18 @@ const Dashboard = () => {
     queryFn: async () => {
       if (!profile?.agency_id) return [];
       
-      // First get client user IDs from user_roles
-      const { data: clientRoles } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role', 'client');
-
-      if (!clientRoles || clientRoles.length === 0) return [];
-      const clientUserIds = clientRoles.map(r => r.user_id);
-
-      // Then fetch profiles for those clients in this agency
-      const { data: profiles, error } = await supabase
+      // First get all profiles in this agency (RLS allows agency owners to see these)
+      const { data: agencyProfiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('agency_id', profile.agency_id)
-        .in('user_id', clientUserIds);
+        .eq('agency_id', profile.agency_id);
 
-      if (error) throw error;
-      if (!profiles || profiles.length === 0) return [];
+      if (profilesError) throw profilesError;
+      if (!agencyProfiles || agencyProfiles.length === 0) return [];
+
+      // Filter out the agency owner themselves
+      const profiles = agencyProfiles.filter(p => p.user_id !== user?.id);
+      if (profiles.length === 0) return [];
 
       const clientIds = profiles.map(p => p.user_id);
 
