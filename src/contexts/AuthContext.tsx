@@ -113,54 +113,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           data: {
             first_name: firstName,
             last_name: lastName,
+            role: selectedRole,
+            agency_name: selectedRole === 'agency_owner' ? agencyName : undefined,
           }
         }
       });
 
       if (error) throw error;
       if (!data.user) throw new Error('Signup failed');
-
-      const userId = data.user.id;
-
-      // Create agency first if agency_owner
-      let agencyId: string | null = null;
-      if (selectedRole === 'agency_owner' && agencyName) {
-        const { data: agencyData, error: agencyError } = await supabase
-          .from('agencies')
-          .insert({
-            name: agencyName,
-            owner_id: userId,
-            email: email,
-          })
-          .select()
-          .single();
-        
-        if (agencyError) throw agencyError;
-        agencyId = agencyData.id;
-      }
-
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          user_id: userId,
-          first_name: firstName,
-          last_name: lastName,
-          email: email,
-          agency_id: agencyId,
-        });
-
-      if (profileError) throw profileError;
-
-      // Create role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: userId,
-          role: selectedRole,
-        });
-
-      if (roleError) throw roleError;
 
       return { error: null };
     } catch (error) {
