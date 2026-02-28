@@ -509,6 +509,105 @@ export type Database = {
           },
         ]
       }
+      credit_applications: {
+        Row: {
+          applicant_id: string
+          application_text: string | null
+          avg_account_age_months: number | null
+          brand_id: string | null
+          created_at: string
+          derogatory_marks: number | null
+          employment_months: number | null
+          employment_type: string | null
+          feature_vector: number[] | null
+          fico_score: number | null
+          id: string
+          income_verified: boolean | null
+          inquiries_6m: number | null
+          ip_address: unknown
+          loan_amount: number | null
+          loan_amount_requested: number | null
+          loan_purpose: string | null
+          missed_payments_12m: number | null
+          missed_payments_24m: number | null
+          oldest_account_months: number | null
+          revolving_utilization: number | null
+          stated_expenses: number | null
+          stated_income: number | null
+          status: string
+          total_accounts: number | null
+          total_balance: number | null
+          total_credit_limit: number | null
+          transactions: Json | null
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          applicant_id: string
+          application_text?: string | null
+          avg_account_age_months?: number | null
+          brand_id?: string | null
+          created_at?: string
+          derogatory_marks?: number | null
+          employment_months?: number | null
+          employment_type?: string | null
+          feature_vector?: number[] | null
+          fico_score?: number | null
+          id?: string
+          income_verified?: boolean | null
+          inquiries_6m?: number | null
+          ip_address?: unknown
+          loan_amount?: number | null
+          loan_amount_requested?: number | null
+          loan_purpose?: string | null
+          missed_payments_12m?: number | null
+          missed_payments_24m?: number | null
+          oldest_account_months?: number | null
+          revolving_utilization?: number | null
+          stated_expenses?: number | null
+          stated_income?: number | null
+          status?: string
+          total_accounts?: number | null
+          total_balance?: number | null
+          total_credit_limit?: number | null
+          transactions?: Json | null
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          applicant_id?: string
+          application_text?: string | null
+          avg_account_age_months?: number | null
+          brand_id?: string | null
+          created_at?: string
+          derogatory_marks?: number | null
+          employment_months?: number | null
+          employment_type?: string | null
+          feature_vector?: number[] | null
+          fico_score?: number | null
+          id?: string
+          income_verified?: boolean | null
+          inquiries_6m?: number | null
+          ip_address?: unknown
+          loan_amount?: number | null
+          loan_amount_requested?: number | null
+          loan_purpose?: string | null
+          missed_payments_12m?: number | null
+          missed_payments_24m?: number | null
+          oldest_account_months?: number | null
+          revolving_utilization?: number | null
+          stated_expenses?: number | null
+          stated_income?: number | null
+          status?: string
+          total_accounts?: number | null
+          total_balance?: number | null
+          total_credit_limit?: number | null
+          transactions?: Json | null
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       credit_report_analyses: {
         Row: {
           analysis_result: Json | null
@@ -544,6 +643,104 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      credit_scores: {
+        Row: {
+          adverse_action_reasons: Json | null
+          applicant_id: string
+          application_id: string
+          brand_id: string | null
+          causal_factors: Json | null
+          confidence_high: number | null
+          confidence_low: number | null
+          counterfactuals: Json | null
+          created_at: string
+          decision: string | null
+          decision_at: string | null
+          decision_by: string | null
+          decision_reason: string | null
+          explanation: string | null
+          explanation_status: string | null
+          fair: boolean
+          id: string
+          improvement_plan: string | null
+          inference_ms: number | null
+          model_version: string
+          probability: number
+          risk_severity: string
+          risk_type: string
+          score: number
+          scored_at: string
+          trajectory: Json | null
+          updated_at: string
+        }
+        Insert: {
+          adverse_action_reasons?: Json | null
+          applicant_id: string
+          application_id: string
+          brand_id?: string | null
+          causal_factors?: Json | null
+          confidence_high?: number | null
+          confidence_low?: number | null
+          counterfactuals?: Json | null
+          created_at?: string
+          decision?: string | null
+          decision_at?: string | null
+          decision_by?: string | null
+          decision_reason?: string | null
+          explanation?: string | null
+          explanation_status?: string | null
+          fair?: boolean
+          id?: string
+          improvement_plan?: string | null
+          inference_ms?: number | null
+          model_version?: string
+          probability: number
+          risk_severity?: string
+          risk_type?: string
+          score: number
+          scored_at?: string
+          trajectory?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          adverse_action_reasons?: Json | null
+          applicant_id?: string
+          application_id?: string
+          brand_id?: string | null
+          causal_factors?: Json | null
+          confidence_high?: number | null
+          confidence_low?: number | null
+          counterfactuals?: Json | null
+          created_at?: string
+          decision?: string | null
+          decision_at?: string | null
+          decision_by?: string | null
+          decision_reason?: string | null
+          explanation?: string | null
+          explanation_status?: string | null
+          fair?: boolean
+          id?: string
+          improvement_plan?: string | null
+          inference_ms?: number | null
+          model_version?: string
+          probability?: number
+          risk_severity?: string
+          risk_type?: string
+          score?: number
+          scored_at?: string
+          trajectory?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_scores_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "credit_applications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dispute_items: {
         Row: {
@@ -693,6 +890,48 @@ export type Database = {
         }
         Relationships: []
       }
+      fairness_metrics: {
+        Row: {
+          approval_rate: number | null
+          brand_id: string | null
+          cfpb_threshold_met: boolean | null
+          computed_at: string | null
+          disparate_impact: number | null
+          equal_opp_diff: number | null
+          id: string
+          metric_date: string
+          model_version: string
+          n_scored: number | null
+          passes_80pct_rule: boolean | null
+        }
+        Insert: {
+          approval_rate?: number | null
+          brand_id?: string | null
+          cfpb_threshold_met?: boolean | null
+          computed_at?: string | null
+          disparate_impact?: number | null
+          equal_opp_diff?: number | null
+          id?: string
+          metric_date: string
+          model_version: string
+          n_scored?: number | null
+          passes_80pct_rule?: boolean | null
+        }
+        Update: {
+          approval_rate?: number | null
+          brand_id?: string | null
+          cfpb_threshold_met?: boolean | null
+          computed_at?: string | null
+          disparate_impact?: number | null
+          equal_opp_diff?: number | null
+          id?: string
+          metric_date?: string
+          model_version?: string
+          n_scored?: number | null
+          passes_80pct_rule?: boolean | null
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           agency_id: string | null
@@ -740,6 +979,42 @@ export type Database = {
           },
         ]
       }
+      macro_context: {
+        Row: {
+          consumer_sentiment: number | null
+          cpi_yoy: number | null
+          credit_card_delinquency_rate: number | null
+          expires_at: string
+          fed_funds_rate: number | null
+          id: string
+          sp500_30d_return: number | null
+          unemployment_rate: number | null
+          valid_at: string
+        }
+        Insert: {
+          consumer_sentiment?: number | null
+          cpi_yoy?: number | null
+          credit_card_delinquency_rate?: number | null
+          expires_at?: string
+          fed_funds_rate?: number | null
+          id?: string
+          sp500_30d_return?: number | null
+          unemployment_rate?: number | null
+          valid_at?: string
+        }
+        Update: {
+          consumer_sentiment?: number | null
+          cpi_yoy?: number | null
+          credit_card_delinquency_rate?: number | null
+          expires_at?: string
+          fed_funds_rate?: number | null
+          id?: string
+          sp500_30d_return?: number | null
+          unemployment_rate?: number | null
+          valid_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -767,6 +1042,57 @@ export type Database = {
           recipient_id?: string
           sender_id?: string
           subject?: string | null
+        }
+        Relationships: []
+      }
+      model_registry: {
+        Row: {
+          auc_roc: number | null
+          brier_score: number | null
+          created_at: string
+          deployed_at: string | null
+          ece: number | null
+          equal_opp_diff: number | null
+          id: string
+          is_active: boolean | null
+          ks_stat: number | null
+          n_test: number | null
+          n_train: number | null
+          notes: string | null
+          retired_at: string | null
+          version: string
+        }
+        Insert: {
+          auc_roc?: number | null
+          brier_score?: number | null
+          created_at?: string
+          deployed_at?: string | null
+          ece?: number | null
+          equal_opp_diff?: number | null
+          id?: string
+          is_active?: boolean | null
+          ks_stat?: number | null
+          n_test?: number | null
+          n_train?: number | null
+          notes?: string | null
+          retired_at?: string | null
+          version: string
+        }
+        Update: {
+          auc_roc?: number | null
+          brier_score?: number | null
+          created_at?: string
+          deployed_at?: string | null
+          ece?: number | null
+          equal_opp_diff?: number | null
+          id?: string
+          is_active?: boolean | null
+          ks_stat?: number | null
+          n_test?: number | null
+          n_train?: number | null
+          notes?: string | null
+          retired_at?: string | null
+          version?: string
         }
         Relationships: []
       }
@@ -849,6 +1175,59 @@ export type Database = {
             columns: ["dispute_item_id"]
             isOneToOne: false
             referencedRelation: "dispute_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prediction_audit_log: {
+        Row: {
+          adverse_reasons: Json | null
+          applicant_id: string
+          application_id: string
+          causal_factors: Json | null
+          created_at: string
+          fair: boolean | null
+          feature_snapshot: number[] | null
+          id: string
+          model_version: string | null
+          probability: number
+          score: number
+          score_id: string
+        }
+        Insert: {
+          adverse_reasons?: Json | null
+          applicant_id: string
+          application_id: string
+          causal_factors?: Json | null
+          created_at?: string
+          fair?: boolean | null
+          feature_snapshot?: number[] | null
+          id?: string
+          model_version?: string | null
+          probability: number
+          score: number
+          score_id: string
+        }
+        Update: {
+          adverse_reasons?: Json | null
+          applicant_id?: string
+          application_id?: string
+          causal_factors?: Json | null
+          created_at?: string
+          fair?: boolean | null
+          feature_snapshot?: number[] | null
+          id?: string
+          model_version?: string | null
+          probability?: number
+          score?: number
+          score_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prediction_audit_log_score_id_fkey"
+            columns: ["score_id"]
+            isOneToOne: false
+            referencedRelation: "credit_scores"
             referencedColumns: ["id"]
           },
         ]
